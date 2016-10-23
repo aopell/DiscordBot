@@ -29,7 +29,7 @@ namespace DiscordBot
         }
         public List<User> Voters;
 
-        public Poll(Channel channel, User creator)
+        public Poll(Channel channel, User creator, Message message)
         {
             StartTime = DateTime.Now;
             Active = true;
@@ -37,6 +37,7 @@ namespace DiscordBot
             Options = new List<PollOption>();
             Creator = creator;
             Voters = new List<User>();
+            Message = message;
         }
 
         private static List<Poll> Polls = new List<Poll>();
@@ -50,7 +51,7 @@ namespace DiscordBot
             }
         }
 
-        public static Poll Create(Channel channel, User creator)
+        public static Poll Create(Channel channel, User creator, Message message)
         {
             foreach (Poll p in Polls)
             {
@@ -60,7 +61,7 @@ namespace DiscordBot
                 }
             }
 
-            Poll poll = new Poll(channel, creator);
+            Poll poll = new Poll(channel, creator, message);
             Polls.Add(poll);
             return poll;
         }
@@ -73,7 +74,7 @@ namespace DiscordBot
                 {
                     p.Active = false;
                     var winners = p.GetWinners();
-                    string messageToSend = "*Poll Results: (Winners in **bold**)*\n";
+                    string messageToSend = "__Poll Results: (Winners in **bold**)__\n";
                     foreach (PollOption o in winners) messageToSend += $"**{o.Votes} - {o.Text}**\n";
                     foreach (PollOption o in p.Options) if (!winners.Contains(o)) messageToSend += $"{o.Votes} - {o.Text}\n";
                     messageToSend += $"{p.TotalVotes} {(p.TotalVotes == 1 ? "Total Vote" : "Total Votes")}";

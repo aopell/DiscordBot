@@ -200,46 +200,61 @@ namespace DiscordBot
 
         public static void LoadCommands()
         {
-            Commands.Add(new Command("!help", new Action<Message>(async (message) =>
+            Commands.Add(new Command("!help", new Action<Message>(message =>
             {
-                var args = GetArgs(message.Text);
-                if (args.Length > 0)
+                try
                 {
-                    if (!args[0].StartsWith("!")) args[0] = '!' + args[0];
-                    Command c = null;
-                    foreach (Command thing in Commands) if (thing.Text == args[0]) { c = thing; break; }
-                    if (c == null) message.Reply("*That command does not exist*", 5000);
-                    else message.Reply($"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}", 15000);
-                }
-                else
-                {
-                    string s = "*This message will delete itself in 20 seconds*\n\n";
-                    foreach (Command c in Commands)
+                    var args = GetArgs(message.Text);
+                    if (args.Length > 0)
                     {
-                        if ((c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840) || c.CommandContext == Command.Context.All || GetMessageContext(message) == c.CommandContext)
-                            s += $"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}\n\n";
+                        if (!args[0].StartsWith("!")) args[0] = '!' + args[0];
+                        Command c = null;
+                        foreach (Command thing in Commands) if (thing.Text == args[0]) { c = thing; break; }
+                        if (c == null) message.Reply("*That command does not exist*", 5000);
+                        else message.Reply($"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}", 15000);
                     }
-                    await message.Delete();
+                    else
+                    {
+                        string s = "*This message will delete itself in 20 seconds*\n\n";
+                        foreach (Command c in Commands)
+                        {
+                            if ((c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840) || c.CommandContext == Command.Context.All || GetMessageContext(message) == c.CommandContext)
+                                s += $"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}\n\n";
+                        }
 
-                    message.Reply(s, 20000);
+                        message.Reply(s, 20000);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
                 }
 
             }), "Lists all commands and their descriptions or one command and its description", "[command]"));
-            Commands.Add(new Command("!echo", new Action<Message>(async (message) =>
+            Commands.Add(new Command("!echo", new Action<Message>(message =>
             {
-                await message.Delete();
-                string text = message.Text.Substring(5).Trim();
-                if (text.StartsWith("!echo")) text = "\\" + text;
-                message.Reply(text);
+                try
+                {
+                    if (GetArgs(message.Text).Length < 1) throw new ParameterException("The syntax of the command was not valid. Use `!help echo` for more information");
+                    string text = message.Text.Substring(5).Trim();
+                    if (text.StartsWith("!echo")) text = "\\" + text;
+                    message.Reply(text);
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
+                }
             }), "Repeats <message> back to you", "<message>"));
-            Commands.Add(new Command("!hello", new Action<Message>(async (message) =>
+            Commands.Add(new Command("!hello", new Action<Message>(message =>
             {
-                await message.Delete();
                 message.Reply("Hello! :hand_splayed:");
             }), "Says hi"));
-            Commands.Add(new Command("!8ball", new Action<Message>(async (message) =>
+            Commands.Add(new Command("!8ball", new Action<Message>(message =>
             {
-                string[] responses = new string[] {
+                try
+                {
+                    if (GetSuffix(message.Text).Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help 8ball` for more information");
+                    string[] responses = new string[] {
                     "It is certain",
                     "It is decidedly so",
                     "Without a doubt",
@@ -260,213 +275,246 @@ namespace DiscordBot
                     "My sources say no",
                     "Outlook not so good",
                     "Very doubtful"
-                };
+                    };
 
-                await message.Delete();
-                message.Reply($"<@{message.User.Id}>: ***{string.Join(" ", message.Text.Split(' ').Skip(1)).Trim()}***\n" + responses[random.Next(responses.Length)]);
+                    message.Reply($"<@{message.User.Id}>: ***{GetSuffix(message.Text)}***\n" + responses[random.Next(responses.Length)]);
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
+                }
             }), "It knows your future", "<yes or no question>"));
             Commands.Add(new Command("!poll", new Action<Message>(async (message) =>
             {
-                string[] voteOptions = GetSuffix(message.Text).Split(',');
-                Poll p = Poll.Create(message.Channel, message.User);
-
-                if (p == null)
+                try
                 {
-                    message.Reply($"*@{message.User.Name}: Please wait, there is already a poll in progress*", 5000);
-                    return;
-                }
+                    if (GetSuffix(message.Text).Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help poll` for more information");
+                    string[] voteOptions = GetSuffix(message.Text).Split(',');
+                    Poll p = Poll.Create(message.Channel, message.User, message);
 
-                foreach (string option in voteOptions) p.Options.Add(new PollOption(option));
-
-                string messageToSend = $"***@{message.User.Name} has started a poll with the following options:***\n";
-                foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
-                messageToSend += "\n***Enter `!vote <number>` to vote!***\n*The poll will end in 60 seconds unless stopped earlier with `!endpoll`*";
-
-                await message.Delete();
-                message.Reply(messageToSend);
-
-                await Task.Delay(60000).ContinueWith(new Action<Task>(t =>
-                {
-                    if (p.Active)
+                    if (p == null)
                     {
-                        Poll.EndActive();
-                    }
-                }));
-            }), "Starts a poll with the given comma-separated options", "<option1>,<option2>[,option3][,option4]..."));
-            Commands.Add(new Command("!vote", new Action<Message>(async (message) =>
-            {
-                await message.Delete();
-
-                if (Poll.ActivePoll != null)
-                {
-                    if (Poll.ActivePoll.Voters.Contains(message.User))
-                    {
-                        message.Reply($"<@{message.User.Id}>: You already voted!", 5000);
+                        message.Reply($"*@{message.User.Name}: Please wait, there is already a poll in progress*", 5000);
                         return;
                     }
 
-                    try
-                    {
-                        Poll.ActivePoll.Options[int.Parse(GetSuffix(message.Text)) - 1].Votes++;
-                        message.Reply($"<@{message.User.Id}>: Vote acknowledged", 5000);
-                        Poll.ActivePoll.Voters.Add(message.User);
-                    }
-                    catch
-                    {
-                        message.Reply($"<@{message.User.Id}>: Invalid poll option", 5000);
-                    }
-                }
-                else
-                {
-                    message.Reply($"<@{message.User.Id}>: No poll currently in progress", 5000);
-                }
+                    foreach (string option in voteOptions) p.Options.Add(new PollOption(option));
 
-            }), "Votes in the active poll", "<option number>"));
-            Commands.Add(new Command("!endpoll", new Action<Message>(async (message) =>
+                    string messageToSend = $"***@{message.User.Name} has started a poll with the following options:***\n";
+                    foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
+                    messageToSend += "\n***Enter `!vote <number>` to vote!***\n*The poll will end in 5 minutes unless stopped earlier with `!endpoll`*";
+
+                    message.Reply(messageToSend);
+
+                    await Task.Delay(300000).ContinueWith(t =>
+                    {
+                        if (p.Active)
+                        {
+                            Poll.EndActive();
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
+                }
+            }), "Starts a poll with the given comma-separated options", "<option1>,<option2>[,option3][,option4]..."));
+            Commands.Add(new Command("!vote", new Action<Message>(message =>
             {
-                await message.Delete();
+                try
+                {
+                    if (Poll.ActivePoll != null)
+                    {
+                        if (Poll.ActivePoll.Voters.Contains(message.User))
+                        {
+                            message.Reply($"<@{message.User.Id}>: You already voted!", 5000);
+                            return;
+                        }
 
-                if (Poll.ActivePoll != null)
-                {
-                    Poll.EndActive();
+                        try
+                        {
+                            Poll.ActivePoll.Options[int.Parse(GetSuffix(message.Text)) - 1].Votes++;
+                            message.Reply($"<@{message.User.Id}>: Vote acknowledged", 5000);
+                            Poll.ActivePoll.Voters.Add(message.User);
+                        }
+                        catch
+                        {
+                            message.Reply($"<@{message.User.Id}>: Invalid poll option", 5000);
+                        }
+                    }
+                    else
+                    {
+                        message.Reply($"<@{message.User.Id}>: No poll currently in progress", 5000);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    message.Reply($"@{message.User.Name}: No poll currently in progress", 5000);
+                    LogError(message, ex);
+                }
+            }), "Votes in the active poll", "<option number>"));
+            Commands.Add(new Command("!endpoll", new Action<Message>(message =>
+            {
+                try
+                {
+                    if (Poll.ActivePoll != null)
+                    {
+                        Poll.EndActive();
+                    }
+                    else
+                    {
+                        message.Reply($"@{message.User.Name}: No poll currently in progress", 5000);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
                 }
 
             }), "Ends the currently active poll"));
             Commands.Add(new Command("!username", new Action<Message>(async (message) =>
             {
-                await message.Delete();
-
                 try
                 {
-                    await Client.CurrentUser.Edit(username: GetSuffix(message.Text).Shorten(64, false));
+                    if (GetSuffix(message.Text).Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help username` for more information");
+                    await Client.CurrentUser.Edit(username: GetSuffix(message.Text).Shorten(32, false));
                     message.Reply($"*Username updated to {GetSuffix(message.Text)}*", 5000);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    message.Reply("**ERROR:** *Username could not be updated to {GetSuffix(message.Text)}*", 5000);
+                    LogError(message, ex);
                 }
 
             }), "Sets the bot's username", "<username>", Command.Context.OwnerOnly));
-            Commands.Add(new Command("!quote", new Action<Message>(async (message) =>
+            Commands.Add(new Command("!quote", new Action<Message>(message =>
             {
-                await message.Delete();
-                Random random = new Random();
-
-                string[] args = GetArgs(message.Text);
-                int quoteId = 0;
-
-                if (!File.Exists($"quotes.{message.Server.Id}.txt"))
-                    File.Create($"quotes.{message.Server.Id}.txt").Close();
-
-                if (args[0] == "?" || args[0] == "random")
+                try
                 {
-                    string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
-                    if (quotes.Length > 0)
+                    Random random = new Random();
+
+                    string[] args = GetArgs(message.Text);
+                    if (args.Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help quote` for more information");
+                    int quoteId = 0;
+
+                    if (!File.Exists($"quotes.{message.Server.Id}.txt"))
+                        File.Create($"quotes.{message.Server.Id}.txt").Close();
+
+                    if (args[0] == "?" || args[0] == "random")
                     {
-                        int id = random.Next(quotes.Length);
-                        message.Reply($"#{id}: *{quotes[id]}*");
+                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        if (quotes.Length > 0)
+                        {
+                            int id = random.Next(quotes.Length);
+                            message.Reply($"#{id}: *{quotes[id]}*");
+                        }
                     }
-                }
-                else if (args[0] == "add")
-                {
-                    File.AppendAllLines($"quotes.{message.Server.Id}.txt", new[] { string.Join(" ", args.Skip(1)) });
-                    string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
-                    message.Reply($"Added quote *{string.Join(" ", args.Skip(1))}* with quote ID {quotes.Length - 1}", 30000);
-                }
-                else if (args[0] == "find")
-                {
-                    string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
-                    List<string> quotesWithPhrase = new List<string>();
-
-                    string searchTerm = string.Join(" ", GetArgs(message.Text).Skip(1));
-
-                    for (int i = 0; i < quotes.Length; i++)
+                    else if (args[0] == "add")
                     {
-                        if (quotes[i].ToLower().Contains(searchTerm.ToLower()))
-                            quotesWithPhrase.Add($"{i}: *{quotes[i]}*");
+                        File.AppendAllLines($"quotes.{message.Server.Id}.txt", new[] { string.Join(" ", args.Skip(1)) });
+                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        message.Reply($"Added quote *{string.Join(" ", args.Skip(1))}* with quote ID {quotes.Length - 1}", 30000);
                     }
-
-                    message.Reply($"**Quotes Matching *\"{searchTerm}\"***\n{string.Join("\n", quotesWithPhrase)}", 30000);
-                }
-                else if (args[0] == "edit")
-                {
-                    List<string> quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt").ToList();
-                    int id = Convert.ToInt32(args[1]);
-
-                    quotes[id] = string.Join(" ", args.Skip(2));
-
-                    File.WriteAllLines($"quotes.{message.Server.Id}.txt", quotes);
-                    message.Reply($"Updated quote {id} with new text *{string.Join(" ", args.Skip(2))}*", 10000);
-                }
-                else if (int.TryParse(args[0], out quoteId))
-                {
-                    string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
-                    if (quotes.Length >= quoteId + 1 && quoteId >= 0)
+                    else if (args[0] == "find")
                     {
-                        message.Reply($"*{quotes[quoteId]}*", 60000);
+                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        List<string> quotesWithPhrase = new List<string>();
+
+                        string searchTerm = string.Join(" ", GetArgs(message.Text).Skip(1));
+
+                        for (int i = 0; i < quotes.Length; i++)
+                        {
+                            if (quotes[i].ToLower().Contains(searchTerm.ToLower()))
+                                quotesWithPhrase.Add($"{i}: *{quotes[i]}*");
+                        }
+
+                        message.Reply($"**Quotes Matching *\"{searchTerm}\"***\n{string.Join("\n", quotesWithPhrase)}", 30000);
+                    }
+                    else if (args[0] == "edit")
+                    {
+                        List<string> quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt").ToList();
+                        int id = Convert.ToInt32(args[1]);
+
+                        quotes[id] = string.Join(" ", args.Skip(2));
+
+                        File.WriteAllLines($"quotes.{message.Server.Id}.txt", quotes);
+                        message.Reply($"Updated quote {id} with new text *{string.Join(" ", args.Skip(2))}*", 10000);
+                    }
+                    else if (int.TryParse(args[0], out quoteId))
+                    {
+                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        if (quotes.Length >= quoteId + 1 && quoteId >= 0)
+                        {
+                            message.Reply($"*{quotes[quoteId]}*", 60000);
+                        }
+                        else
+                        {
+                            message.Reply($"*No quote with ID 0*", 10000);
+                        }
                     }
                     else
                     {
-                        message.Reply($"*No quote with ID 0*", 10000);
+                        message.Reply("**!quote** [add <quote text>|edit <id> <new quote text>|id|find <search phrase>|random|?]", 7500);
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    message.Reply("**!quote** [add <quote text>|edit <id> <new quote text>|id|find <search phrase>|random|?]", 7500);
+                    LogError(message, ex);
                 }
-
 
             }), "Saves quotes and provides ways to look them up", "[add <quote text>|edit <id> <new quote text>|id|find <search phrase>|random|?]", Command.Context.GuildChannel));
             Commands.Add(new Command("!chat", new Action<Message>(async (message) =>
             {
-                var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://cleverbot.io/1.0/ask");
-                httpWebRequest.ContentType = "application/json";
-                httpWebRequest.Method = "POST";
-
-                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                try
                 {
-                    string jsonToSend = JsonConvert.SerializeObject(
-                        new
-                        {
-                            user = CleverBotUsername,
-                            key = CleverBotKey,
-                            nick = "DiscordUser." + Client.CurrentUser.Id,
-                            text = GetSuffix(message.Text)
-                        });
+                    if (GetSuffix(message.Text).Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help chat` for more information");
+                    var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://cleverbot.io/1.0/ask");
+                    httpWebRequest.ContentType = "application/json";
+                    httpWebRequest.Method = "POST";
 
-                    streamWriter.Write(jsonToSend);
-                    await streamWriter.FlushAsync();
-                    streamWriter.Close();
+                    using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                    {
+                        string jsonToSend = JsonConvert.SerializeObject(
+                            new
+                            {
+                                user = CleverBotUsername,
+                                key = CleverBotKey,
+                                nick = "DiscordUser." + Client.CurrentUser.Id,
+                                text = GetSuffix(message.Text)
+                            });
+
+                        streamWriter.Write(jsonToSend);
+                        await streamWriter.FlushAsync();
+                        streamWriter.Close();
+                    }
+
+                    var json = JObject.Parse("{status: \"No response found\"}");
+                    var httpResponse = (HttpWebResponse)(await httpWebRequest.GetResponseAsync());
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = await streamReader.ReadToEndAsync();
+                        json = JObject.Parse(result);
+                    }
+
+                    if (json["status"].ToString() != "success")
+                    {
+                        message.Reply(json["status"].ToString());
+                    }
+                    else
+                    {
+                        message.Reply(json["response"].ToString());
+                    }
                 }
-
-                var json = JObject.Parse("{status: \"No response found\"}");
-                var httpResponse = (HttpWebResponse)(await httpWebRequest.GetResponseAsync());
-                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                catch (Exception ex)
                 {
-                    var result = await streamReader.ReadToEndAsync();
-                    json = JObject.Parse(result);
-                }
-
-                if (json["status"].ToString() != "success")
-                {
-                    message.Reply(json["status"].ToString());
-                }
-                else
-                {
-                    message.Reply(json["response"].ToString());
+                    LogError(message, ex);
                 }
 
             }), "Chats with Cleverbot", "<message>"));
-            Commands.Add(new Command("!alias", new Action<Message>(async (message) =>
+            Commands.Add(new Command("!alias", new Action<Message>(message =>
             {
-                await message.Delete();
                 try
                 {
                     var args = GetArgs(message.Text);
+                    if (args.Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help alias` for more information");
 
                     if (args[0] == "create")
                     {
@@ -512,13 +560,11 @@ namespace DiscordBot
                         {
                             messageToSend += $"`{aliases.Keys.ToArray()[i]}`\n{aliases.Values.ToArray()[i]}\n\n";
                         }
-                        await message.Delete();
 
                         message.Reply(messageToSend, 20000);
                     }
                     else if (args[0] == "remove")
                     {
-                        await message.Delete();
                         var aliases = LoadAliases(message.Server);
                         string command = args[1];
                         if (!command.StartsWith("!")) command = '!' + command;
@@ -532,74 +578,79 @@ namespace DiscordBot
                 }
                 catch (Exception ex)
                 {
-                    message.Reply($"Error parsing \"{message.Text}\": {ex.GetType().Name}", 5000);
+                    LogError(message, ex);
                 }
 
             }), "Provides ways to create, list, and remove aliases for other commands or text messages", "<create <!command> <text>|list|remove <!command>>", Command.Context.GuildChannel));
-            Commands.Add(new Command("!gameinfo", new Action<Message>(async (message) =>
-             {
-                 await message.Delete();
-
-                 DateTime date = DateTime.Today;
-
-                 string[] args = GetArgs(message.RawText);
-                 if (args.Length > 1 && !DateTime.TryParse(args[1], out date))
-                 {
-                     message.Reply("*The date provided was not valid*", 5000);
-                     date = date.Date;
-                     return;
-                 }
-
-
-                 var users = message.MentionedUsers.ToList();
-
-                 if (users.Count <= 0)
-                 {
-                     message.Reply("*Please @mention a user to find game info about them*", 5000);
-                     return;
-                 }
-
-                 var gamer = Gamer.FindById(users[0].Id);
-
-                 if (gamer == null || !gamer.GamesPlayed.ContainsKey(date) || gamer.GamesPlayed[date].Count == 0)
-                 {
-                     message.Reply("*The user played no games on that date*", 5000);
-                     return;
-                 }
-
-
-                 string output = $"**Games played by {gamer.Username} on {date.ToShortDateString()}:**\n";
-                 foreach (var data in gamer.GamesPlayed[date])
-                     output += $"{data.Game.Name}: {Math.Round(data.TimePlayed.TotalHours, 2)} hours\n";
-
-                 message.Reply(output, 60000);
-
-             }), "Lists how long people have played games", $"<@mention> [date={DateTime.Today.ToShortDateString()}]"));
-            Commands.Add(new Command("!sendfile", new Action<Message>(async (Message message) =>
+            Commands.Add(new Command("!gameinfo", new Action<Message>(message =>
             {
-
-                await message.Delete();
-
-                string[] args = GetArgs(message.RawText);
-
-                if (args.Length == 0)
-                {
-                    message.Reply("Provide a file path", 5000);
-                    return;
-                }
-
                 try
                 {
+                    DateTime date = DateTime.Today;
+
+                    string[] args = GetArgs(message.RawText);
+                    if (args.Length == 0 || (args.Length > 1 && !DateTime.TryParse(args[1], out date)))
+                        throw new ParameterException("The syntax of the command was not valid. Use `!help gameinfo` for more information");
+
+                    var users = message.MentionedUsers.ToList();
+
+                    if (users.Count <= 0) throw new ParameterException("The syntax of the command was not valid. Use `!help gameinfo` for more information");
+
+                    var user = users[0];
+                    var gamer = Gamer.FindById(user.Id);
+
+                    if (user.CurrentGame.HasValue)
+                    {
+                        var time = Gamer.GameStopped(user, new DiscordGame(user.CurrentGame.Value));
+                        LogEvent($"@{user.Name}#{user.Discriminator.ToString("D4")} is no longer playing {user.CurrentGame.Value.Name} after {Math.Round(time.TotalHours, 2)} hours", EventType.GameUpdated);
+                        Gamer.GameStarted(user);
+                        LogEvent($"@{user.Name}#{user.Discriminator.ToString("D4")} is now playing {user.CurrentGame.Value.Name}", EventType.GameUpdated);
+                    }
+                    gamer = Gamer.FindById(user.Id);
+
+                    if (gamer == null || !gamer.GamesPlayed.ContainsKey(date) || gamer.GamesPlayed[date].Count == 0)
+                    {
+                        message.Reply("*The user played no games on that date*", 5000);
+                        return;
+                    }
+
+
+                    string output = $"**Games played by {gamer.Username} on {date.ToShortDateString()}:**\n";
+                    foreach (var data in gamer.GamesPlayed[date])
+                        output += $"{data.Game.Name}: {Math.Round(data.TimePlayed.TotalHours, 2)} hours\n";
+
+                    message.Reply(output, 60000);
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
+                }
+
+            }), "Lists how long people have played games", $"<@mention> [date={DateTime.Today.ToShortDateString()}]"));
+            Commands.Add(new Command("!sendfile", new Action<Message>(async (message) =>
+            {
+                try
+                {
+                    string[] args = GetArgs(message.RawText);
+
+                    if (args.Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help sendfile` for more information");
                     await message.Channel.SendFile(GetSuffix(message.RawText));
                 }
                 catch (Exception ex)
                 {
-                    message.Reply("Error sending file: " + ex.Message, 5000);
+                    LogError(message, ex);
                 }
 
             }), "Uploads a file at a relative path", "<path>", Command.Context.OwnerOnly));
 
             Commands = Commands.OrderBy(c => c.Text).ToList();
+        }
+
+        private static void LogError(Message message, Exception ex)
+        {
+            if (!(ex is ParameterException))
+                LogEvent(ex.ToString(), EventType.Error);
+            message.Reply($"*An error occurred: {ex.Message}*");
         }
 
         private static Dictionary<string, string> LoadAliases(Server server)
@@ -619,38 +670,19 @@ namespace DiscordBot
             {
                 try
                 {
-                    if (string.IsNullOrEmpty(c.Usage))
-                    {
-                        if (message.Text.StartsWith(c.Text))
-                            if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840)
-                            {
-                                message.Channel.SendIsTyping();
-                                c.Action(message);
-                                ranCommand = true;
-                            }
-                            else if (c.CommandContext == Command.Context.All || c.CommandContext == GetMessageContext(message))
-                            {
-                                message.Channel.SendIsTyping();
-                                c.Action(message);
-                                ranCommand = true;
-                            }
-                    }
-                    else
-                    {
-                        if (message.Text.StartsWith(c.Text + " "))
-                            if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840)
-                            {
-                                message.Channel.SendIsTyping();
-                                c.Action(message);
-                                ranCommand = true;
-                            }
-                            else if (c.CommandContext == Command.Context.All || c.CommandContext == GetMessageContext(message))
-                            {
-                                message.Channel.SendIsTyping();
-                                c.Action(message);
-                                ranCommand = true;
-                            }
-                    }
+                    if (message.Text.StartsWith(c.Text))
+                        if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840)
+                        {
+                            message.Channel.SendIsTyping();
+                            c.Action(message);
+                            ranCommand = true;
+                        }
+                        else if (c.CommandContext == Command.Context.All || c.CommandContext == GetMessageContext(message))
+                        {
+                            message.Channel.SendIsTyping();
+                            c.Action(message);
+                            ranCommand = true;
+                        }
                 }
                 catch (Exception ex)
                 {
@@ -695,11 +727,18 @@ namespace DiscordBot
                 if (MessageQueue.Count > 0)
                 {
                     var message = MessageQueue.Dequeue();
-                    if (message.Item3 != 0)
-                        (await message.Item1.Channel.SendMessage(message.Item2)).DeleteAfterDelay(message.Item3);
-                    else
-                        await message.Item1.Channel.SendMessage(message.Item2);
 
+                    try
+                    {
+                        if (message.Item3 != 0)
+                            (await message.Item1.Channel.SendMessage(message.Item2)).DeleteAfterDelay(message.Item3);
+                        else
+                            await message.Item1.Channel.SendMessage(message.Item2);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError(message.Item1, ex);
+                    }
                     await Task.Delay(200);
                 }
             }
