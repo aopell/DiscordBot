@@ -12,15 +12,25 @@ namespace DiscordBot
         public string Text;
         public string Usage;
         public string HelpDescription;
+        public Context CommandContext;
 
         public Action<Message> Action;
 
-        public Command(string text, Action<Message> action, string description, string usage = "")
+        public Command(string text, Action<Message> action, string description, string usage = "", Context context = Context.All)
         {
             Text = text;
             Usage = usage;
             HelpDescription = description;
             Action = action;
+            CommandContext = context;
+        }
+
+        public enum Context
+        {
+            All,
+            GuildChannel,
+            DirectMessage,
+            OwnerOnly
         }
     }
 }
