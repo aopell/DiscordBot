@@ -30,17 +30,17 @@ namespace DiscordBot
 
         private static void SaveGamers(List<Gamer> gamers)
         {
-            if (!File.Exists("gamedata.json"))
-                File.Create("gamedata.json").Close();
-            File.WriteAllText("gamedata.json", JsonConvert.SerializeObject(gamers));
+            if (!File.Exists("gamedata-new.json"))
+                File.Create("gamedata-new.json").Close();
+            File.WriteAllText("gamedata-new.json", JsonConvert.SerializeObject(gamers));
         }
 
         private static List<Gamer> LoadGamers()
         {
-            if (!File.Exists("gamedata.json"))
-                File.Create("gamedata.json").Close();
+            if (!File.Exists("gamedata-new.json"))
+                File.Create("gamedata-new.json").Close();
 
-            return JsonConvert.DeserializeObject<List<Gamer>>(File.ReadAllText("gamedata.json"));
+            return JsonConvert.DeserializeObject<List<Gamer>>(File.ReadAllText("gamedata-new.json"));
         }
 
         public static void GameStarted(User user)
@@ -71,7 +71,7 @@ namespace DiscordBot
             SaveGamers(gamers);
         }
 
-        public static TimeSpan GameStopped(User user, DiscordGame? game)
+        public static TimeSpan GameStopped(User user, string game)
         {
             if (game == null) return TimeSpan.Zero;
 
@@ -91,7 +91,7 @@ namespace DiscordBot
 
             if (person == null) return TimeSpan.Zero;
 
-            var time = person.StopTracking((DiscordGame)game);
+            var time = person.StopTracking(game);
 
             var duplicates = (from g in gamers where g.UserId == person.UserId select g).ToList();
 
@@ -110,7 +110,7 @@ namespace DiscordBot
             LastGameStarted = DateTime.Now;
         }
 
-        private TimeSpan StopTracking(DiscordGame game)
+        private TimeSpan StopTracking(string game)
         {
             if (!GamesPlayed.ContainsKey(DateTime.Today))
                 GamesPlayed.Add(DateTime.Today, new List<DiscordGameData>());
@@ -129,7 +129,7 @@ namespace DiscordBot
             return time;
         }
 
-        private DiscordGameData GameDataListContains(DateTime date, DiscordGame game)
+        private DiscordGameData GameDataListContains(DateTime date, string game)
         {
             foreach (var g in GamesPlayed[date])
                 if (g.Game == game)

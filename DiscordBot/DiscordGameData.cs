@@ -8,10 +8,10 @@ namespace DiscordBot
 {
     public class DiscordGameData
     {
-        public DiscordGame Game;
+        public string Game;
         public TimeSpan TimePlayed;
 
-        public DiscordGameData(DiscordGame game, TimeSpan timePlayed)
+        public DiscordGameData(string game, TimeSpan timePlayed)
         {
             Game = game;
             TimePlayed = timePlayed;
