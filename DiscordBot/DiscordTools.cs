@@ -15,6 +15,7 @@ namespace DiscordBot
         public const string Token = "MTY5NTQ3Mjc3MzMxODU3NDA4.CtQqUQ.jPiTbmQRGYeO1ksbEQTd9LCWvuI";
 
         public static DiscordClient Client = new DiscordClient();
+        public const string BasePath = "D:\\home\\data\\jobs\\continuous\\DiscordBot\\";
 
         private const string CleverBotUsername = "3G4ViNSjpAL557Ua";
         private const string CleverBotKey = "mqEJEDGPQ2vEAQQottv5nAW6U39LTPBq";
@@ -162,12 +163,11 @@ namespace DiscordBot
             Console.WriteLine(logMessage);
             Console.ForegroundColor = ConsoleColor.Gray;
 
-            if (!Directory.Exists("Logs"))
-                Directory.CreateDirectory("Logs");
-
             try
             {
-                File.AppendAllLines($"Logs/{DateTime.Now.ToString("yyyy-MM-dd")}.log", new[] { logMessage });
+                if (!Directory.Exists($"{BasePath}Logs"))
+                    Directory.CreateDirectory($"{DiscordTools.BasePath}Logs");
+                File.AppendAllLines($"{BasePath}Logs\\{DateTime.Now.ToString("yyyy-MM-dd")}.log", new[] { logMessage });
             }
             catch
             {
@@ -392,12 +392,12 @@ namespace DiscordBot
                     if (args.Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help quote` for more information");
                     int quoteId = 0;
 
-                    if (!File.Exists($"quotes.{message.Server.Id}.txt"))
-                        File.Create($"quotes.{message.Server.Id}.txt").Close();
+                    if (!File.Exists($"{BasePath}quotes.{message.Server.Id}.txt"))
+                        File.Create($"{BasePath}quotes.{message.Server.Id}.txt").Close();
 
                     if (args[0] == "?" || args[0] == "random")
                     {
-                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        string[] quotes = File.ReadAllLines($"{BasePath}quotes.{message.Server.Id}.txt");
                         if (quotes.Length > 0)
                         {
                             int id = random.Next(quotes.Length);
@@ -408,23 +408,23 @@ namespace DiscordBot
                     }
                     else if (args[0] == "remove")
                     {
-                        List<string> quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt").ToList();
+                        List<string> quotes = File.ReadAllLines($"{BasePath}quotes.{message.Server.Id}.txt").ToList();
                         int id = Convert.ToInt32(args[1]);
 
                         quotes[id] = "";
 
-                        File.WriteAllLines($"quotes.{message.Server.Id}.txt", quotes);
+                        File.WriteAllLines($"{BasePath}quotes.{message.Server.Id}.txt", quotes);
                         message.Reply($"Deleted quote {id}", 5000);
                     }
                     else if (args[0] == "add")
                     {
-                        File.AppendAllLines($"quotes.{message.Server.Id}.txt", new[] { string.Join(" ", args.Skip(1)).Replace("\\n", "\\\\n").Replace("\n", "\\n") });
-                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        File.AppendAllLines($"{BasePath}quotes.{message.Server.Id}.txt", new[] { string.Join(" ", args.Skip(1)).Replace("\\n", "\\\\n").Replace("\n", "\\n") });
+                        string[] quotes = File.ReadAllLines($"{BasePath}quotes.{message.Server.Id}.txt");
                         message.Reply($"Added quote *{string.Join(" ", args.Skip(1))}* with quote ID {quotes.Length - 1}", 30000);
                     }
                     else if (args[0] == "find")
                     {
-                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        string[] quotes = File.ReadAllLines($"{BasePath}quotes.{message.Server.Id}.txt");
                         List<string> quotesWithPhrase = new List<string>();
 
                         string searchTerm = string.Join(" ", GetArgs(message.Text).Skip(1));
@@ -439,17 +439,17 @@ namespace DiscordBot
                     }
                     else if (args[0] == "edit")
                     {
-                        List<string> quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt").ToList();
+                        List<string> quotes = File.ReadAllLines($"{BasePath}quotes.{message.Server.Id}.txt").ToList();
                         int id = Convert.ToInt32(args[1]);
 
                         quotes[id] = string.Join(" ", args.Skip(2)).Replace("\\n", "\\\\n").Replace("\n", "\\n");
 
-                        File.WriteAllLines($"quotes.{message.Server.Id}.txt", quotes);
+                        File.WriteAllLines($"{BasePath}quotes.{message.Server.Id}.txt", quotes);
                         message.Reply($"Updated quote {id} with new text *{string.Join(" ", args.Skip(2))}*", 10000);
                     }
                     else if (int.TryParse(args[0], out quoteId))
                     {
-                        string[] quotes = File.ReadAllLines($"quotes.{message.Server.Id}.txt");
+                        string[] quotes = File.ReadAllLines($"{BasePath}quotes.{message.Server.Id}.txt");
                         if (quotes.Length >= quoteId + 1 && quoteId >= 0 && !string.IsNullOrWhiteSpace(quotes[quoteId]))
                         {
                             message.Reply($"*{quotes[quoteId].Replace("\\n", "\n").Replace("\\\\n", "\\n")}*", 60000);
@@ -461,7 +461,7 @@ namespace DiscordBot
                     }
                     else
                     {
-                        message.Reply("**!quote** [add <quote text>|edit <id> <new quote text>|remove <id>|id|find <search phrase>|random|?]", 7500);
+                        message.Reply("**!quote** [add <quote text>|remove <id>|edit <id> <new quote text>|remove <id>|id|find <search phrase>|random|?]", 7500);
                     }
                 }
                 catch (Exception ex)
@@ -555,7 +555,7 @@ namespace DiscordBot
                             toWrite += aliases.Keys.ToArray()[i] + "\t" + aliases.Values.ToArray()[i] + "\n";
                         }
 
-                        File.WriteAllText($"aliases.{message.Server.Id}.txt", JsonConvert.SerializeObject(aliases));
+                        File.WriteAllText($"{BasePath}aliases.{message.Server.Id}.txt", JsonConvert.SerializeObject(aliases));
 
                         message.Reply($"Successfully created alias {command} with text {text}", 5000);
                     }
@@ -581,7 +581,7 @@ namespace DiscordBot
                             message.Reply($"Successfully deleted alias `{command}`", 5000);
                         else
                             message.Reply($"Failed to delete alias `{command}`", 5000);
-                        File.WriteAllText($"aliases.{message.Server.Id}.txt", JsonConvert.SerializeObject(aliases));
+                        File.WriteAllText($"{BasePath}aliases.{message.Server.Id}.txt", JsonConvert.SerializeObject(aliases));
                     }
 
                 }
@@ -591,7 +591,7 @@ namespace DiscordBot
                 }
 
             }), "Provides ways to create, list, and remove aliases for other commands or text messages", "<create <!command> <text>|list|remove <!command>>", Command.Context.GuildChannel));
-            Commands.Add(new Command("!gameinfo", new Action<Message>((Message message) =>
+            Commands.Add(new Command("!gameinfo", new Action<Message>((message) =>
             {
                 try
                 {
@@ -604,7 +604,16 @@ namespace DiscordBot
                     User user;
                     try
                     {
-                        user = (from u in message.Server.FindUsers(args[0].Split('#')[0]) where u.Discriminator == ushort.Parse(args[0].Split('#')[1]) select u).First();
+                        if (!args[0].Contains('#'))
+                        {
+                            var choices = message.Server.FindUsers(args[0]);
+                            if (choices.Count() == 1) user = choices.First();
+                            else throw new ParameterException("There are multiple users with that username. Please include the DiscordTag (ex. #1242) to specify");
+                        }
+                        else
+                        {
+                            user = (from u in message.Server.FindUsers(args[0].Split('#')[0]) where u.Discriminator == ushort.Parse(args[0].Split('#')[1]) select u).First();
+                        }
                     }
                     catch (InvalidOperationException)
                     {
@@ -625,9 +634,9 @@ namespace DiscordBot
                     if (gamer == null || !gamer.GamesPlayed.ContainsKey(date) || gamer.GamesPlayed[date].Count == 0)
                         throw new ParameterException("The user played no games on that UTC date");
 
-                    string output = $"**Games played by {gamer.Username} on {date.ToShortDateString()} (UTC):**\n";
+                    string output = $"**Games played by {gamer.Username} on {date.ToShortDateString()} (UTC) (H:MM):**\n";
                     foreach (var data in gamer.GamesPlayed[date])
-                        output += $"{data.Game}: {(int)data.TimePlayed.TotalHours}:{data.TimePlayed.Minutes} hours\n";
+                        output += $"{data.Game}: {(int)data.TimePlayed.TotalHours}:{data.TimePlayed.Minutes.ToString("D2")}\n";
 
                     message.Reply(output);
                 }
@@ -636,17 +645,17 @@ namespace DiscordBot
                     LogError(message, ex);
                 }
 
-            }), "Lists how long people have played games", $"<Username#DiscordTag> [date={DateTime.Today.ToShortDateString()}]"));
+            }), "Lists how long people have played games", $"<Username[#DiscordTag]> [date={DateTime.Today.ToShortDateString()}]"));
             Commands.Add(new Command("!sendfile", new Action<Message>(async (message) =>
             {
                 try
                 {
                     string[] args = GetArgs(message.RawText);
 
-                    if (args[0] == "gamedata") await message.Channel.SendFile("gamedata-new.json");
-                    else if (args[0] == "log") await message.Channel.SendFile("Logs/" + args[1]);
-                    else if (args[0] == "aliases") await message.Channel.SendFile($"aliases.{message.Server.Id}.txt");
-                    else if (args[0] == "quotes") await message.Channel.SendFile($"quotes.{message.Server.Id}.txt");
+                    if (args[0] == "gamedata") await message.Channel.SendFile(BasePath + "gamedata-new.json");
+                    else if (args[0] == "log") await message.Channel.SendFile(BasePath + "Logs\\" + args[1] + ".log");
+                    else if (args[0] == "aliases") await message.Channel.SendFile(BasePath + $"aliases.{message.Server.Id}.txt");
+                    else if (args[0] == "quotes") await message.Channel.SendFile(BasePath + $"quotes.{message.Server.Id}.txt");
                     else throw new ParameterException("Please enter a valid file to send");
 
                     if (args.Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help sendfile` for more information");
@@ -700,9 +709,9 @@ namespace DiscordBot
 
         private static Dictionary<string, string> LoadAliases(Server server)
         {
-            if (File.Exists($"aliases.{server.Id}.txt"))
+            if (File.Exists($"{BasePath}aliases.{server.Id}.txt"))
             {
-                return JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText($"aliases.{server.Id}.txt"));
+                return JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText($"{BasePath}aliases.{server.Id}.txt"));
             }
 
             return new Dictionary<string, string>();
