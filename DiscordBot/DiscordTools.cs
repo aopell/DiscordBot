@@ -106,6 +106,11 @@ namespace DiscordBot
                 if (lastMessage != (lastMessage = message)) LogEvent(message, EventType.StatusUpdated);
             }
 
+            if (e.After.Status == UserStatus.Offline)
+            {
+
+            }
+
             if (e.Before.CurrentGame.GetValueOrDefault(new Game("")).Name != e.After.CurrentGame.GetValueOrDefault(new Game("")).Name)
             {
                 string message = "";
@@ -316,12 +321,18 @@ namespace DiscordBot
                     LogError(message, ex);
                 }
             }), "Starts a poll with the given comma-separated options", "<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel));
-            Commands.Add(new Command("!vote", new Action<Message>(message =>
+            Commands.Add(new Command("!vote", new Action<Message>((Message message) =>
             {
                 try
                 {
                     if (Poll.ActivePoll != null)
                     {
+                        if (message.User.IsBot)
+                        {
+                            message.Reply($"<@{message.User.Id}>: BOTs can't vote! That is called *voter fraud*.", 5000);
+                            return;
+                        }
+
                         if (Poll.ActivePoll.Voters.Contains(message.User))
                         {
                             message.Reply($"<@{message.User.Id}>: You already voted!", 5000);
