@@ -103,12 +103,25 @@ namespace DiscordBot
             if (e.Before.Status != e.After.Status)
             {
                 string message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} is now {e.After.Status}";
-                if (lastMessage != (lastMessage = message)) LogEvent(message, EventType.StatusUpdated);
-            }
+                if (lastMessage != (lastMessage = message))
+                {
+                    LogEvent(message, EventType.StatusUpdated);
 
-            if (e.After.Status == UserStatus.Offline)
-            {
+                    if (e.Before.Status != UserStatus.Online && e.After.Status == UserStatus.Online)
+                    {
+                        var reminders = JsonConvert.DeserializeObject<Dictionary<ulong, List<string>>>(File.ReadAllText($"{BasePath}reminders.json"));
+                        if (reminders.ContainsKey(e.After.Id))
+                        {
+                            foreach (string s in reminders[e.After.Id])
+                            {
+                                e.After.SendMessage(s);
+                            }
 
+                            reminders.Remove(e.After.Id);
+                            File.WriteAllText($"{BasePath}reminders.json", JsonConvert.SerializeObject(reminders));
+                        }
+                    }
+                }
             }
 
             if (e.Before.CurrentGame.GetValueOrDefault(new Game("")).Name != e.After.CurrentGame.GetValueOrDefault(new Game("")).Name)
@@ -667,6 +680,7 @@ namespace DiscordBot
                     else if (args[0] == "log") await message.Channel.SendFile(BasePath + "Logs\\" + args[1] + ".log");
                     else if (args[0] == "aliases") await message.Channel.SendFile(BasePath + $"aliases.{message.Server.Id}.txt");
                     else if (args[0] == "quotes") await message.Channel.SendFile(BasePath + $"quotes.{message.Server.Id}.txt");
+                    else if (args[0] == "reminders") await message.Channel.SendFile(BasePath + $"reminders.json");
                     else throw new ParameterException("Please enter a valid file to send");
 
                     if (args.Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help sendfile` for more information");
@@ -706,6 +720,59 @@ namespace DiscordBot
                     LogError(message, ex);
                 }
             }), "Replies with a random Overwatch 'gg ez' replacement"));
+            Commands.Add(new Command("!remind", new Action<Message>((Message message) =>
+            {
+                try
+                {
+                    var args = GetArgs(message.Text);
+                    if (args.Length < 2) throw new ParameterException("The syntax of the command was not valid. Use `!help remind` for more information");
+
+                    User user;
+                    try
+                    {
+                        if (!args[0].Contains('#'))
+                        {
+                            var choices = message.Server.FindUsers(args[0]);
+                            if (choices.Count() == 1) user = choices.First();
+                            else throw new ParameterException("There are multiple users with that username. Please include the DiscordTag (ex. #1242) to specify");
+                        }
+                        else
+                        {
+                            user = (from u in message.Server.FindUsers(args[0].Split('#')[0]) where u.Discriminator == ushort.Parse(args[0].Split('#')[1]) select u).First();
+                        }
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        throw new ParameterException("User not found");
+                    }
+
+                    if (!File.Exists($"{BasePath}reminders.json"))
+                    {
+                        File.Create($"{BasePath}reminders.json").Close();
+                        File.WriteAllText($"{BasePath}reminders.json", JsonConvert.SerializeObject(new Dictionary<ulong, List<string>>()));
+                    }
+
+                    var reminders = JsonConvert.DeserializeObject<Dictionary<ulong, List<string>>>(File.ReadAllText($"{BasePath}reminders.json"));
+
+                    if (reminders != null && reminders.ContainsKey(user.Id))
+                    {
+                        reminders[user.Id].Add($"Reminder from <@{message.User.Id}>: " + string.Join(" ", args.Skip(1)));
+                    }
+                    else
+                    {
+                        if (reminders == null) reminders = new Dictionary<ulong, List<string>>();
+                        reminders.Add(user.Id, new List<string> { $"Reminder from <@{message.User.Id}>: " + string.Join(" ", args.Skip(1)) });
+                    }
+
+                    File.WriteAllText($"{BasePath}reminders.json", JsonConvert.SerializeObject(reminders));
+
+                    message.Reply("Reminder saved");
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
+                }
+            }), "Sends a message to a user when they come online", "<Username[#Discriminator]> <Message>"));
 
 
             Commands = Commands.OrderBy(c => c.Text).ToList();
