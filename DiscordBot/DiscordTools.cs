@@ -307,15 +307,13 @@ namespace DiscordBot
                     string[] voteOptions = GetSuffix(message.Text).Split(',');
                     Poll p = Poll.Create(message.Channel, message.User, message);
 
-                    if (p == null)
-                    {
-                        message.Reply($"*@{message.User.Name}: Please wait, there is already a poll in progress*", 5000);
-                        return;
-                    }
+                    if (p == null) throw new ParameterException("There is already a poll in progress");
 
-                    foreach (string option in voteOptions) p.Options.Add(new PollOption(option));
+                    if (voteOptions.Length < 2) throw new ParameterException("Polls must have at least two options. Don't force things upon people. It's not nice.");
 
-                    string messageToSend = $"***@{message.User.Name} has started a poll with the following options:***\n";
+                    foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart()));
+
+                    string messageToSend = $"***<@{message.User.Id}> has started a poll with the following options:***\n";
                     foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
                     messageToSend += "\n***Enter `!vote <number>` to vote!***\n*The poll will end in 5 minutes unless stopped earlier with `!endpoll`*";
 
@@ -781,8 +779,11 @@ namespace DiscordBot
         private static void LogError(Message message, Exception ex)
         {
             if (!(ex is ParameterException))
+            {
                 LogEvent(ex.ToString(), EventType.Error);
-            message.Reply($"*An error occurred: {ex.Message}*");
+                message.Reply($"*An error occurred: {ex.Message}*");
+            }
+            else message.Reply($"*Command failed: {ex.Message}*", 20000);
         }
 
         private static Dictionary<string, string> LoadAliases(Server server)
