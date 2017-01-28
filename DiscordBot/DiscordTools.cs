@@ -226,18 +226,18 @@ namespace DiscordBot
                         Command c = null;
                         foreach (Command thing in Commands) if (thing.Text == args[0]) { c = thing; break; }
                         if (c == null) message.Reply("*That command does not exist*", 5000);
-                        else message.Reply($"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}", 15000);
+                        else message.Reply($"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}", 60000);
                     }
                     else
                     {
-                        string s = "*This message will delete itself in 20 seconds*\n\n";
+                        string s = "*This message will delete itself in 60 seconds*\n\n";
                         foreach (Command c in Commands)
                         {
                             if ((c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840) || c.CommandContext == Command.Context.All || GetMessageContext(message) == c.CommandContext)
                                 s += $"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}\n\n";
                         }
 
-                        message.Reply(s, 20000);
+                        message.Reply(s, 60000);
                     }
                 }
                 catch (Exception ex)
