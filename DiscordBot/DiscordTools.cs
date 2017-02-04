@@ -215,7 +215,7 @@ namespace DiscordBot
 
         public static void LoadCommands()
         {
-            Commands.Add(new Command("!help", new Action<Message>(message =>
+            Commands.Add(new Command("!help|!man", new Action<Message>(message =>
             {
                 try
                 {
@@ -246,7 +246,7 @@ namespace DiscordBot
                 }
 
             }), "Lists all commands and their descriptions or one command and its description", "[command]"));
-            Commands.Add(new Command("!echo", new Action<Message>(message =>
+            Commands.Add(new Command("!echo|!say", new Action<Message>(message =>
             {
                 try
                 {
@@ -260,7 +260,7 @@ namespace DiscordBot
                     LogError(message, ex);
                 }
             }), "Repeats <message> back to you", "<message>"));
-            Commands.Add(new Command("!hello", new Action<Message>(message =>
+            Commands.Add(new Command("!hello|!test", new Action<Message>(message =>
             {
                 message.Reply("Hello! :hand_splayed:");
             }), "Says hi"));
@@ -304,22 +304,28 @@ namespace DiscordBot
                 try
                 {
                     if (GetSuffix(message.Text).Length == 0) throw new ParameterException("The syntax of the command was not valid. Use `!help poll` for more information");
-                    string[] voteOptions = GetSuffix(message.Text).Split(',');
+
+                    string[] args = GetArgs(message.Text);
+
+                    int seconds = 0;
+                    if (!int.TryParse(args[0], out seconds) || seconds < 1 || seconds > 86400) throw new ParameterException("Please specify a valid positive integer number of seconds >= 1 and <= 86400.");
+
+                    string[] voteOptions = string.Join(" ", args.Skip(1)).Split(',');
+                    if (voteOptions.Length < 2) throw new ParameterException("Polls must have at least two options. Don't force things upon people. It's not nice.");
+
                     Poll p = Poll.Create(message.Channel, message.User, message);
 
                     if (p == null) throw new ParameterException("There is already a poll in progress");
-
-                    if (voteOptions.Length < 2) throw new ParameterException("Polls must have at least two options. Don't force things upon people. It's not nice.");
 
                     foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart()));
 
                     string messageToSend = $"***<@{message.User.Id}> has started a poll with the following options:***\n";
                     foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
-                    messageToSend += "\n***Enter `!vote <number>` to vote!***\n*The poll will end in 5 minutes unless stopped earlier with `!endpoll`*";
+                    messageToSend += $"\n***Enter `!vote <number>` to vote!***\n*The poll will end in {Math.Round(seconds / 60.0, 1)} minutes unless stopped earlier with `!endpoll`*";
 
                     message.Reply(messageToSend);
 
-                    await Task.Delay(300000).ContinueWith(t =>
+                    await Task.Delay(seconds * 1000).ContinueWith(t =>
                     {
                         if (p.Active)
                         {
@@ -331,7 +337,7 @@ namespace DiscordBot
                 {
                     LogError(message, ex);
                 }
-            }), "Starts a poll with the given comma-separated options", "<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel));
+            }), "Starts a poll with the given comma-separated options", "<length (seconds)> <option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel));
             Commands.Add(new Command("!vote", new Action<Message>((Message message) =>
             {
                 try
@@ -492,7 +498,7 @@ namespace DiscordBot
                 }
 
             }), "Saves quotes and provides ways to look them up", "[add <quote text>|edit <id> <new quote text>|id|find <search phrase>|random|?]", Command.Context.GuildChannel));
-            Commands.Add(new Command("!chat", new Action<Message>(async (message) =>
+            Commands.Add(new Command("!chat|!t", new Action<Message>(async (message) =>
             {
                 try
                 {
@@ -613,7 +619,7 @@ namespace DiscordBot
                 }
 
             }), "Provides ways to create, list, and remove aliases for other commands or text messages", "<create <!command> <text>|list|remove <!command>>", Command.Context.GuildChannel));
-            Commands.Add(new Command("!gameinfo", new Action<Message>((message) =>
+            Commands.Add(new Command("!gameinfo|!gamedata", new Action<Message>((message) =>
             {
                 try
                 {
@@ -803,7 +809,7 @@ namespace DiscordBot
             {
                 try
                 {
-                    if (message.Text.StartsWith(c.Text))
+                    if (message.Text.StartsWithAny(c.Text.Split('|')))
                         if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840)
                         {
                             message.Channel.SendIsTyping();
@@ -829,7 +835,6 @@ namespace DiscordBot
                 string command = message.Text.Split(' ')[0];
                 if (aliases.ContainsKey(command))
                 {
-                    message.Delete();
                     message.Reply(aliases[command].Replace("{suffix}", GetSuffix(message.Text)));
                 }
             }
@@ -862,6 +867,13 @@ namespace DiscordBot
                 (await message.Channel.SendMessage(text)).DeleteAfterDelay(deleteAfter);
             else
                 await message.Channel.SendMessage(text);
+        }
+
+        public static bool StartsWithAny(this string s, string[] values)
+        {
+            foreach (string v in values)
+                if (s.StartsWith(v)) return true;
+            return false;
         }
 
         public static string Shorten(this string s, int maxLength, bool elipses = true)

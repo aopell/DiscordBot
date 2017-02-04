@@ -79,7 +79,6 @@ namespace DiscordBot
                     foreach (PollOption o in p.Options) if (!winners.Contains(o)) messageToSend += $"{o.Votes} - {o.Text}\n";
                     messageToSend += $"{p.TotalVotes} {(p.TotalVotes == 1 ? "Total Vote" : "Total Votes")}";
                     await p.Channel.SendMessage(messageToSend);
-                    await p.Message.Delete();
                 }
             }
         }
