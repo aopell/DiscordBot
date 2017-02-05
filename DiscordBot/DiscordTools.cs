@@ -14,7 +14,7 @@ namespace DiscordBot
     {
         public const string Token = "MTY5NTQ3Mjc3MzMxODU3NDA4.CtQqUQ.jPiTbmQRGYeO1ksbEQTd9LCWvuI";
 
-        public static DiscordClient Client = new DiscordClient();
+        public static DiscordClient Client;
         public const string BasePath = "D:\\home\\data\\jobs\\continuous\\DiscordBot\\";
 
         private const string CleverBotUsername = "3G4ViNSjpAL557Ua";
@@ -22,6 +22,10 @@ namespace DiscordBot
 
         public static void ConnectClient()
         {
+            DiscordConfigBuilder b = new DiscordConfigBuilder();
+            b.MessageCacheSize = 0;
+            Client = new DiscordClient(b);
+
             Client.ExecuteAndWait(async () =>
             {
                 while (true)
@@ -224,7 +228,7 @@ namespace DiscordBot
                     {
                         if (!args[0].StartsWith("!")) args[0] = '!' + args[0];
                         Command c = null;
-                        foreach (Command thing in Commands) if (thing.Text == args[0]) { c = thing; break; }
+                        foreach (Command thing in Commands) if (args[0].StartsWithAny(thing.Text.Split('|'))) { c = thing; break; }
                         if (c == null) message.Reply("*That command does not exist*", 5000);
                         else message.Reply($"`{c.Text}{(string.IsNullOrEmpty(c.Usage) ? "" : $" {c.Usage}")}`\n{c.HelpDescription}", 60000);
                     }
@@ -307,8 +311,8 @@ namespace DiscordBot
 
                     string[] args = GetArgs(message.Text);
 
-                    int seconds = 0;
-                    if (!int.TryParse(args[0], out seconds) || seconds < 1 || seconds > 86400) throw new ParameterException("Please specify a valid positive integer number of seconds >= 1 and <= 86400.");
+                    double minutes = 0;
+                    if (!double.TryParse(args[0], out minutes) || minutes < 0.01 || minutes > 1440) throw new ParameterException("Please specify a valid positive integer number of minutes >= 0.01 and <= 1440.");
 
                     string[] voteOptions = string.Join(" ", args.Skip(1)).Split(',');
                     if (voteOptions.Length < 2) throw new ParameterException("Polls must have at least two options. Don't force things upon people. It's not nice.");
@@ -321,11 +325,11 @@ namespace DiscordBot
 
                     string messageToSend = $"***<@{message.User.Id}> has started a poll with the following options:***\n";
                     foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
-                    messageToSend += $"\n***Enter `!vote <number>` to vote!***\n*The poll will end in {Math.Round(seconds / 60.0, 1)} minutes unless stopped earlier with `!endpoll`*";
+                    messageToSend += $"\n***Enter `!vote <number>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
 
                     message.Reply(messageToSend);
 
-                    await Task.Delay(seconds * 1000).ContinueWith(t =>
+                    await Task.Delay((int)(minutes * 60000)).ContinueWith(t =>
                     {
                         if (p.Active)
                         {
@@ -337,7 +341,7 @@ namespace DiscordBot
                 {
                     LogError(message, ex);
                 }
-            }), "Starts a poll with the given comma-separated options", "<length (seconds)> <option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel));
+            }), "Starts a poll with the given comma-separated options", "<length (minutes)> <option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel));
             Commands.Add(new Command("!vote", new Action<Message>((Message message) =>
             {
                 try
@@ -777,6 +781,28 @@ namespace DiscordBot
                     LogError(message, ex);
                 }
             }), "Sends a message to a user when they come online", "<Username[#Discriminator]> <Message>"));
+            Commands.Add(new Command("!getmessage|!byid", new Action<Message>(async (Message message) =>
+            {
+                try
+                {
+                    string[] args = GetArgs(message.Text);
+
+                    ulong id;
+                    if (args.Length < 1 || (args.Length == 2 && message.MentionedChannels.Count() < 1) || !ulong.TryParse(args[0], out id)) throw new ParameterException("Please supply a valid Discord message ID and channel combination");
+
+                    Message mm;
+                    if (message.MentionedChannels.Count() < 1)
+                        mm = (await message.Channel.DownloadMessages(1, id, Relative.Around, false))[0];
+                    else
+                        mm = (await message.MentionedChannels.First().DownloadMessages(1, id, Relative.Around, false))[0];
+
+                    message.Reply($"*On {mm.Timestamp.ToShortDateString()} at {mm.Timestamp.ToShortTimeString()} UTC @{mm.User.Name} said:*\n{mm.RawText}");
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
+                }
+            }), "Looks up a Discord message by its ID number", "<messageid> [channel mention]"));
 
 
             Commands = Commands.OrderBy(c => c.Text).ToList();
