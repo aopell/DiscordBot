@@ -818,7 +818,7 @@ namespace DiscordBot
                     bool useComplex = false;
                     for (int i = 0; i < count; i++)
                     {
-                        backronym += (args[0].StartsWith("&") ? args[0].Skip(1).ToString().ToUpper() : args[0].ToUpper()) + ": ";
+                        backronym += (args[0].StartsWith("&") ? args[0].Substring(1).ToUpper() : args[0].ToUpper()) + ": ";
                         foreach (char c in args[0])
                         {
                             if (c == '&' && c == args[0][0])
