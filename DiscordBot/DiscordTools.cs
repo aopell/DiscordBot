@@ -54,12 +54,9 @@ namespace DiscordBot
                 else
                     LogEvent($"DM To @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: \"{e.Message.Text}\"", EventType.BotAction);
             }
-            else
+            else if (e.Channel.Server == null)
             {
-                if (e.Channel.Server != null)
-                    LogEvent($"{e.Channel.Server.Name.Shorten(15)}#{e.Channel.Name} - @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: {e.Message.Text}", EventType.MessageReceived);
-                else
-                    LogEvent($"DM From @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: {e.Message.Text}", EventType.MessageReceived);
+                LogEvent($"DM From @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: {e.Message.Text}", EventType.MessageReceived);
             }
             CheckCommands(e.Message);
         }
@@ -181,7 +178,7 @@ namespace DiscordBot
             else if (type == EventType.UsernameUpdated) Console.ForegroundColor = ConsoleColor.Yellow;
             else if (type == EventType.JoinedServer) Console.ForegroundColor = ConsoleColor.Cyan;
             else if (type == EventType.MessageUpdated) Console.ForegroundColor = ConsoleColor.DarkYellow;
-            string logMessage = $"{DateTime.Now.ToString("[HH:mm:ss]")} {message}";
+            string logMessage = $"{DateTime.Now.ToString("[HH:mm:ss]")} [{type.ToString()}] {message}";
             Console.WriteLine(logMessage);
             Console.ForegroundColor = ConsoleColor.Gray;
 
@@ -796,13 +793,54 @@ namespace DiscordBot
                     else
                         mm = (await message.MentionedChannels.First().DownloadMessages(1, id, Relative.Around, false))[0];
 
-                    message.Reply($"*On {mm.Timestamp.ToShortDateString()} at {mm.Timestamp.ToShortTimeString()} UTC @{mm.User.Name} said:*\n{mm.RawText}");
+                    string response = $"*On {mm.Timestamp.ToShortDateString()} at {mm.Timestamp.ToShortTimeString()} UTC @{mm.User.Name} said:*\n{mm.RawText}";
+
+                    message.Reply(response.Length > 2000 ? response.Substring(0, 2000) : response);
                 }
                 catch (Exception ex)
                 {
                     LogError(message, ex);
                 }
             }), "Looks up a Discord message by its ID number", "<messageid> [channel mention]"));
+            Commands.Add(new Command("!back", new Action<Message>((Message message) =>
+            {
+                try
+                {
+                    Random rand = new Random();
+                    string[] args = GetArgs(message.Text);
+                    if (args.Length < 1 || args[0].Length > 25) throw new ParameterException("Please provide a string from which to make a backronym that is 25 or fewer characters.");
+
+                    int count = 1;
+                    if (args.Length > 1) int.TryParse(args[1], out count);
+                    count = count < 1 ? 1 : count > 10 ? 10 : count;
+
+                    string backronym = "";
+                    for (int i = 0; i < count; i++)
+                    {
+                        backronym += args[0].ToUpper() + ": ";
+                        foreach (char c in args[0])
+                        {
+                            if (File.Exists($"words\\{char.ToLower(c)}.txt"))
+                            {
+                                string[] words = File.ReadAllLines($"words\\{char.ToLower(c)}.txt");
+                                string word = words[rand.Next(words.Length)];
+                                if (word.Length > 1)
+                                    backronym += char.ToUpper(word[0]) + word.Substring(1) + " ";
+                                else
+                                    backronym += char.ToUpper(word[0]) + " ";
+                            }
+                        }
+
+                        backronym += "\n";
+                    }
+
+                    message.Reply(backronym);
+                }
+                catch (Exception ex)
+                {
+                    LogError(message, ex);
+                }
+            }), "Creates an backronym for the given letters", "<letters> [count (max 10)]"));
 
 
             Commands = Commands.OrderBy(c => c.Text).ToList();
@@ -836,7 +874,15 @@ namespace DiscordBot
                 try
                 {
                     if (message.Text.StartsWithAny(c.Text.Split('|')))
-                        if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840)
+                    {
+                        if (message.Channel.Server != null)
+                            LogEvent($"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator.ToString("D4")}: {message.Text}", EventType.MessageReceived);
+                        if (message.User.IsBot)
+                        {
+                            LogEvent($"Ignored {c.Text} command from BOT user {message.User.Name}");
+                            return;
+                        }
+                        else if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == 85877191371427840)
                         {
                             message.Channel.SendIsTyping();
                             c.Action(message);
@@ -848,6 +894,7 @@ namespace DiscordBot
                             c.Action(message);
                             ranCommand = true;
                         }
+                    }
                 }
                 catch (Exception ex)
                 {

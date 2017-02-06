@@ -1,1 +1,0 @@
-{"!how":"do you do this?","!Hello":"!ECHO 42","!fortune":"!8ball {suffix}"}
