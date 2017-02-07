@@ -815,14 +815,18 @@ namespace DiscordBot
                     count = count < 1 ? 1 : count > 10 ? 10 : count;
 
                     string backronym = "";
+                    bool useComplex = false;
                     for (int i = 0; i < count; i++)
                     {
-                        backronym += args[0].ToUpper() + ": ";
+                        backronym += (args[0].StartsWith("&") ? args[0].Substring(1).ToUpper() : args[0].ToUpper()) + ": ";
                         foreach (char c in args[0])
                         {
-                            if (File.Exists($"words\\{char.ToLower(c)}.txt"))
+                            if (c == '&' && c == args[0][0])
+                                useComplex = true;
+
+                            if (File.Exists($"{(useComplex ? "" : "simple")}words\\{char.ToLower(c)}.txt"))
                             {
-                                string[] words = File.ReadAllLines($"words\\{char.ToLower(c)}.txt");
+                                string[] words = File.ReadAllLines($"{(useComplex ? "" : "simple")}words\\{char.ToLower(c)}.txt");
                                 string word = words[rand.Next(words.Length)];
                                 if (word.Length > 1)
                                     backronym += char.ToUpper(word[0]) + word.Substring(1) + " ";
@@ -840,7 +844,7 @@ namespace DiscordBot
                 {
                     LogError(message, ex);
                 }
-            }), "Creates an backronym for the given letters", "<letters> [count (max 10)]"));
+            }), "Creates an backronym for the given letters", "<letters (start with ampersand for extended dictionary)> [count (max 10)]"));
 
 
             Commands = Commands.OrderBy(c => c.Text).ToList();
