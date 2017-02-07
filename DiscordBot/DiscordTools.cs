@@ -83,7 +83,7 @@ namespace DiscordBot
 
         private static void Client_MessageUpdated(object sender, MessageUpdatedEventArgs e)
         {
-            LogEvent($"{e.Channel.Server.Name.Shorten(15)}#{e.Channel.Name} - @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: Message updated from \"{e.Before.Text}\" to \"{e.After.Text}\"", EventType.MessageUpdated);
+            //LogEvent($"{e.Channel.Server.Name.Shorten(15)}#{e.Channel.Name} - @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: Message updated from \"{e.Before.Text}\" to \"{e.After.Text}\"", EventType.MessageUpdated);
         }
 
         private static void Client_JoinedServer(object sender, ServerEventArgs e)
