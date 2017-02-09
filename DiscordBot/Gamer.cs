@@ -30,17 +30,17 @@ namespace DiscordBot
 
         private static void SaveGamers(List<Gamer> gamers)
         {
-            if (!File.Exists($"{DiscordTools.BasePath}gamedata-new.json"))
-                File.Create($"{DiscordTools.BasePath}gamedata-new.json").Close();
-            File.WriteAllText($"{DiscordTools.BasePath}gamedata-new.json", JsonConvert.SerializeObject(gamers));
+            if (!File.Exists(Config.GameDataPath))
+                File.Create(Config.GameDataPath).Close();
+            File.WriteAllText(Config.GameDataPath, JsonConvert.SerializeObject(gamers));
         }
 
         private static List<Gamer> LoadGamers()
         {
-            if (!File.Exists($"{DiscordTools.BasePath}gamedata-new.json"))
-                File.Create($"{DiscordTools.BasePath}gamedata-new.json").Close();
+            if (!File.Exists(Config.GameDataPath))
+                File.Create(Config.GameDataPath).Close();
 
-            return JsonConvert.DeserializeObject<List<Gamer>>(File.ReadAllText($"{DiscordTools.BasePath}gamedata-new.json"));
+            return JsonConvert.DeserializeObject<List<Gamer>>(File.ReadAllText(Config.GameDataPath));
         }
 
         public static void GameStarted(User user)

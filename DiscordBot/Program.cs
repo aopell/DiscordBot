@@ -10,9 +10,9 @@ namespace DiscordBot
     {
         static void Main(string[] args)
         {
-            DiscordTools.ConnectClient();
+            DiscordBot.ConnectClient();
             Console.ReadKey();
-            DiscordTools.Client.Dispose();
+            DiscordBot.Client.Dispose();
         }
     }
 }

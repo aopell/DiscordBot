@@ -9,17 +9,53 @@ namespace DiscordBot
 {
     public class Command
     {
-        public string Text;
-        public string Usage;
+        public string[] Names;
+        public List<string> Parameters;
         public string HelpDescription;
         public Context CommandContext;
+        public Action<Message, List<string>> Action;
 
-        public Action<Message> Action;
-
-        public Command(string text, Action<Message> action, string description, string usage = "", Context context = Context.All)
+        public int RequiredParameters
         {
-            Text = text;
-            Usage = usage;
+            get
+            {
+                return Parameters.Where(x => (!x.StartsWith("~"))).Count();
+            }
+        }
+
+        public string NamesString
+        {
+            get
+            {
+                return string.Join("|", Names);
+            }
+        }
+
+        public string Usage
+        {
+            get
+            {
+                string usage = "";
+                foreach (string parameter in Parameters)
+                {
+                    if (parameter.StartsWith("~"))
+                    {
+                        usage += $"[{parameter.Substring(1)}] ";
+                    }
+                    else
+                    {
+                        usage += $"<{parameter}> ";
+                    }
+                }
+
+                return usage;
+            }
+        }
+
+        public Command(string[] names, Action<Message, List<string>> action, string description, List<string> parameters, Context context = Context.All)
+        {
+            Names = names;
+            Parameters = parameters;
             HelpDescription = description;
             Action = action;
             CommandContext = context;
@@ -34,14 +70,17 @@ namespace DiscordBot
         }
     }
 
-    public class ParameterException : Exception
+    public class BotCommandException : Exception
     {
-        public ParameterException(string message) : base(message)
+        public BotCommandException(string message) : base(message)
         {
 
         }
+    }
 
-        public ParameterException(string message, Exception inner) : base(message, inner)
+    public class CommandSyntaxException : Exception
+    {
+        public CommandSyntaxException(string message) : base($"The syntax of the command was not valid. Use `!help {message}` for more information")
         {
 
         }
