@@ -202,11 +202,7 @@ namespace DiscordBot
             MessageUpdated
         }
 
-        public static List<Command> Commands = new List<Command>();
-
-        private static Random random = new Random();
-
-        private static void LogError(Message message, Exception ex)
+        public static void LogError(Message message, Exception ex)
         {
             if (!(ex is BotCommandException))
             {
@@ -216,43 +212,48 @@ namespace DiscordBot
             else message.Reply($"*Command failed: {ex.Message}*", 20000);
         }
 
+        private static async void RunCommandAction(Command c, Message message)
+        {
+            try
+            {
+                await message.Channel.SendIsTyping();
+                var args = message.RawText.Split(' ').Skip(1).ToList();
+                if (args.Count >= c.RequiredParameters)
+                    c.Action.HandleErrors()(message, args);
+                else throw new CommandSyntaxException(c.Names[0]);
+            }
+            catch
+            {
+                await (await Client.CreatePrivateChannel(Config.OwnerId)).SendMessage($"{DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]")} Bad! Error!");
+            }
+        }
+
         public static void CheckCommands(Message message)
         {
-            foreach (Command c in Commands)
+            foreach (Command c in BotCommands.Commands)
             {
                 try
                 {
                     if (message.Text.StartsWithAny(c.Names))
                     {
-                        try
+                        if (message.Channel.Server != null)
+                            LogEvent($"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator.ToString("D4")}: {message.Text}", EventType.MessageReceived);
+                        if (message.User.IsBot)
                         {
-                            if (message.Channel.Server != null)
-                                LogEvent($"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator.ToString("D4")}: {message.Text}", EventType.MessageReceived);
-                            if (message.User.IsBot)
-                            {
-                                LogEvent($"Ignored {c.NamesString} command from BOT user {message.User.Name}");
-                                return;
-                            }
-                            else if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == Config.OwnerId)
-                            {
-                                message.Channel.SendIsTyping();
-                                var args = message.RawText.Split(' ').Skip(1).ToList();
-                                if (args.Count < c.RequiredParameters)
-                                    c.Action(message, args);
-                                else throw new CommandSyntaxException(c.Names[0]);
-                            }
-                            else if (c.CommandContext == Command.Context.All || c.CommandContext == GetMessageContext(message))
-                            {
-                                message.Channel.SendIsTyping();
-                                var args = message.RawText.Split(' ').Skip(1).ToList();
-                                if (args.Count < c.RequiredParameters)
-                                    c.Action(message, args);
-                                else throw new CommandSyntaxException(c.Names[0]);
-                            }
+                            LogEvent($"Ignored {c.NamesString} command from BOT user {message.User.Name}");
+                            return;
                         }
-                        catch (Exception ex) when (ex is CommandSyntaxException || ex is BotCommandException)
+                        else if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == Config.OwnerId)
                         {
-                            LogError(message, ex);
+                            RunCommandAction(c, message);
+                        }
+                        else if (c.CommandContext == Command.Context.DeletePermission && message.User.GetPermissions(message.Channel).ManageMessages)
+                        {
+                            RunCommandAction(c, message);
+                        }
+                        else if (c.CommandContext == Command.Context.All || c.CommandContext == GetMessageContext(message))
+                        {
+                            RunCommandAction(c, message);
                         }
                     }
                 }
@@ -284,6 +285,21 @@ namespace DiscordBot
 
     public static class ExtMethods
     {
+        public static Action<Message, List<string>> HandleErrors(this Action<Message, List<string>> action)
+        {
+            return (Message message, List<string> parameters) =>
+            {
+                try
+                {
+                    action(message, parameters);
+                }
+                catch (Exception ex)
+                {
+                    DiscordBot.LogError(message, ex);
+                }
+            };
+        }
+
         public static async void Reply(this Message message, string text, int deleteAfter = 0)
         {
             if (deleteAfter != 0)

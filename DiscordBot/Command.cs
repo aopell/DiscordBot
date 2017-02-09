@@ -66,7 +66,8 @@ namespace DiscordBot
             All,
             GuildChannel,
             DirectMessage,
-            OwnerOnly
+            OwnerOnly,
+            DeletePermission
         }
     }
 

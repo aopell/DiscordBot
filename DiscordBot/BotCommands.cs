@@ -427,7 +427,7 @@ namespace DiscordBot
 
                 message.Reply("Reminder saved");
             });
-            AddCommand("!byid", "Looks up a Discord message by its ID number", "message ID;~channel mention", Command.Context.All, async (message, args) =>
+            AddCommand("!byid", "Looks up a Discord message by its ID number", "message ID;~channel mention", Command.Context.All, new Action<Message, List<string>>(async (message, args) =>
             {
                 ulong id;
                 if (args.Count < 1 || (args.Count == 2 && message.MentionedChannels.Count() < 1) || !ulong.TryParse(args[0], out id)) throw new BotCommandException("Please supply a valid Discord message ID and channel combination");
@@ -441,8 +441,8 @@ namespace DiscordBot
                 string response = $"*On {quotedMessage.Timestamp.ToShortDateString()} at {quotedMessage.Timestamp.ToShortTimeString()} UTC @{quotedMessage.User.Name} said:*\n{quotedMessage.RawText}";
 
                 message.Reply(response.Length > 2000 ? response.Substring(0, 2000) : response);
-            });
-            AddCommand("!back", "Creates a backronym from the provided letters", "letters (start with & for extended dictionary);~count", Command.Context.All, (message, args) =>
+            }));
+            AddCommand("!back", "Creates a backronym from the provided letters", "letters (start with & for extended dictionary);~count", Command.Context.All, new Action<Message, List<string>>((message, args) =>
             {
                 Random rand = new Random();
                 if (args.Count < 1 || args[0].Length > 25) throw new BotCommandException("Please provide a string from which to make a backronym that is 25 or fewer characters.");
@@ -476,10 +476,22 @@ namespace DiscordBot
                 }
 
                 message.Reply(backronym);
+            }));
+
+            AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
+            {
+                int amount = 0;
+                if (int.TryParse(args[0], out amount) && amount <= 100)
+                {
+                    foreach (var m in (await message.Channel.DownloadMessages(amount)))
+                    {
+                        await m.Delete();
+                    }
+                }
+                else throw new CommandSyntaxException("!delete");
             });
 
             Commands = Commands.OrderBy(c => c.NamesString).ToList();
-
         }
     }
 

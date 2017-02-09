@@ -133,9 +133,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BotCommands.cs" />
     <Compile Include="Command.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="DiscordGameData.cs" />
-    <Compile Include="DiscordTools.cs" />
+    <Compile Include="DiscordBot.cs" />
     <Compile Include="Gamer.cs" />
     <Compile Include="Poll.cs" />
     <Compile Include="Program.cs" />
@@ -143,9 +145,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="gamedata.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="packages.config" />
     <None Include="Properties\PublishProfiles\DiscordBotAdrian - Web Deploy.pubxml" />
     <None Include="Properties\webjob-publish-settings.json" />
