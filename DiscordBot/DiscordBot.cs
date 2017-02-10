@@ -204,12 +204,12 @@ namespace DiscordBot
 
         public static void LogError(Message message, Exception ex)
         {
-            if (!(ex is BotCommandException))
+            if (!(ex is BotCommandException) && !(ex is CommandSyntaxException))
             {
                 LogEvent(ex.ToString(), EventType.Error);
-                message.Reply($"*An error occurred: {ex.Message}*");
+                message.Reply($"```diff\n- ERROR: {ex.Message}\n```");
             }
-            else message.Reply($"*Command failed: {ex.Message}*", 20000);
+            else message.Reply($"```diff\n- Command failed: {ex.Message}\n```");
         }
 
         private static async void RunCommandAction(Command c, Message message)
@@ -224,8 +224,7 @@ namespace DiscordBot
             }
             catch (Exception ex)
             {
-                message.Reply($"Error: {ex.Message}");
-                LogEvent($"Error: {ex.ToString()}", EventType.Error);
+                LogError(message, ex);
             }
         }
 
@@ -260,7 +259,7 @@ namespace DiscordBot
                 }
                 catch (Exception ex)
                 {
-                    LogEvent($"Error: {ex.ToString()}", EventType.Error);
+                    LogError(message, ex);
                 }
             }
         }
