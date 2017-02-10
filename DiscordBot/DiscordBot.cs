@@ -219,12 +219,13 @@ namespace DiscordBot
                 await message.Channel.SendIsTyping();
                 var args = message.RawText.Split(' ').Skip(1).ToList();
                 if (args.Count >= c.RequiredParameters)
-                    c.Action.HandleErrors()(message, args);
+                    c.Action(message, args);
                 else throw new CommandSyntaxException(c.Names[0]);
             }
-            catch
+            catch (Exception ex)
             {
-                await (await Client.CreatePrivateChannel(Config.OwnerId)).SendMessage($"{DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]")} Bad! Error!");
+                message.Reply($"Error: {ex.Message}");
+                LogEvent($"Error: {ex.ToString()}", EventType.Error);
             }
         }
 
