@@ -81,7 +81,7 @@ namespace DiscordBot
 
     public class CommandSyntaxException : Exception
     {
-        public CommandSyntaxException(string message) : base($"The syntax of the command was not valid. Use `!help {message}` for more information")
+        public CommandSyntaxException(string message) : base($"The syntax of the command was not valid. Use \"!help {message}\" for more information")
         {
 
         }

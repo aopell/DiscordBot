@@ -212,6 +212,11 @@ namespace DiscordBot
             else message.Reply($"```diff\n- Command failed: {ex.Message}\n```");
         }
 
+        public static void LogError(Message message, string text)
+        {
+            message.Reply($"```diff\n- ERROR: {text}\n```");
+        }
+
         private static async void RunCommandAction(Command c, Message message)
         {
             try

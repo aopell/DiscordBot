@@ -95,17 +95,29 @@ namespace DiscordBot
 
                 message.Reply($"<@{message.User.Id}>: ***{args[0]}***\n" + responses[random.Next(responses.Length)]);
             });
-            AddCommand("!poll", "Starts a poll with the given comma-separated options", "length (minutes);option1;option2;~option3;~option4...", Command.Context.GuildChannel, async (message, args) =>
+            AddCommand("!poll", "Starts a poll with the given comma-separated options", "length (minutes);<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel, async (message, args) =>
             {
                 double minutes = 0;
-                if (!double.TryParse(args[0], out minutes) || minutes < 0.01 || minutes > 1440) throw new BotCommandException("Please specify a valid positive integer number of minutes >= 0.01 and <= 1440.");
+                if (!double.TryParse(args[0], out minutes) || minutes < 0.01 || minutes > 1440)
+                {
+                    DiscordBot.LogError(message, "Please specify a valid positive integer number of minutes >= 0.01 and <= 1440.");
+                    return;
+                }
 
                 string[] voteOptions = args.Skip(1).Join().Split(',');
-                if (voteOptions.Length < 2) throw new BotCommandException("Polls must have at least two options. Don't force things upon people. It's not nice.");
+                if (voteOptions.Length < 2)
+                {
+                    DiscordBot.LogError(message, "Polls must have at least two options. Don't force things upon people. It's not nice.");
+                    return;
+                }
 
                 Poll p = Poll.Create(message.Channel, message.User, message);
 
-                if (p == null) throw new BotCommandException("There is already a poll in progress");
+                if (p == null)
+                {
+                    message.Reply("There is already a poll in progress");
+                    return;
+                }
 
                 foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart()));
 
@@ -119,57 +131,74 @@ namespace DiscordBot
                 {
                     if (p.Active)
                     {
-                        Poll.EndActive();
+                        Poll.End(message.Channel);
                     }
                 });
             });
             AddCommand("!vote", "Votes in the active poll", "option number", Command.Context.GuildChannel, (message, args) =>
             {
-                if (Poll.ActivePoll != null)
+
+                Poll p = Poll.GetPoll(message.Channel);
+                if (p != null && p.Active)
                 {
                     if (message.User.IsBot)
                     {
-                        message.Reply($"<@{message.User.Id}>: BOTs can't vote! That is called *voter fraud*.", 5000);
+                        message.Reply($"<@{message.User.Id}>: BOTs can't vote! That is called *voter fraud*.");
                         return;
                     }
 
-                    if (Poll.ActivePoll.Voters.Contains(message.User))
+                    if (p.Voters.Contains(message.User))
                     {
-                        message.Reply($"<@{message.User.Id}>: You already voted!", 5000);
+                        message.Reply($"<@{message.User.Id}>: You already voted!");
                         return;
                     }
 
                     try
                     {
-                        Poll.ActivePoll.Options[int.Parse(args[0]) - 1].Votes++;
-                        message.Reply($"<@{message.User.Id}>: Vote acknowledged", 5000);
-                        Poll.ActivePoll.Voters.Add(message.User);
+                        p.Options[int.Parse(args[0]) - 1].Votes++;
+                        message.Reply($"<@{message.User.Id}>: Vote acknowledged");
+                        p.Voters.Add(message.User);
                     }
                     catch
                     {
-                        message.Reply($"<@{message.User.Id}>: Invalid poll option", 5000);
+                        message.Reply($"<@{message.User.Id}>: Invalid poll option");
                     }
                 }
                 else
                 {
-                    message.Reply($"<@{message.User.Id}>: No poll currently in progress", 5000);
+                    message.Reply($"<@{message.User.Id}>: No poll currently in progress");
                 }
             });
             AddCommand("!endpoll", "Ends the currently active poll", "", Command.Context.GuildChannel, (message, args) =>
             {
-                if (Poll.ActivePoll != null)
+                Poll p = Poll.GetPoll(message.Channel);
+                if (p != null && p.Active)
                 {
-                    Poll.EndActive();
+                    Poll.End(message.Channel);
                 }
                 else
                 {
-                    message.Reply($"@{message.User.Name}: No poll currently in progress", 5000);
+                    message.Reply($"@{message.User.Name}: No poll currently in progress");
                 }
             });
             AddCommand("!username", "Sets the bot's username", "username", Command.Context.OwnerOnly, async (message, args) =>
             {
                 await DiscordBot.Client.CurrentUser.Edit(username: args.Join());
                 message.Reply($"*Username updated to {args.Join()}*");
+            });
+            AddCommand("!avatar", "Sets the bot's username", "avatar direct url", Command.Context.OwnerOnly, async (message, args) =>
+            {
+                try
+                {
+                    string path = Path.GetTempFileName();
+                    new WebClient().DownloadFile(args.Join(), path);
+                    await DiscordBot.Client.CurrentUser.Edit(avatar: new FileStream(path, FileMode.Open));
+                    message.Reply($"*Avatar updated*");
+                }
+                catch (Exception ex)
+                {
+                    message.Reply($"Failed: " + ex.Message);
+                }
             });
             AddCommand("!quote", "Stores quotes and provides methods of searching for them", "<id>|add <quote text>|remove <quote ID>|edit <quote ID> <new text>|find [query]|random|?", Command.Context.GuildChannel, (message, args) =>
             {
@@ -185,8 +214,14 @@ namespace DiscordBot
                     {
                         int id = random.Next(quotes.Length);
                         if (!string.IsNullOrWhiteSpace(quotes[id]))
+                        {
                             message.Reply($"#{id}: *{quotes[id].Replace("\\n", "\n").Replace("\\\\n", "\\n")}*");
-                        else throw new BotCommandException("This server has no quotes in its quotes list. Add one using `!quote add <quote text>`");
+                        }
+                        else
+                        {
+                            DiscordBot.LogError(message, "This server has no quotes in its quotes list. Add one using `!quote add <quote text>`");
+                            return;
+                        }
                     }
                 }
                 else if (args[0] == "remove")
@@ -260,7 +295,11 @@ namespace DiscordBot
                     {
                         message.Reply($"*{quotes[quoteId].Replace("\\n", "\n").Replace("\\\\n", "\\n")}*");
                     }
-                    else throw new BotCommandException("No quote found for that ID");
+                    else
+                    {
+                        DiscordBot.LogError(message, "No quote found for that ID");
+                        return;
+                    }
                 }
                 else
                 {
@@ -311,7 +350,9 @@ namespace DiscordBot
                 DateTime date = DateTime.Today;
 
                 if (args.Count == 0 || (args.Count > 1 && !DateTime.TryParse(args[1], out date)))
-                    throw new CommandSyntaxException("!gameinfo");
+                {
+                    DiscordBot.LogError(message, new CommandSyntaxException("!gameinfo"));
+                }
 
                 User user;
                 try
@@ -320,8 +361,12 @@ namespace DiscordBot
                     {
                         var choices = message.Server.FindUsers(args[0]);
                         if (choices.Count() == 1) user = choices.First();
-                        else if (choices.Count() > 1) throw new BotCommandException("There are multiple users with that username. Please include the DiscordTag (ex. #1242) to specify");
-                        else throw new BotCommandException("No users in this server matched that username");
+                        else
+                        {
+                            if (choices.Count() > 1) DiscordBot.LogError(message, "There are multiple users with that username. Please include the DiscordTag (ex. #1242) to specify");
+                            else DiscordBot.LogError(message, "No users in this server matched that username");
+                            return;
+                        }
                     }
                     else
                     {
@@ -330,7 +375,8 @@ namespace DiscordBot
                 }
                 catch (InvalidOperationException)
                 {
-                    throw new BotCommandException("User not found");
+                    DiscordBot.LogError(message, "User not found");
+                    return;
                 }
 
                 var gamer = Gamer.FindById(user.Id);
@@ -345,7 +391,10 @@ namespace DiscordBot
                 gamer = Gamer.FindById(user.Id);
 
                 if (gamer == null || !gamer.GamesPlayed.ContainsKey(date) || gamer.GamesPlayed[date].Count == 0)
-                    throw new BotCommandException("The user played no games on that UTC date");
+                {
+                    DiscordBot.LogError(message, "The user played no games on that UTC date");
+                    return;
+                }
 
                 string output = $"**Games played by {gamer.Username} on {date.ToShortDateString()} (UTC) (H:MM):**\n";
                 foreach (var data in gamer.GamesPlayed[date])
@@ -360,7 +409,7 @@ namespace DiscordBot
                 else if (args[0] == "aliases") await message.Channel.SendFile($"{Config.BasePath}aliases.{message.Server.Id}.txt");
                 else if (args[0] == "quotes") await message.Channel.SendFile($"{Config.BasePath}quotes.{message.Server.Id}.txt");
                 else if (args[0] == "reminders") await message.Channel.SendFile(Config.RemindersPath);
-                else throw new BotCommandException("Please enter a valid file to send");
+                else DiscordBot.LogError(message, "Please enter a valid file to send");
             });
             AddCommand("!ggez", "Replies with a random Overwatch 'gg ez' replacement", "", Command.Context.All, (message, args) =>
             {
@@ -392,8 +441,12 @@ namespace DiscordBot
                     {
                         var choices = message.Server.FindUsers(args[0]);
                         if (choices.Count() == 1) user = choices.First();
-                        else if (choices.Count() > 1) throw new BotCommandException("There are multiple users with that username. Please include the DiscordTag (ex. #1242) to specify");
-                        else throw new BotCommandException("No users in this server matched that username");
+                        else
+                        {
+                            if (choices.Count() > 1) DiscordBot.LogError(message, "There are multiple users with that username. Please include the DiscordTag (ex. #1242) to specify");
+                            else DiscordBot.LogError(message, "No users in this server matched that username");
+                            return;
+                        }
                     }
                     else
                     {
@@ -402,7 +455,8 @@ namespace DiscordBot
                 }
                 catch (InvalidOperationException)
                 {
-                    throw new BotCommandException("User not found");
+                    DiscordBot.LogError(message, "User not found");
+                    return;
                 }
 
                 if (!File.Exists(Config.RemindersPath))
@@ -430,7 +484,11 @@ namespace DiscordBot
             AddCommand("!byid", "Looks up a Discord message by its ID number", "message ID;~channel mention", Command.Context.All, new Action<Message, List<string>>(async (message, args) =>
             {
                 ulong id;
-                if (args.Count < 1 || (args.Count == 2 && message.MentionedChannels.Count() < 1) || !ulong.TryParse(args[0], out id)) throw new BotCommandException("Please supply a valid Discord message ID and channel combination");
+                if (args.Count < 1 || (args.Count == 2 && message.MentionedChannels.Count() < 1) || !ulong.TryParse(args[0], out id))
+                {
+                    DiscordBot.LogError(message, "Please supply a valid Discord message ID and channel combination");
+                    return;
+                }
 
                 Message quotedMessage;
                 if (message.MentionedChannels.Count() < 1)
@@ -445,7 +503,11 @@ namespace DiscordBot
             AddCommand("!back", "Creates a backronym from the provided letters", "letters (start with & for extended dictionary);~count", Command.Context.All, new Action<Message, List<string>>((message, args) =>
             {
                 Random rand = new Random();
-                if (args.Count < 1 || args[0].Length > 25) throw new BotCommandException("Please provide a string from which to make a backronym that is 25 or fewer characters.");
+                if (args.Count < 1 || args[0].Length > 25)
+                {
+                    DiscordBot.LogError(message, "Please provide a string from which to make a backronym that is 25 or fewer characters.");
+                    return;
+                }
 
                 int count = 1;
                 if (args.Count > 1) int.TryParse(args[1], out count);
@@ -488,7 +550,7 @@ namespace DiscordBot
                         await m.Delete();
                     }
                 }
-                else throw new CommandSyntaxException("!delete");
+                else DiscordBot.LogError(message, new CommandSyntaxException("!delete"));
             });
 
             Commands = Commands.OrderBy(c => c.NamesString).ToList();

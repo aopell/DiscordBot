@@ -28,6 +28,7 @@ namespace DiscordBot
             }
         }
         public List<User> Voters;
+        private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
 
         public Poll(Channel channel, User creator, Message message)
         {
@@ -40,36 +41,20 @@ namespace DiscordBot
             Message = message;
         }
 
-        private static List<Poll> Polls = new List<Poll>();
-        public static Poll ActivePoll
-        {
-            get
-            {
-                foreach (Poll p in Polls)
-                    if (p.Active) return p;
-                return null;
-            }
-        }
-
         public static Poll Create(Channel channel, User creator, Message message)
         {
-            foreach (Poll p in Polls)
-            {
-                if (p.Active)
-                {
-                    return null;
-                }
-            }
+            if (polls.ContainsKey(channel.Id)) return null;
 
             Poll poll = new Poll(channel, creator, message);
-            Polls.Add(poll);
+            polls.Add(channel.Id, poll);
             return poll;
         }
 
-        public static async void EndActive()
+        public static async void End(Channel c)
         {
-            foreach (Poll p in Polls)
+            if (polls.ContainsKey(c.Id))
             {
+                var p = polls[c.Id];
                 if (p.Active)
                 {
                     p.Active = false;
@@ -79,8 +64,14 @@ namespace DiscordBot
                     foreach (PollOption o in p.Options) if (!winners.Contains(o)) messageToSend += $"{o.Votes} - {o.Text}\n";
                     messageToSend += $"{p.TotalVotes} {(p.TotalVotes == 1 ? "Total Vote" : "Total Votes")}";
                     await p.Channel.SendMessage(messageToSend);
+                    polls.Remove(c.Id);
                 }
             }
+        }
+
+        public static Poll GetPoll(Channel c)
+        {
+            return polls.ContainsKey(c.Id) ? polls[c.Id] : null;
         }
 
         public List<PollOption> GetWinners()
