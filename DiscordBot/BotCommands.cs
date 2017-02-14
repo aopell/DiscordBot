@@ -308,41 +308,48 @@ namespace DiscordBot
             });
             AddCommand("!talk|!t|!chat", "Chats with Cleverbot", "message", Command.Context.All, async (message, args) =>
             {
-                var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://cleverbot.io/1.0/ask");
-                httpWebRequest.ContentType = "application/json";
-                httpWebRequest.Method = "POST";
-
-                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                try
                 {
-                    string jsonToSend = JsonConvert.SerializeObject(
-                        new
-                        {
-                            user = Config.CleverBotUsername,
-                            key = Config.CleverBotKey,
-                            nick = "DiscordUser." + DiscordBot.Client.CurrentUser.Id,
-                            text = args.Join()
-                        });
+                    var httpWebRequest = (HttpWebRequest)WebRequest.Create("https://cleverbot.io/1.0/ask");
+                    httpWebRequest.ContentType = "application/json";
+                    httpWebRequest.Method = "POST";
 
-                    streamWriter.Write(jsonToSend);
-                    await streamWriter.FlushAsync();
-                    streamWriter.Close();
+                    using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                    {
+                        string jsonToSend = JsonConvert.SerializeObject(
+                            new
+                            {
+                                user = Config.CleverBotUsername,
+                                key = Config.CleverBotKey,
+                                nick = "DiscordUser." + DiscordBot.Client.CurrentUser.Id,
+                                text = args.Join()
+                            });
+
+                        streamWriter.Write(jsonToSend);
+                        await streamWriter.FlushAsync();
+                        streamWriter.Close();
+                    }
+
+                    var json = JObject.Parse("{status: \"No response found\"}");
+                    var httpResponse = (HttpWebResponse)(await httpWebRequest.GetResponseAsync());
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        var result = await streamReader.ReadToEndAsync();
+                        json = JObject.Parse(result);
+                    }
+
+                    if (json["status"].ToString() != "success")
+                    {
+                        message.Reply(json["status"].ToString());
+                    }
+                    else
+                    {
+                        message.Reply(json["response"].ToString());
+                    }
                 }
-
-                var json = JObject.Parse("{status: \"No response found\"}");
-                var httpResponse = (HttpWebResponse)(await httpWebRequest.GetResponseAsync());
-                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                catch (Exception ex)
                 {
-                    var result = await streamReader.ReadToEndAsync();
-                    json = JObject.Parse(result);
-                }
-
-                if (json["status"].ToString() != "success")
-                {
-                    message.Reply(json["status"].ToString());
-                }
-                else
-                {
-                    message.Reply(json["response"].ToString());
+                    DiscordBot.LogError(message, ex);
                 }
             });
             AddCommand("!gameinfo|!gamedata", "Lists how long a person has played games on a given date", $"username;~date", Command.Context.GuildChannel, (message, args) =>

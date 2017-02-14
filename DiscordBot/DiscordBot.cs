@@ -290,8 +290,17 @@ namespace DiscordBot
 
     public static class ExtMethods
     {
+        public static IEnumerable<string> SplitByLength(this string str, int maxLength)
+        {
+            for (int index = 0; index < str.Length; index += maxLength)
+            {
+                yield return str.Substring(index, Math.Min(maxLength, str.Length - index));
+            }
+        }
+
         public static Action<Message, List<string>> HandleErrors(this Action<Message, List<string>> action)
         {
+
             return (Message message, List<string> parameters) =>
             {
                 try
@@ -307,10 +316,34 @@ namespace DiscordBot
 
         public static async void Reply(this Message message, string text, int deleteAfter = 0)
         {
-            if (deleteAfter != 0)
-                (await message.Channel.SendMessage(text)).DeleteAfterDelay(deleteAfter);
-            else
-                await message.Channel.SendMessage(text);
+            foreach (string s in text.SplitByLength(2000))
+            {
+
+                if (deleteAfter != 0)
+                {
+                    (await message.Channel.SendMessage(s)).DeleteAfterDelay(deleteAfter);
+                }
+                else
+                {
+                    await message.Channel.SendMessage(s);
+                }
+            }
+        }
+
+        public static async void Reply(this Channel channel, string text, int deleteAfter = 0)
+        {
+            foreach (string s in text.SplitByLength(2000))
+            {
+
+                if (deleteAfter != 0)
+                {
+                    (await channel.SendMessage(s)).DeleteAfterDelay(deleteAfter);
+                }
+                else
+                {
+                    await channel.SendMessage(s);
+                }
+            }
         }
 
         public static bool StartsWithAny(this string s, string[] values)

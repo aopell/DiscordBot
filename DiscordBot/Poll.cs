@@ -14,7 +14,6 @@ namespace DiscordBot
         public bool Active;
         public Channel Channel;
         public User Creator;
-        public Message Message;
         public int TotalVotes
         {
             get
@@ -30,7 +29,7 @@ namespace DiscordBot
         public List<User> Voters;
         private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
 
-        public Poll(Channel channel, User creator, Message message)
+        public Poll(Channel channel, User creator, Message message = null)
         {
             StartTime = DateTime.Now;
             Active = true;
@@ -38,7 +37,6 @@ namespace DiscordBot
             Options = new List<PollOption>();
             Creator = creator;
             Voters = new List<User>();
-            Message = message;
         }
 
         public static Poll Create(Channel channel, User creator, Message message)
@@ -63,7 +61,7 @@ namespace DiscordBot
                     foreach (PollOption o in winners) messageToSend += $"**{o.Votes} - {o.Text}**\n";
                     foreach (PollOption o in p.Options) if (!winners.Contains(o)) messageToSend += $"{o.Votes} - {o.Text}\n";
                     messageToSend += $"{p.TotalVotes} {(p.TotalVotes == 1 ? "Total Vote" : "Total Votes")}";
-                    await p.Channel.SendMessage(messageToSend);
+                    p.Channel.Reply(messageToSend);
                     polls.Remove(c.Id);
                 }
             }
