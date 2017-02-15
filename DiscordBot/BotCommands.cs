@@ -156,7 +156,7 @@ namespace DiscordBot
                     try
                     {
                         int i;
-                        if (int.TryParse(args[0], out i))
+                        if (int.TryParse(args[0], out i) && i > 0 && i <= p.Options.Count)
                         {
                             p.Options[i - 1].Votes++;
                         }

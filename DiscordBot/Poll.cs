@@ -48,7 +48,7 @@ namespace DiscordBot
             return poll;
         }
 
-        public static async void End(Channel c)
+        public static void End(Channel c)
         {
             if (polls.ContainsKey(c.Id))
             {
@@ -57,10 +57,10 @@ namespace DiscordBot
                 {
                     p.Active = false;
                     var winners = p.GetWinners();
-                    string messageToSend = "__Poll Results: (Winners in **bold**)__\n";
+                    string messageToSend = "======== POLL RESULTS ========\n";
                     foreach (PollOption o in winners) messageToSend += $"**{o.Votes} - {o.Text}**\n";
                     foreach (PollOption o in p.Options) if (!winners.Contains(o)) messageToSend += $"{o.Votes} - {o.Text}\n";
-                    messageToSend += $"{p.TotalVotes} {(p.TotalVotes == 1 ? "Total Vote" : "Total Votes")}";
+                    messageToSend += $"({p.TotalVotes} {(p.TotalVotes == 1 ? "total vote" : "total votes")})";
                     p.Channel.Reply(messageToSend);
                     polls.Remove(c.Id);
                 }
