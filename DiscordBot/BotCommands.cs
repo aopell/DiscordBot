@@ -93,7 +93,7 @@ namespace DiscordBot
                     "Very doubtful"
                     };
 
-                message.Reply($"<@{message.User.Id}>: ***{args[0]}***\n" + responses[random.Next(responses.Length)]);
+                message.Reply($"<@{message.User.Id}>: ***{args.Join()}***\n" + responses[random.Next(responses.Length)]);
             });
             AddCommand("!poll", "Starts a poll with the given comma-separated options", "length (minutes);<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel, async (message, args) =>
             {
@@ -155,13 +155,25 @@ namespace DiscordBot
 
                     try
                     {
-                        p.Options[int.Parse(args[0]) - 1].Votes++;
+                        int i;
+                        if (int.TryParse(args[0], out i))
+                        {
+                            p.Options[i - 1].Votes++;
+                        }
+                        else if (p.Options.Where(x => x.Text == args.Join()).Count() > 0)
+                        {
+                            if (p.Options.Where(x => x.Text == args.Join()).Count() == 1)
+                                p.Options.Where(x => x.Text == args.Join()).First().Votes++;
+                            else throw new BotCommandException("There are multiple options with the same text. Please vote by number instead.");
+                        }
+                        else throw new BotCommandException("That poll option doesn't exist");
+
                         message.Reply($"<@{message.User.Id}>: Vote acknowledged");
                         p.Voters.Add(message.User);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        message.Reply($"<@{message.User.Id}>: Invalid poll option");
+                        DiscordBot.LogError(message, ex);
                     }
                 }
                 else
