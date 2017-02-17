@@ -32,7 +32,7 @@ namespace DiscordBot
                     Command c = null;
                     foreach (Command command in Commands)
                     {
-                        if (args[0].StartsWithAny(command.Names))
+                        if (args[0].StartsWithAnyStrict(command.Names))
                         {
                             c = command;
                             break;
@@ -62,7 +62,7 @@ namespace DiscordBot
             });
             AddCommand("!echo|!say", "Repeats <message> back to you", "message", Command.Context.All, (message, args) =>
             {
-                message.Reply(message.Text.Substring(5).Trim());
+                message.Reply(message.RawText.Split(new[] { ' ' }, 2)[1]);
             });
             AddCommand("!hello|!test", "Says hi", "", Command.Context.All, new Action<Message, List<string>>((message, args) =>
             {
