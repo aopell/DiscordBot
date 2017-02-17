@@ -558,6 +558,11 @@ namespace DiscordBot
 
                 message.Reply(backronym);
             }));
+            AddCommand("!bugreport", "Sends a direct message to the bot owner with a bug report. Abusing this results in this command being removed.", "description", Command.Context.GuildChannel, new Action<Message, List<string>>(async (message, args) =>
+            {
+                await (await DiscordBot.Client.CreatePrivateChannel(Config.OwnerId)).SendMessage($"Bug report from <@{message.User.Id}>: {args.Join()}");
+                message.Reply("Bug report sent");
+            }));
 
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
