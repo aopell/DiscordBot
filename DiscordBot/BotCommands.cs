@@ -563,6 +563,46 @@ namespace DiscordBot
                 await (await DiscordBot.Client.CreatePrivateChannel(Config.OwnerId)).SendMessage($"Bug report from <@{message.User.Id}>: {args.Join()}");
                 message.Reply("Bug report sent");
             }));
+            AddCommand("!namegen", "Creates a random name from two words", "~count;~use complex = false", Command.Context.All, new Action<Message, List<string>>((message, args) =>
+            {
+                int count = 1;
+                if (args.Count > 0) int.TryParse(args[0], out count);
+                count = count < 1 ? 1 : count > 10 ? 10 : count;
+
+                string name = "";
+                bool useComplex;
+                try
+                {
+                    useComplex = args.Count > 1 ? bool.Parse(args[1]) : false;
+                }
+                catch
+                {
+                    DiscordBot.LogError(message, "Please provide a valid boolean: either 'true' or 'false' for argument 2");
+                    return;
+                }
+
+                char[] letters = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
+
+                for (int c = 0; c < 10; c++)
+                {
+                    for (int i = 0; i < 2; i++)
+                    {
+                        string[] words = File.ReadAllLines($"{(useComplex ? "" : "simple")}words\\{char.ToLower(letters[random.Next(letters.Length)])}.txt");
+                        while (true)
+                        {
+                            string word = words[random.Next(words.Length)];
+                            if (word.Length >= 5)
+                            {
+                                name += word.ToUpper();
+                                break;
+                            }
+                        }
+                    }
+                    name += "\n";
+                }
+
+                message.Reply(name);
+            }));
 
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
