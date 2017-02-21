@@ -135,7 +135,7 @@ namespace DiscordBot
                     }
                 });
             });
-            AddCommand("!vote", "Votes in the active poll", "option number", Command.Context.GuildChannel, (message, args) =>
+            AddCommand("!vote", "Votes in the active poll", "option number | option text", Command.Context.GuildChannel, (message, args) =>
             {
 
                 Poll p = Poll.GetPoll(message.Channel);
