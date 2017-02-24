@@ -8,7 +8,7 @@ namespace DiscordBot
 {
     public static class Config
     {
-        public const string Token = "MTY5NTQ3Mjc3MzMxODU3NDA4.CtQqUQ.jPiTbmQRGYeO1ksbEQTd9LCWvuI";
+        public const string Token = "MTY5NTQ3Mjc3MzMxODU3NDA4.C5FaEA.RUfWLsyd0FHd2SDs2b5QTcvAJgM";
         public const string BasePath = "D:\\home\\data\\jobs\\continuous\\DiscordBot\\";
         public const string GameDataPath = BasePath + "gamedata-new.json";
         public const string RemindersPath = BasePath + "reminders.json";
