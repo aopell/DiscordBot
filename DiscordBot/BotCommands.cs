@@ -364,7 +364,7 @@ namespace DiscordBot
                     DiscordBot.LogError(message, ex);
                 }
             });
-            AddCommand("!gameinfo|!gamedata", "Lists how long a person has played games on a given date", $"username;~date", Command.Context.GuildChannel, async (message, args) =>
+            AddCommand("!gameinfo|!gamedata", "Lists how long a person has played games on a given date", $"username;~date", Command.Context.GuildChannel, (message, args) =>
             {
                 DateTime date = DateTime.Today;
 
@@ -403,9 +403,9 @@ namespace DiscordBot
 
                 if (user.CurrentGame.HasValue)
                 {
-                    var time = await Gamer.GameStopped(user, user.CurrentGame.Value.Name);
+                    var time = Gamer.GameStopped(user, user.CurrentGame.Value.Name);
                     DiscordBot.LogEvent($"@{user.Name}#{user.Discriminator.ToString("D4")} is no longer playing {user.CurrentGame.Value.Name} after {Math.Round(time.TotalHours, 2)} hours", DiscordBot.EventType.GameUpdated);
-                    await Gamer.GameStarted(user);
+                    Gamer.GameStarted(user);
                     DiscordBot.LogEvent($"@{user.Name}#{user.Discriminator.ToString("D4")} is now playing {user.CurrentGame.Value.Name}", DiscordBot.EventType.GameUpdated);
                 }
                 gamer = Gamer.FindById(user.Id);

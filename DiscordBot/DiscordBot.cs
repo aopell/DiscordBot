@@ -85,7 +85,7 @@ namespace DiscordBot
 
         private static string lastMessage = "";
 
-        private static async void Client_UserUpdated(object sender, UserUpdatedEventArgs e)
+        private static void Client_UserUpdated(object sender, UserUpdatedEventArgs e)
         {
             if (e.Before.Name != e.After.Name)
             {
@@ -126,20 +126,20 @@ namespace DiscordBot
                     tempMessage = $"game.start.{e.After.Id}.{e.After.CurrentGame.Value.Name}";
                     if (lastMessage == (lastMessage = tempMessage)) return;
                     message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} is now playing {e.After.CurrentGame.Value.Name}";
-                    await Gamer.GameStarted(e.After);
+                    Gamer.GameStarted(e.After);
                 }
                 else if (e.Before.CurrentGame.HasValue && !e.After.CurrentGame.HasValue)
                 {
                     tempMessage = $"game.stop.{e.After.Id}.{e.Before.CurrentGame.Value.Name}";
                     if (lastMessage == (lastMessage = tempMessage)) return;
-                    var time = await Gamer.GameStopped(e.After, e.Before.CurrentGame.Value.Name);
+                    var time = Gamer.GameStopped(e.After, e.Before.CurrentGame.Value.Name);
                     message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} is no longer playing {e.Before.CurrentGame.Value.Name} after {Math.Round(time.TotalHours, 2)} hours";
                 }
                 else if (e.Before.CurrentGame.HasValue && e.After.CurrentGame.HasValue)
                 {
                     tempMessage = $"game.switch.{e.After.Id}.{e.Before.CurrentGame.Value.Name}.{e.After.CurrentGame.Value.Name}";
                     if (lastMessage == (lastMessage = tempMessage)) return;
-                    var time = await Gamer.GameStopped(e.After, e.Before.CurrentGame.Value.Name);
+                    var time = Gamer.GameStopped(e.After, e.Before.CurrentGame.Value.Name);
                     message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} switched from playing {e.Before.CurrentGame.Value.Name} to {e.After.CurrentGame.Value.Name}  after {Math.Round(time.TotalHours, 2)} hours";
                     Gamer.GameStarted(e.After);
                 }

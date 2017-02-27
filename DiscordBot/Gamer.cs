@@ -43,72 +43,66 @@ namespace DiscordBot
             return JsonConvert.DeserializeObject<List<Gamer>>(File.ReadAllText(Config.GameDataPath));
         }
 
-        public static async Task GameStarted(User user)
+        public static void GameStarted(User user)
         {
-            await Task.Run(() =>
+            var gamers = LoadGamers();
+            if (gamers == null) gamers = new List<Gamer>();
+
+            Gamer person = null;
+
+            foreach (Gamer g in gamers)
             {
-                var gamers = LoadGamers();
-                if (gamers == null) gamers = new List<Gamer>();
+                if (g.UserId == user.Id)
+                    person = g;
+            }
 
-                Gamer person = null;
+            if (person == null)
+                person = new Gamer(user.Name, user.Discriminator, user.Id);
 
-                foreach (Gamer g in gamers)
-                {
-                    if (g.UserId == user.Id)
-                        person = g;
-                }
+            person.StartTracking();
 
-                if (person == null)
-                    person = new Gamer(user.Name, user.Discriminator, user.Id);
+            var duplicates = (from g in gamers where g.UserId == person.UserId select g).ToList();
 
-                person.StartTracking();
+            for (int i = 0; i < duplicates.Count; i++)
+                gamers.Remove(duplicates[i]);
 
-                var duplicates = (from g in gamers where g.UserId == person.UserId select g).ToList();
+            gamers.Add(person);
 
-                for (int i = 0; i < duplicates.Count; i++)
-                    gamers.Remove(duplicates[i]);
-
-                gamers.Add(person);
-
-                SaveGamers(gamers);
-            });
+            SaveGamers(gamers);
         }
 
-        public static async Task<TimeSpan> GameStopped(User user, string game)
+        public static TimeSpan GameStopped(User user, string game)
         {
-            return await Task.Run(() =>
+            if (game == null) return TimeSpan.Zero;
+
+            var gamers = LoadGamers();
+            if (gamers == null) gamers = new List<Gamer>();
+
+            Gamer person = null;
+
+            foreach (Gamer g in gamers)
             {
-                if (game == null) return TimeSpan.Zero;
-
-                var gamers = LoadGamers();
-                if (gamers == null) gamers = new List<Gamer>();
-
-                Gamer person = null;
-
-                foreach (Gamer g in gamers)
+                if (user.Id == g.UserId)
                 {
-                    if (user.Id == g.UserId)
-                    {
-                        person = g;
-                        break;
-                    }
+                    person = g;
+                    break;
                 }
+            }
 
-                if (person == null) return TimeSpan.Zero;
+            if (person == null) return TimeSpan.Zero;
 
-                var time = person.StopTracking(game);
+            var time = person.StopTracking(game);
 
-                var duplicates = (from g in gamers where g.UserId == person.UserId select g).ToList();
+            var duplicates = (from g in gamers where g.UserId == person.UserId select g).ToList();
 
-                for (int i = 0; i < duplicates.Count; i++)
-                    gamers.Remove(duplicates[i]);
+            for (int i = 0; i < duplicates.Count; i++)
+                gamers.Remove(duplicates[i]);
 
-                gamers.Add(person);
+            gamers.Add(person);
 
-                SaveGamers(gamers);
+            SaveGamers(gamers);
 
-                return time;
-            });
+            return time;
         }
 
         private void StartTracking()
