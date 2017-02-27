@@ -364,13 +364,14 @@ namespace DiscordBot
                     DiscordBot.LogError(message, ex);
                 }
             });
-            AddCommand("!gameinfo|!gamedata", "Lists how long a person has played games on a given date", $"username;~date", Command.Context.GuildChannel, (message, args) =>
+            AddCommand("!gameinfo|!gamedata", "Lists how long a person has played games on a given date", $"username;~date", Command.Context.GuildChannel, async (message, args) =>
             {
                 DateTime date = DateTime.Today;
 
                 if (args.Count == 0 || (args.Count > 1 && !DateTime.TryParse(args[1], out date)))
                 {
                     DiscordBot.LogError(message, new CommandSyntaxException("!gameinfo"));
+                    return;
                 }
 
                 User user;
@@ -402,9 +403,9 @@ namespace DiscordBot
 
                 if (user.CurrentGame.HasValue)
                 {
-                    var time = Gamer.GameStopped(user, user.CurrentGame.Value.Name);
+                    var time = await Gamer.GameStopped(user, user.CurrentGame.Value.Name);
                     DiscordBot.LogEvent($"@{user.Name}#{user.Discriminator.ToString("D4")} is no longer playing {user.CurrentGame.Value.Name} after {Math.Round(time.TotalHours, 2)} hours", DiscordBot.EventType.GameUpdated);
-                    Gamer.GameStarted(user);
+                    await Gamer.GameStarted(user);
                     DiscordBot.LogEvent($"@{user.Name}#{user.Discriminator.ToString("D4")} is now playing {user.CurrentGame.Value.Name}", DiscordBot.EventType.GameUpdated);
                 }
                 gamer = Gamer.FindById(user.Id);
@@ -417,18 +418,26 @@ namespace DiscordBot
 
                 string output = $"**Games played by {gamer.Username} on {date.ToShortDateString()} (UTC) (H:MM):**\n";
                 foreach (var data in gamer.GamesPlayed[date])
-                    output += $"{data.Game}: {(int)data.TimePlayed.TotalHours}:{data.TimePlayed.Minutes.ToString("D2")}\n";
+                    if (data.TimePlayed.TotalMinutes >= 1)
+                        output += $"{data.Game}: {(int)data.TimePlayed.TotalHours}:{data.TimePlayed.Minutes.ToString("D2")}\n";
 
                 message.Reply(output);
             });
             AddCommand("!sendfile", "Sends various bot files to the bot owner", "gamedata|log <date>|quotes|reminders", Command.Context.OwnerOnly, async (message, args) =>
             {
-                if (args[0] == "gamedata") await message.Channel.SendFile(Config.GameDataPath);
-                else if (args[0] == "log") await message.Channel.SendFile(Config.LogDirectoryPath + args[1] + ".log");
-                else if (args[0] == "aliases") await message.Channel.SendFile($"{Config.BasePath}aliases.{message.Server.Id}.txt");
-                else if (args[0] == "quotes") await message.Channel.SendFile($"{Config.BasePath}quotes.{message.Server.Id}.txt");
-                else if (args[0] == "reminders") await message.Channel.SendFile(Config.RemindersPath);
-                else DiscordBot.LogError(message, "Please enter a valid file to send");
+                try
+                {
+                    if (args[0] == "gamedata") await message.Channel.SendFile(Config.GameDataPath);
+                    else if (args[0] == "log") await message.Channel.SendFile(Config.LogDirectoryPath + args[1] + ".log");
+                    else if (args[0] == "aliases") await message.Channel.SendFile($"{Config.BasePath}aliases.{message.Server.Id}.txt");
+                    else if (args[0] == "quotes") await message.Channel.SendFile($"{Config.BasePath}quotes.{message.Server.Id}.txt");
+                    else if (args[0] == "reminders") await message.Channel.SendFile(Config.RemindersPath);
+                    else DiscordBot.LogError(message, "Please enter a valid file to send");
+                }
+                catch (Exception ex)
+                {
+                    DiscordBot.LogError(message, ex);
+                }
             });
             AddCommand("!ggez", "Replies with a random Overwatch 'gg ez' replacement", "", Command.Context.All, (message, args) =>
             {
