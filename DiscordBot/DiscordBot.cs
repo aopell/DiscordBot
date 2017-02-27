@@ -44,7 +44,7 @@ namespace DiscordBot
                 if (e.Channel.Server != null)
                     LogEvent($"Sent \"{e.Message.Text}\" to {e.Channel.Server.Name.Shorten(15)}#{e.Channel.Name}", EventType.BotAction);
                 else
-                    LogEvent($"DM To @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: \"{e.Message.Text}\"", EventType.BotAction);
+                    LogEvent($"DM To @{e.Channel.Users.Where(x => x.Id != Client.CurrentUser.Id).First().Name}#{e.User.Discriminator.ToString("D4")}: \"{e.Message.Text}\"", EventType.BotAction);
             }
             else if (e.Channel.Server == null)
             {
