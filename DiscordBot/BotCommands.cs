@@ -91,14 +91,13 @@ namespace DiscordBot
                     "My sources say no",
                     "Outlook not so good",
                     "Very doubtful"
-                    };
+                };
 
                 message.Reply($"<@{message.User.Id}>: ***{args.Join()}***\n" + responses[random.Next(responses.Length)]);
             });
             AddCommand("!poll", "Starts a poll with the given comma-separated options", "length (minutes);<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel, async (message, args) =>
             {
-                double minutes = 0;
-                if (!double.TryParse(args[0], out minutes) || minutes < 0.01 || minutes > 1440)
+                if (!double.TryParse(args[0], out double minutes) || minutes < 0.01 || minutes > 1440)
                 {
                     DiscordBot.LogError(message, "Please specify a valid positive integer number of minutes >= 0.01 and <= 1440.");
                     return;
@@ -615,8 +614,7 @@ namespace DiscordBot
 
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
-                int amount = 0;
-                if (int.TryParse(args[0], out amount) && amount <= 100)
+                if (int.TryParse(args[0], out int amount) && amount <= 100)
                 {
                     foreach (var m in (await message.Channel.DownloadMessages(amount)))
                     {
@@ -639,14 +637,12 @@ namespace DiscordBot
 
         public static bool IsInteger(this string s)
         {
-            int temp = 0;
-            return int.TryParse(s, out temp);
+            return int.TryParse(s, out int temp);
         }
 
         public static bool IsDouble(this string s)
         {
-            double temp = 0;
-            return double.TryParse(s, out temp);
+            return double.TryParse(s, out double temp);
         }
     }
 }
