@@ -11,6 +11,7 @@ namespace DiscordBot
     {
         public List<PollOption> Options;
         public DateTime StartTime;
+        public double Length;
         public bool Active;
         public Channel Channel;
         public User Creator;
@@ -29,7 +30,7 @@ namespace DiscordBot
         public List<User> Voters;
         private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
 
-        public Poll(Channel channel, User creator, Message message = null)
+        public Poll(Channel channel, User creator, double length, Message message = null)
         {
             StartTime = DateTime.Now;
             Active = true;
@@ -37,13 +38,14 @@ namespace DiscordBot
             Options = new List<PollOption>();
             Creator = creator;
             Voters = new List<User>();
+            Length = length;
         }
 
-        public static Poll Create(Channel channel, User creator, Message message)
+        public static Poll Create(Channel channel, User creator, Message message, double length)
         {
             if (polls.ContainsKey(channel.Id)) return null;
 
-            Poll poll = new Poll(channel, creator, message);
+            Poll poll = new Poll(channel, creator, length, message);
             polls.Add(channel.Id, poll);
             return poll;
         }

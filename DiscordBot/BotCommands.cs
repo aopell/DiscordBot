@@ -95,8 +95,34 @@ namespace DiscordBot
 
                 message.Reply($"<@{message.User.Id}>: ***{args.Join()}***\n" + responses[random.Next(responses.Length)]);
             });
-            AddCommand("!poll", "Starts a poll with the given comma-separated options", "length (minutes);<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel, async (message, args) =>
+            AddCommand("!poll", "Starts a poll with the given comma-separated options", "~length (minutes);~<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel, async (message, args) =>
             {
+                if (args.Count == 0)
+                {
+                    Poll po;
+                    if ((po = Poll.GetPoll(message.Channel)) != null)
+                    {
+                        string m = $"***Currently active poll started by <@{po.Creator.Id}> has the following options:***\n";
+                        foreach (PollOption o in po.Options) m += $"{po.Options.IndexOf(o) + 1}: {o.Text}\n";
+                        m += $"\n***Enter `!vote <number | option>` to vote!***\n*The poll will end in {Math.Round((TimeSpan.FromMinutes(po.Length) - (DateTime.Now - po.StartTime)).TotalMinutes, 1)} minutes unless stopped earlier with `!endpoll`*";
+
+                        if (po.TotalVotes > 0)
+                            m += $"\n\n**ALREADY VOTED ({po.Voters.Count}):** {string.Join(", ", (from u in po.Voters select u.Nickname ?? u.Name))}";
+
+                        message.Reply(m);
+                    }
+                    else
+                    {
+                        DiscordBot.LogError(message, "There is no currently active poll in this channel");
+                    }
+                    return;
+                }
+                else if (args.Count < 2)
+                {
+                    DiscordBot.LogError(message, new CommandSyntaxException("!poll"));
+                    return;
+                }
+
                 if (!double.TryParse(args[0], out double minutes) || minutes < 0.01 || minutes > 1440)
                 {
                     DiscordBot.LogError(message, "Please specify a valid positive integer number of minutes >= 0.01 and <= 1440.");
@@ -110,7 +136,7 @@ namespace DiscordBot
                     return;
                 }
 
-                Poll p = Poll.Create(message.Channel, message.User, message);
+                Poll p = Poll.Create(message.Channel, message.User, message, minutes);
 
                 if (p == null)
                 {
@@ -122,7 +148,7 @@ namespace DiscordBot
 
                 string messageToSend = $"***<@{message.User.Id}> has started a poll with the following options:***\n";
                 foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
-                messageToSend += $"\n***Enter `!vote <number>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
+                messageToSend += $"\n***Enter `!vote <number | option>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
 
                 message.Reply(messageToSend);
 
