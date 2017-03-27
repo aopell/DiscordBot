@@ -114,9 +114,9 @@ namespace DiscordBot
                         return;
                     }
 
-                    if (p.Voters.Contains(message.User))
+                    if (p.Voters.Contains(message.User) && p.MinutesLeft < 0.5)
                     {
-                        message.Reply($"<@{message.User.Id}>: You already voted!");
+                        message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
                         return;
                     }
 
@@ -134,7 +134,10 @@ namespace DiscordBot
                         }
                         else throw new BotCommandException("That poll option doesn't exist");
 
-                        message.Reply($"<@{message.User.Id}>: Vote acknowledged");
+                        if (!p.Voters.Contains(message.User))
+                            message.Reply($"<@{message.User.Id}>: Vote for option {args[0]} acknowledged");
+                        else
+                            message.Reply($"<@{message.User.Id}>: Vote update to option {args[0]} acknowledged");
                         p.Voters.Add(message.User);
                     }
                     catch (Exception ex)
@@ -168,9 +171,9 @@ namespace DiscordBot
                         return;
                     }
 
-                    if (p.Voters.Contains(message.User))
+                    if (p.Voters.Contains(message.User) && p.MinutesLeft < 0.5)
                     {
-                        message.Reply($"<@{message.User.Id}>: You already voted!");
+                        message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
                         return;
                     }
 
@@ -188,7 +191,10 @@ namespace DiscordBot
                         }
                         else throw new BotCommandException("That poll option doesn't exist");
 
-                        message.Reply($"<@{message.User.Id}>: Vote acknowledged");
+                        if (!p.Voters.Contains(message.User))
+                            message.Reply($"<@{message.User.Id}>: Vote for option {args[1]} acknowledged");
+                        else
+                            message.Reply($"<@{message.User.Id}>: Vote update to option {args[1]} acknowledged");
                         p.Voters.Add(message.User);
                     }
                     catch (Exception ex)
@@ -654,12 +660,12 @@ namespace DiscordBot
                 Poll po;
                 if ((po = Poll.GetPoll(message.Channel)) != null)
                 {
-                    string m = $"***Currently active {(anonymous ? "**anonymous **" : "")}poll started by <@{po.Creator.Id}> has the following options:***\n";
+                    string m = $"***Currently active {(po.Anonymous ? "**anonymous **" : "")}poll started by <@{po.Creator.Id}> has the following options:***\n";
                     foreach (PollOption o in po.Options) m += $"{po.Options.IndexOf(o) + 1}: {o.Text}\n";
-                    m += anonymous ? $"\n**ONLY VOTES FROM A DIRECT MESSAGE WILL BE COUNTED!** This is **anonymous poll number #{po.Id}.** Use `!anonvote {po.Id} <number|option>`\n*The poll will end in {Math.Round((TimeSpan.FromMinutes(po.Length) - (DateTime.Now - po.StartTime)).TotalMinutes, 1)} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {Math.Round((TimeSpan.FromMinutes(po.Length) - (DateTime.Now - po.StartTime)).TotalMinutes, 1)} minutes unless stopped earlier with `!endpoll`*";
+                    m += po.Anonymous ? $"\n**ONLY VOTES FROM A DIRECT MESSAGE WILL BE COUNTED!** This is **anonymous poll number #{po.Id}.** Use `!anonvote {po.Id} <number|option>`\n*The poll will end in {po.MinutesLeft} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {po.MinutesLeft} minutes unless stopped earlier with `!endpoll`*";
 
                     if (po.TotalVotes > 0)
-                        m += $"\n\n**ALREADY VOTED ({po.Voters.Count})** {(anonymous ? "" : ": " + string.Join(", ", (from u in po.Voters select u.Nickname ?? u.Name)))}";
+                        m += $"\n\n**ALREADY VOTED ({po.Voters.Count})** {(po.Anonymous ? "" : ": " + string.Join(", ", (from u in po.Voters select u.Nickname ?? u.Name)))}";
 
                     message.Reply(m);
                 }
@@ -692,15 +698,15 @@ namespace DiscordBot
 
             if (p == null)
             {
-                message.Reply("There is already a poll in progress");
+                message.Reply($"There is already a{(Poll.GetPoll(message.Channel).Anonymous ? "n anonymous" : "")} poll in progress");
                 return;
             }
 
             foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart()));
 
-            string messageToSend = $"***<@{message.User.Id}> has started {(anonymous ? "an **anonymous **" : "a ")}poll with the following options:***\n";
+            string messageToSend = $"***<@{message.User.Id}> has started {(anonymous ? "an __anonymous__ " : "a ")}poll with the following options:***\n";
             foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
-            messageToSend += anonymous ? $"\n**ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!** This is **anonymous poll number #{p.Id}.** Use `!anonvote {p.Id} <number|option>`\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
+            messageToSend += anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__** This is **anonymous poll number #{p.Id}.**\nUse `!anonvote {p.Id} <number|option>` in a direct message to me to vote\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
 
             message.Reply(messageToSend);
 

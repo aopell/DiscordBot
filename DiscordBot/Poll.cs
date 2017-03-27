@@ -15,6 +15,7 @@ namespace DiscordBot
         public double Length;
         public bool Active;
         public bool Anonymous;
+        public double MinutesLeft => Math.Round((TimeSpan.FromMinutes(Length) - (DateTime.Now - StartTime)).TotalMinutes, 1);
         public Channel Channel;
         public User Creator;
         public int TotalVotes
