@@ -142,9 +142,9 @@ namespace DiscordBot
                         else throw new BotCommandException("That poll option doesn't exist");
 
                         if (!update)
-                            message.Reply($"<@{message.User.Id}>: Vote for option {(num ? "#" : "")}{args[0]}{(num ? "" : "'")} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote for {(num ? "option #" : "")}{args[0]}{(num ? "" : "'")} acknowledged");
                         else
-                            message.Reply($"<@{message.User.Id}>: Vote update to option {(num ? "#" : "'")}{args[0]}{(num ? "" : "'")} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote update to {(num ? "option #" : "'")}{args[0]}{(num ? "" : "'")} acknowledged");
                     }
                     catch (Exception ex)
                     {
@@ -209,9 +209,9 @@ namespace DiscordBot
                         else throw new BotCommandException("That poll option doesn't exist");
 
                         if (!update)
-                            message.Reply($"<@{message.User.Id}>: Vote for option {(num ? "#" : "")}{args[1]}{(num ? "" : "'")} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote for {(num ? "option #" : "")}{args[1]}{(num ? "" : "'")} acknowledged");
                         else
-                            message.Reply($"<@{message.User.Id}>: Vote update to option {(num ? "#" : "")}{args[1]}{(num ? "" : "'")} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote update to {(num ? "option #" : "")}{args[1]}{(num ? "" : "'")} acknowledged");
                     }
                     catch (Exception ex)
                     {
