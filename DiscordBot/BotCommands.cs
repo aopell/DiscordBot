@@ -127,12 +127,14 @@ namespace DiscordBot
 
                     try
                     {
+                        bool num = true;
                         if (int.TryParse(args[0], out int i) && i > 0 && i <= p.Options.Count)
                         {
                             p.Voters[message.User] = p.Options[i - 1];
                         }
                         else if (p.Options.Where(x => x.Text == args.Join()).Count() > 0)
                         {
+                            num = false;
                             if (p.Options.Where(x => x.Text == args.Join()).Count() == 1)
                                 p.Voters[message.User] = p.Options.Where(x => x.Text == args.Join()).First();
                             else throw new BotCommandException("There are multiple options with the same text. Please vote by number instead.");
@@ -140,9 +142,9 @@ namespace DiscordBot
                         else throw new BotCommandException("That poll option doesn't exist");
 
                         if (!update)
-                            message.Reply($"<@{message.User.Id}>: Vote for option {args[0]} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote for option {(num ? "#" : "")}{args[0]} acknowledged");
                         else
-                            message.Reply($"<@{message.User.Id}>: Vote update to option {args[0]} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote update to option {(num ? "#" : "")}{args[0]} acknowledged");
                     }
                     catch (Exception ex)
                     {
@@ -192,12 +194,14 @@ namespace DiscordBot
 
                     try
                     {
+                        bool num = true;
                         if (int.TryParse(args[1], out int i) && i > 0 && i <= p.Options.Count)
                         {
                             p.Voters[message.User] = p.Options[i - 1];
                         }
                         else if (p.Options.Where(x => x.Text == args.Join()).Count() > 0)
                         {
+                            num = false;
                             if (p.Options.Where(x => x.Text == args.Join()).Count() == 1)
                                 p.Voters[message.User] = p.Options.Where(x => x.Text == args.Join()).First();
                             else throw new BotCommandException("There are multiple options with the same text. Please vote by number instead.");
@@ -205,9 +209,9 @@ namespace DiscordBot
                         else throw new BotCommandException("That poll option doesn't exist");
 
                         if (!update)
-                            message.Reply($"<@{message.User.Id}>: Vote for option {args[1]} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote for option {(num ? "#" : "")}{args[1]} acknowledged");
                         else
-                            message.Reply($"<@{message.User.Id}>: Vote update to option {args[1]} acknowledged");
+                            message.Reply($"<@{message.User.Id}>: Vote update to option {(num ? "#" : "")}{args[1]} acknowledged");
                     }
                     catch (Exception ex)
                     {
