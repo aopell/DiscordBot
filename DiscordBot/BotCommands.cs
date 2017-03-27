@@ -114,7 +114,7 @@ namespace DiscordBot
                         return;
                     }
 
-                    if (p.Voters.Contains(message.User) && p.MinutesLeft < 0.5)
+                    if (p.Voters.ContainsKey(message.User) && p.MinutesLeft < 0.5)
                     {
                         message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
                         return;
@@ -124,21 +124,20 @@ namespace DiscordBot
                     {
                         if (int.TryParse(args[0], out int i) && i > 0 && i <= p.Options.Count)
                         {
-                            p.Options[i - 1].Votes.Add(message.User);
+                            p.Voters[message.User] = p.Options[i - 1];
                         }
                         else if (p.Options.Where(x => x.Text == args.Join()).Count() > 0)
                         {
                             if (p.Options.Where(x => x.Text == args.Join()).Count() == 1)
-                                p.Options.Where(x => x.Text == args.Join()).First().Votes.Add(message.User);
+                                p.Voters[message.User] = p.Options.Where(x => x.Text == args.Join()).First();
                             else throw new BotCommandException("There are multiple options with the same text. Please vote by number instead.");
                         }
                         else throw new BotCommandException("That poll option doesn't exist");
 
-                        if (!p.Voters.Contains(message.User))
+                        if (!p.Voters.ContainsKey(message.User))
                             message.Reply($"<@{message.User.Id}>: Vote for option {args[0]} acknowledged");
                         else
                             message.Reply($"<@{message.User.Id}>: Vote update to option {args[0]} acknowledged");
-                        p.Voters.Add(message.User);
                     }
                     catch (Exception ex)
                     {
@@ -147,7 +146,10 @@ namespace DiscordBot
                 }
                 else
                 {
-                    message.Reply($"<@{message.User.Id}>: No poll currently in progress");
+                    if (p != null && p.Anonymous)
+                        message.Reply($"<@{message.User.Id}>: The current poll is anonymous. Please use `!anonvote {p.Id} <number|option>` in a direct message to me to vote.");
+                    else
+                        message.Reply($"<@{message.User.Id}>: No poll currently in progress");
                 }
             });
             AddCommand("!anonvote", "Votes in the specified **anonymous** poll", "id;option number | option text", Command.Context.DirectMessage, (message, args) =>
@@ -171,7 +173,7 @@ namespace DiscordBot
                         return;
                     }
 
-                    if (p.Voters.Contains(message.User) && p.MinutesLeft < 0.5)
+                    if (p.Voters.ContainsKey(message.User) && p.MinutesLeft < 0.5)
                     {
                         message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
                         return;
@@ -181,21 +183,20 @@ namespace DiscordBot
                     {
                         if (int.TryParse(args[1], out int i) && i > 0 && i <= p.Options.Count)
                         {
-                            p.Options[i - 1].Votes.Add(null);
+                            p.Voters[message.User] = p.Options[i - 1];
                         }
                         else if (p.Options.Where(x => x.Text == args.Join()).Count() > 0)
                         {
                             if (p.Options.Where(x => x.Text == args.Join()).Count() == 1)
-                                p.Options.Where(x => x.Text == args.Join()).First().Votes.Add(null);
+                                p.Voters[message.User] = p.Options.Where(x => x.Text == args.Join()).First();
                             else throw new BotCommandException("There are multiple options with the same text. Please vote by number instead.");
                         }
                         else throw new BotCommandException("That poll option doesn't exist");
 
-                        if (!p.Voters.Contains(message.User))
+                        if (!p.Voters.ContainsKey(message.User))
                             message.Reply($"<@{message.User.Id}>: Vote for option {args[1]} acknowledged");
                         else
                             message.Reply($"<@{message.User.Id}>: Vote update to option {args[1]} acknowledged");
-                        p.Voters.Add(message.User);
                     }
                     catch (Exception ex)
                     {
@@ -665,7 +666,7 @@ namespace DiscordBot
                     m += po.Anonymous ? $"\n**ONLY VOTES FROM A DIRECT MESSAGE WILL BE COUNTED!** This is **anonymous poll number #{po.Id}.** Use `!anonvote {po.Id} <number|option>`\n*The poll will end in {po.MinutesLeft} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {po.MinutesLeft} minutes unless stopped earlier with `!endpoll`*";
 
                     if (po.TotalVotes > 0)
-                        m += $"\n\n**ALREADY VOTED ({po.Voters.Count})** {(po.Anonymous ? "" : ": " + string.Join(", ", (from u in po.Voters select u.Nickname ?? u.Name)))}";
+                        m += $"\n\n**ALREADY VOTED ({po.Voters.Count})** {(po.Anonymous ? "" : ": " + string.Join(", ", (from u in po.Voters select u.Key.Nickname ?? u.Key.Name)))}";
 
                     message.Reply(m);
                 }
@@ -702,7 +703,7 @@ namespace DiscordBot
                 return;
             }
 
-            foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart()));
+            foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart(), p));
 
             string messageToSend = $"***<@{message.User.Id}> has started {(anonymous ? "an __anonymous__ " : "a ")}poll with the following options:***\n";
             foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";

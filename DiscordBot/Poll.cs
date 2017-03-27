@@ -18,19 +18,9 @@ namespace DiscordBot
         public double MinutesLeft => Math.Round((TimeSpan.FromMinutes(Length) - (DateTime.Now - StartTime)).TotalMinutes, 1);
         public Channel Channel;
         public User Creator;
-        public int TotalVotes
-        {
-            get
-            {
-                int votes = 0;
-                foreach (PollOption o in Options)
-                {
-                    votes += o.Votes.Count;
-                }
-                return votes;
-            }
-        }
-        public List<User> Voters;
+        public int TotalVotes => Voters.Count;
+
+        public Dictionary<User, PollOption> Voters;
         private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
 
         public Poll(Channel channel, User creator, double length, bool anonymous, Message message = null)
@@ -40,7 +30,7 @@ namespace DiscordBot
             Channel = channel;
             Options = new List<PollOption>();
             Creator = creator;
-            Voters = new List<User>();
+            Voters = new Dictionary<User, PollOption>();
             Length = length;
             Anonymous = anonymous;
         }
@@ -116,12 +106,14 @@ namespace DiscordBot
     public class PollOption
     {
         public string Text;
-        public List<User> Votes;
+        private Poll poll;
 
-        public PollOption(string text)
+        public List<User> Votes => (from v in poll.Voters where v.Value == this select v.Key).ToList();
+
+        public PollOption(string text, Poll poll)
         {
             Text = text;
-            Votes = new List<User>();
+            this.poll = poll;
         }
     }
 }
