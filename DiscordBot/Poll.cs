@@ -9,10 +9,12 @@ namespace DiscordBot
 {
     public class Poll
     {
+        public int Id = polls.Count > 0 ? polls.Last().Value.Id + 1 : 1;
         public List<PollOption> Options;
         public DateTime StartTime;
         public double Length;
         public bool Active;
+        public bool Anonymous;
         public Channel Channel;
         public User Creator;
         public int TotalVotes
@@ -22,7 +24,7 @@ namespace DiscordBot
                 int votes = 0;
                 foreach (PollOption o in Options)
                 {
-                    votes += o.Votes;
+                    votes += o.Votes.Count;
                 }
                 return votes;
             }
@@ -30,7 +32,7 @@ namespace DiscordBot
         public List<User> Voters;
         private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
 
-        public Poll(Channel channel, User creator, double length, Message message = null)
+        public Poll(Channel channel, User creator, double length, bool anonymous, Message message = null)
         {
             StartTime = DateTime.Now;
             Active = true;
@@ -39,13 +41,14 @@ namespace DiscordBot
             Creator = creator;
             Voters = new List<User>();
             Length = length;
+            Anonymous = anonymous;
         }
 
-        public static Poll Create(Channel channel, User creator, Message message, double length)
+        public static Poll Create(Channel channel, User creator, Message message, double length, bool anonymous)
         {
             if (polls.ContainsKey(channel.Id)) return null;
 
-            Poll poll = new Poll(channel, creator, length, message);
+            Poll poll = new Poll(channel, creator, length, anonymous, message);
             polls.Add(channel.Id, poll);
             return poll;
         }
@@ -60,12 +63,24 @@ namespace DiscordBot
                     p.Active = false;
                     var winners = p.GetWinners();
                     string messageToSend = "======== POLL RESULTS ========\n";
-                    foreach (PollOption o in winners) messageToSend += $"**{o.Votes} - {o.Text}**\n";
-                    foreach (PollOption o in p.Options) if (!winners.Contains(o)) messageToSend += $"{o.Votes} - {o.Text}\n";
+                    foreach (PollOption o in winners) messageToSend += $"**{o.Text} ({o.Votes.Count} {(o.Votes.Count == 1 ? "vote" : "votes")}){(p.Anonymous ? "**" : $":** {string.Join(", ", (from v in o.Votes select v.Nickname ?? v.Name))}")}\n";
+                    foreach (PollOption o in p.Options) if (!winners.Contains(o)) messageToSend += $"{o.Text} ({o.Votes.Count} votes){(p.Anonymous ? "" : $": {string.Join(", ", (from v in o.Votes select v.Nickname ?? v.Name))}")}\n";
                     messageToSend += $"({p.TotalVotes} {(p.TotalVotes == 1 ? "total vote" : "total votes")})";
                     p.Channel.Reply(messageToSend);
                     polls.Remove(c.Id);
                 }
+            }
+        }
+
+        public static Poll GetPollById(int id)
+        {
+            try
+            {
+                return (from p in polls where p.Value.Id == id select p).First().Value;
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -81,13 +96,13 @@ namespace DiscordBot
 
             foreach (PollOption o in Options)
             {
-                if (o.Votes > winnningAmount)
+                if (o.Votes.Count > winnningAmount)
                 {
                     options.Clear();
                     options.Add(o);
-                    winnningAmount = o.Votes;
+                    winnningAmount = o.Votes.Count;
                 }
-                else if (o.Votes == winnningAmount)
+                else if (o.Votes.Count == winnningAmount)
                 {
                     options.Add(o);
                 }
@@ -100,12 +115,12 @@ namespace DiscordBot
     public class PollOption
     {
         public string Text;
-        public int Votes;
+        public List<User> Votes;
 
         public PollOption(string text)
         {
             Text = text;
-            Votes = 0;
+            Votes = new List<User>();
         }
     }
 }

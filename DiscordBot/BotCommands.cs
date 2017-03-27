@@ -97,73 +97,69 @@ namespace DiscordBot
             });
             AddCommand("!poll", "Starts a poll with the given comma-separated options", "~length (minutes);~<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel, async (message, args) =>
             {
-                if (args.Count == 0)
-                {
-                    Poll po;
-                    if ((po = Poll.GetPoll(message.Channel)) != null)
-                    {
-                        string m = $"***Currently active poll started by <@{po.Creator.Id}> has the following options:***\n";
-                        foreach (PollOption o in po.Options) m += $"{po.Options.IndexOf(o) + 1}: {o.Text}\n";
-                        m += $"\n***Enter `!vote <number | option>` to vote!***\n*The poll will end in {Math.Round((TimeSpan.FromMinutes(po.Length) - (DateTime.Now - po.StartTime)).TotalMinutes, 1)} minutes unless stopped earlier with `!endpoll`*";
-
-                        if (po.TotalVotes > 0)
-                            m += $"\n\n**ALREADY VOTED ({po.Voters.Count}):** {string.Join(", ", (from u in po.Voters select u.Nickname ?? u.Name))}";
-
-                        message.Reply(m);
-                    }
-                    else
-                    {
-                        DiscordBot.LogError(message, "There is no currently active poll in this channel");
-                    }
-                    return;
-                }
-                else if (args.Count < 2)
-                {
-                    DiscordBot.LogError(message, new CommandSyntaxException("!poll"));
-                    return;
-                }
-
-                if (!double.TryParse(args[0], out double minutes) || minutes < 0.01 || minutes > 1440)
-                {
-                    DiscordBot.LogError(message, "Please specify a valid positive integer number of minutes >= 0.01 and <= 1440.");
-                    return;
-                }
-
-                string[] voteOptions = args.Skip(1).Join().Split(',');
-                if (voteOptions.Length < 2)
-                {
-                    DiscordBot.LogError(message, "Polls must have at least two options. Don't force things upon people. It's not nice.");
-                    return;
-                }
-
-                Poll p = Poll.Create(message.Channel, message.User, message, minutes);
-
-                if (p == null)
-                {
-                    message.Reply("There is already a poll in progress");
-                    return;
-                }
-
-                foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart()));
-
-                string messageToSend = $"***<@{message.User.Id}> has started a poll with the following options:***\n";
-                foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
-                messageToSend += $"\n***Enter `!vote <number | option>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
-
-                message.Reply(messageToSend);
-
-                await Task.Delay((int)(minutes * 60000)).ContinueWith(t =>
-                {
-                    if (p.Active)
-                    {
-                        Poll.End(message.Channel);
-                    }
-                });
+                await CreatePoll(message, args, false);
+            });
+            AddCommand("!anonpoll", "Starts an anonymous poll with the given comma-separated options", "~length (minutes);~<option1>,<option2>[,option3][,option4]...", Command.Context.GuildChannel, async (message, args) =>
+            {
+                await CreatePoll(message, args, true);
             });
             AddCommand("!vote", "Votes in the active poll", "option number | option text", Command.Context.GuildChannel, (message, args) =>
             {
-
                 Poll p = Poll.GetPoll(message.Channel);
+                if (!p.Anonymous && p != null && p.Active)
+                {
+                    if (message.User.IsBot)
+                    {
+                        message.Reply($"<@{message.User.Id}>: BOTs can't vote! That is called *voter fraud*.");
+                        return;
+                    }
+
+                    if (p.Voters.Contains(message.User))
+                    {
+                        message.Reply($"<@{message.User.Id}>: You already voted!");
+                        return;
+                    }
+
+                    try
+                    {
+                        if (int.TryParse(args[0], out int i) && i > 0 && i <= p.Options.Count)
+                        {
+                            p.Options[i - 1].Votes.Add(message.User);
+                        }
+                        else if (p.Options.Where(x => x.Text == args.Join()).Count() > 0)
+                        {
+                            if (p.Options.Where(x => x.Text == args.Join()).Count() == 1)
+                                p.Options.Where(x => x.Text == args.Join()).First().Votes.Add(message.User);
+                            else throw new BotCommandException("There are multiple options with the same text. Please vote by number instead.");
+                        }
+                        else throw new BotCommandException("That poll option doesn't exist");
+
+                        message.Reply($"<@{message.User.Id}>: Vote acknowledged");
+                        p.Voters.Add(message.User);
+                    }
+                    catch (Exception ex)
+                    {
+                        DiscordBot.LogError(message, ex);
+                    }
+                }
+                else
+                {
+                    message.Reply($"<@{message.User.Id}>: No poll currently in progress");
+                }
+            });
+            AddCommand("!anonvote", "Votes in the specified **anonymous** poll", "id;option number | option text", Command.Context.DirectMessage, (message, args) =>
+            {
+                Poll p;
+                try
+                {
+                    p = Poll.GetPollById(int.Parse(args[0]));
+                }
+                catch
+                {
+                    DiscordBot.LogError(message, new CommandSyntaxException("!anonvote"));
+                    return;
+                }
+
                 if (p != null && p.Active)
                 {
                     if (message.User.IsBot)
@@ -180,15 +176,14 @@ namespace DiscordBot
 
                     try
                     {
-                        int i;
-                        if (int.TryParse(args[0], out i) && i > 0 && i <= p.Options.Count)
+                        if (int.TryParse(args[1], out int i) && i > 0 && i <= p.Options.Count)
                         {
-                            p.Options[i - 1].Votes++;
+                            p.Options[i - 1].Votes.Add(null);
                         }
                         else if (p.Options.Where(x => x.Text == args.Join()).Count() > 0)
                         {
                             if (p.Options.Where(x => x.Text == args.Join()).Count() == 1)
-                                p.Options.Where(x => x.Text == args.Join()).First().Votes++;
+                                p.Options.Where(x => x.Text == args.Join()).First().Votes.Add(null);
                             else throw new BotCommandException("There are multiple options with the same text. Please vote by number instead.");
                         }
                         else throw new BotCommandException("That poll option doesn't exist");
@@ -203,7 +198,7 @@ namespace DiscordBot
                 }
                 else
                 {
-                    message.Reply($"<@{message.User.Id}>: No poll currently in progress");
+                    message.Reply($"<@{message.User.Id}>: No poll with that id currently in progress");
                 }
             });
             AddCommand("!endpoll", "Ends the currently active poll", "", Command.Context.GuildChannel, (message, args) =>
@@ -536,8 +531,7 @@ namespace DiscordBot
             });
             AddCommand("!byid", "Looks up a Discord message by its ID number", "message ID;~channel mention", Command.Context.All, new Action<Message, List<string>>(async (message, args) =>
             {
-                ulong id;
-                if (args.Count < 1 || (args.Count == 2 && message.MentionedChannels.Count() < 1) || !ulong.TryParse(args[0], out id))
+                if (args.Count < 1 || (args.Count == 2 && message.MentionedChannels.Count() < 1) || !ulong.TryParse(args[0], out ulong id))
                 {
                     DiscordBot.LogError(message, "Please supply a valid Discord message ID and channel combination");
                     return;
@@ -651,6 +645,72 @@ namespace DiscordBot
             });
 
             Commands = Commands.OrderBy(c => c.NamesString).ToList();
+        }
+
+        private static async Task CreatePoll(Message message, List<string> args, bool anonymous)
+        {
+            if (args.Count == 0)
+            {
+                Poll po;
+                if ((po = Poll.GetPoll(message.Channel)) != null)
+                {
+                    string m = $"***Currently active {(anonymous ? "**anonymous **" : "")}poll started by <@{po.Creator.Id}> has the following options:***\n";
+                    foreach (PollOption o in po.Options) m += $"{po.Options.IndexOf(o) + 1}: {o.Text}\n";
+                    m += anonymous ? $"\n**ONLY VOTES FROM A DIRECT MESSAGE WILL BE COUNTED!** This is **anonymous poll number #{po.Id}.** Use `!anonvote {po.Id} <number|option>`\n*The poll will end in {Math.Round((TimeSpan.FromMinutes(po.Length) - (DateTime.Now - po.StartTime)).TotalMinutes, 1)} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {Math.Round((TimeSpan.FromMinutes(po.Length) - (DateTime.Now - po.StartTime)).TotalMinutes, 1)} minutes unless stopped earlier with `!endpoll`*";
+
+                    if (po.TotalVotes > 0)
+                        m += $"\n\n**ALREADY VOTED ({po.Voters.Count})** {(anonymous ? "" : ": " + string.Join(", ", (from u in po.Voters select u.Nickname ?? u.Name)))}";
+
+                    message.Reply(m);
+                }
+                else
+                {
+                    DiscordBot.LogError(message, "There is no currently active poll in this channel");
+                }
+                return;
+            }
+            else if (args.Count < 2)
+            {
+                DiscordBot.LogError(message, new CommandSyntaxException("!poll"));
+                return;
+            }
+
+            if (!double.TryParse(args[0], out double minutes) || minutes < 0.01 || minutes > 1440)
+            {
+                DiscordBot.LogError(message, "Please specify a valid positive number of minutes >= 0.01 and <= 1440.");
+                return;
+            }
+
+            string[] voteOptions = args.Skip(1).Join().Split(',');
+            if (voteOptions.Length < 2)
+            {
+                DiscordBot.LogError(message, "Polls must have at least two options. Don't force things upon people. It's not nice. I mean you could like make the poll have the same option twice, but whatever.");
+                return;
+            }
+
+            Poll p = Poll.Create(message.Channel, message.User, message, minutes, anonymous);
+
+            if (p == null)
+            {
+                message.Reply("There is already a poll in progress");
+                return;
+            }
+
+            foreach (string option in voteOptions) p.Options.Add(new PollOption(option.TrimStart()));
+
+            string messageToSend = $"***<@{message.User.Id}> has started {(anonymous ? "an **anonymous **" : "a ")}poll with the following options:***\n";
+            foreach (PollOption o in p.Options) messageToSend += $"{p.Options.IndexOf(o) + 1}: {o.Text}\n";
+            messageToSend += anonymous ? $"\n**ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!** This is **anonymous poll number #{p.Id}.** Use `!anonvote {p.Id} <number|option>`\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
+
+            message.Reply(messageToSend);
+
+            await Task.Delay((int)(minutes * 60000)).ContinueWith(t =>
+            {
+                if (p.Active)
+                {
+                    Poll.End(message.Channel);
+                }
+            });
         }
     }
 

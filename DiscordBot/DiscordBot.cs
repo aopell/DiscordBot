@@ -241,7 +241,7 @@ namespace DiscordBot
                 {
                     if (message.Text.StartsWithAnyStrict(c.Names))
                     {
-                        if (message.Channel.Server != null)
+                        if (message.Channel.Server != null && "!anon".StartsWithAny(c.Names))
                             LogEvent($"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator.ToString("D4")}: {message.Text}", EventType.MessageReceived);
                         if (message.User.IsBot)
                         {
@@ -344,6 +344,13 @@ namespace DiscordBot
                     await channel.SendMessage(s);
                 }
             }
+        }
+
+        public static bool StartsWithAny(this string s, string[] values)
+        {
+            foreach (string v in values)
+                if (s == v || s.StartsWith(v)) return true;
+            return false;
         }
 
         public static bool StartsWithAnyStrict(this string s, string[] values)
