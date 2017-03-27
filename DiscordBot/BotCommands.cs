@@ -108,16 +108,21 @@ namespace DiscordBot
                 Poll p = Poll.GetPoll(message.Channel);
                 if (!p.Anonymous && p != null && p.Active)
                 {
+                    bool update = false;
                     if (message.User.IsBot)
                     {
                         message.Reply($"<@{message.User.Id}>: BOTs can't vote! That is called *voter fraud*.");
                         return;
                     }
 
-                    if (p.Voters.ContainsKey(message.User) && p.MinutesLeft < 0.5)
+                    if (p.Voters.ContainsKey(message.User))
                     {
-                        message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
-                        return;
+                        update = true;
+                        if (p.MinutesLeft < 0.5)
+                        {
+                            message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
+                            return;
+                        }
                     }
 
                     try
@@ -134,7 +139,7 @@ namespace DiscordBot
                         }
                         else throw new BotCommandException("That poll option doesn't exist");
 
-                        if (!p.Voters.ContainsKey(message.User))
+                        if (!update)
                             message.Reply($"<@{message.User.Id}>: Vote for option {args[0]} acknowledged");
                         else
                             message.Reply($"<@{message.User.Id}>: Vote update to option {args[0]} acknowledged");
@@ -167,16 +172,22 @@ namespace DiscordBot
 
                 if (p != null && p.Active)
                 {
+                    bool update = false;
                     if (message.User.IsBot)
                     {
                         message.Reply($"<@{message.User.Id}>: BOTs can't vote! That is called *voter fraud*.");
                         return;
                     }
 
-                    if (p.Voters.ContainsKey(message.User) && p.MinutesLeft < 0.5)
+
+                    if (p.Voters.ContainsKey(message.User))
                     {
-                        message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
-                        return;
+                        update = true;
+                        if (p.MinutesLeft < 0.5)
+                        {
+                            message.Reply($"<@{message.User.Id}>: Too late to change your vote! Sorry.");
+                            return;
+                        }
                     }
 
                     try
@@ -193,7 +204,7 @@ namespace DiscordBot
                         }
                         else throw new BotCommandException("That poll option doesn't exist");
 
-                        if (!p.Voters.ContainsKey(message.User))
+                        if (!update)
                             message.Reply($"<@{message.User.Id}>: Vote for option {args[1]} acknowledged");
                         else
                             message.Reply($"<@{message.User.Id}>: Vote update to option {args[1]} acknowledged");
