@@ -55,7 +55,7 @@ namespace DiscordBot
                     var winners = p.GetWinners();
                     string messageToSend = "======== POLL RESULTS ========\n";
                     foreach (PollOption o in winners) messageToSend += $"**{o.Text} ({o.Votes.Count} {(o.Votes.Count == 1 ? "vote" : "votes")}){(p.Anonymous ? "**" : $":** {string.Join(", ", (from v in o.Votes select v.Nickname ?? v.Name))}")}\n";
-                    foreach (PollOption o in p.Options.OrderByDescending(x => x.Votes)) if (!winners.Contains(o)) messageToSend += $"{o.Text} ({o.Votes.Count} votes){(p.Anonymous ? "" : $": {string.Join(", ", (from v in o.Votes select v.Nickname ?? v.Name))}")}\n";
+                    foreach (PollOption o in p.Options.OrderByDescending(x => x.Votes.Count)) if (!winners.Contains(o)) messageToSend += $"{o.Text} ({o.Votes.Count} votes){(p.Anonymous ? "" : $": {string.Join(", ", (from v in o.Votes select v.Nickname ?? v.Name))}")}\n";
                     messageToSend += $"({p.TotalVotes} {(p.TotalVotes == 1 ? "total vote" : "total votes")})";
                     p.Channel.Reply(messageToSend);
                     polls.Remove(c.Id);
