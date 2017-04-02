@@ -9,7 +9,7 @@ namespace DiscordBot
 {
     public class Poll
     {
-        public int Id = polls.Count > 0 ? polls.Last().Value.Id + 1 : 1;
+        public byte Id;
         public List<PollOption> Options;
         public DateTime StartTime;
         public double Length;
@@ -22,6 +22,7 @@ namespace DiscordBot
 
         public Dictionary<User, PollOption> Voters;
         private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
+        private static Dictionary<byte, Poll> pollsById = new Dictionary<byte, Poll>();
 
         public Poll(Channel channel, User creator, double length, bool anonymous, Message message = null)
         {
@@ -40,7 +41,17 @@ namespace DiscordBot
             if (polls.ContainsKey(channel.Id)) return null;
 
             Poll poll = new Poll(channel, creator, length, anonymous, message);
+            Random rand = new Random();
+            byte[] id = new byte[1];
+            rand.NextBytes(id);
+            while (pollsById.ContainsKey(id[0]))
+            {
+                rand.NextBytes(id);
+            }
+            poll.Id = id[0];
+
             polls.Add(channel.Id, poll);
+            pollsById.Add(poll.Id, poll);
             return poll;
         }
 

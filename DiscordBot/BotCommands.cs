@@ -168,12 +168,18 @@ namespace DiscordBot
                 }
                 catch
                 {
-                    DiscordBot.LogError(message, new CommandSyntaxException("!anonvote"));
+                    message.Reply($"<@{message.User.Id}>: No poll with that id currently in progress");
                     return;
                 }
 
                 if (p != null && p.Active)
                 {
+                    if (p.Channel.GetUser(message.User.Id) == null)
+                    {
+                        DiscordBot.LogError(message, "That poll doesn't exist");
+                        return;
+                    }
+
                     bool update = false;
                     if (message.User.IsBot)
                     {
