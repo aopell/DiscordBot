@@ -634,6 +634,12 @@ namespace DiscordBot
 
                 message.Reply(name);
             });
+            AddCommand("!cat", "cat.", "", Command.Context.All, (message, args) =>
+               {
+                   var rand = new Random();
+                   char randomHexDigit(int min = 0, int max = 16) => rand.Next(min, max).ToString("X").ToLower()[0];
+                   message.Reply($"http://thecatapi.com/api/images/get.php?id={randomHexDigit(1, 14)}{randomHexDigit()}{randomHexDigit()}");
+               });
 
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
