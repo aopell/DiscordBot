@@ -634,12 +634,38 @@ namespace DiscordBot
 
                 message.Reply(name);
             });
-            AddCommand("!cat", "cat.", "", Command.Context.All, (message, args) =>
-               {
-                   var rand = new Random();
-                   char randomHexDigit(int min = 0, int max = 16) => rand.Next(min, max).ToString("X").ToLower()[0];
-                   message.Reply($"http://thecatapi.com/api/images/get.php?id={randomHexDigit(1, 14)}{randomHexDigit()}{randomHexDigit()}");
-               });
+            AddCommand("!cat", "cat.", "~id (3 lowercase hex digits between 200 and d99)", Command.Context.All, (message, args) =>
+            {
+                string url;
+                var rand = new Random();
+
+                char randomHexDigit(int min = 0, int max = 16) => rand.Next(min, max).ToString("X").ToLower()[0];
+
+                if (args.Count == 1 && args[0].Length != 3)
+                {
+                    DiscordBot.LogError(message, new CommandSyntaxException("!cat"));
+                    return;
+                }
+
+                if (args.Count == 1)
+                {
+                    url = $"http://thecatapi.com/api/images/get.php?id={args[0]}";
+                }
+                else
+                {
+                    url = $"http://thecatapi.com/api/images/get.php?id={randomHexDigit(2, 14)}{randomHexDigit()}{randomHexDigit()}";
+                    while (!string.IsNullOrEmpty(((HttpWebRequest)WebRequest.Create(url)).GetResponse().Headers["Location"]))
+                    {
+                        try
+                        {
+                            url = $"http://thecatapi.com/api/images/get.php?id={randomHexDigit(2, 14)}{randomHexDigit()}{randomHexDigit()}";
+                        }
+                        catch { }
+                    }
+                }
+
+                message.Reply(url);
+            });
 
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
