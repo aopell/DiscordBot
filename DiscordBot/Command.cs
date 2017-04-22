@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DiscordBot
 {
@@ -15,21 +13,9 @@ namespace DiscordBot
         public Context CommandContext;
         public Action<Message, List<string>> Action;
 
-        public int RequiredParameters
-        {
-            get
-            {
-                return Parameters.Where(x => (!x.StartsWith("~"))).Count();
-            }
-        }
+        public int RequiredParameters => Parameters.Count(x => !x.StartsWith("~"));
 
-        public string NamesString
-        {
-            get
-            {
-                return string.Join("|", Names);
-            }
-        }
+        public string NamesString => string.Join("|", Names);
 
         public string Usage
         {

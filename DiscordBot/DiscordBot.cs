@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using System.Net;
-using Newtonsoft.Json.Linq;
 using System.IO;
 using Newtonsoft.Json;
 
@@ -39,16 +37,16 @@ namespace DiscordBot
 
         private static void Client_MessageReceived(object sender, MessageEventArgs e)
         {
+            if (e.Message.MentionedUsers.Any(u => u.Id == 168158669224017922))
+                LogEvent(e.Message.Text);
+
             if (e.Message.IsAuthor)
             {
-                if (e.Channel.Server != null)
-                    LogEvent($"Sent \"{e.Message.Text}\" to {e.Channel.Server.Name.Shorten(15)}#{e.Channel.Name}", EventType.BotAction);
-                else
-                    LogEvent($"DM To @{e.Channel.Users.Where(x => x.Id != Client.CurrentUser.Id).First().Name}#{e.User.Discriminator.ToString("D4")}: \"{e.Message.Text}\"", EventType.BotAction);
+                LogEvent(e.Channel.Server != null ? $"Sent \"{e.Message.Text}\" to {e.Channel.Server.Name.Shorten(15)}#{e.Channel.Name}" : $"DM To @{e.Channel.Users.First(x => x.Id != Client.CurrentUser.Id).Name}#{e.User.Discriminator:D4}: \"{e.Message.Text}\"", EventType.BotAction);
             }
             else if (e.Channel.Server == null)
             {
-                LogEvent($"DM From @{e.User.Name}#{e.User.Discriminator.ToString("D4")}: {e.Message.Text}", EventType.MessageReceived);
+                LogEvent($"DM From @{e.User.Name}#{e.User.Discriminator:D4}: {e.Message.Text}");
             }
             CheckCommands(e.Message);
         }
@@ -68,7 +66,7 @@ namespace DiscordBot
                     LogEvent($"Connnected to Server {s.Name}{(!string.IsNullOrEmpty(s.GetUser(Client.CurrentUser.Id).Nickname) ? $" with nickname {s.GetUser(Client.CurrentUser.Id).Nickname}" : "")}", EventType.Success);
             });
 
-            await (await Client.CreatePrivateChannel(Config.OwnerId)).SendMessage($"{DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]")} Now online!");
+            await (await Client.CreatePrivateChannel(Config.OwnerId)).SendMessage($"{DateTime.Now:[yyyy-MM-dd HH:mm:ss]} Now online!");
 
             BotCommands.Load();
         }
@@ -89,13 +87,13 @@ namespace DiscordBot
         {
             if (e.Before.Name != e.After.Name)
             {
-                string message = $"@{e.Before.Name}#{e.Before.Discriminator.ToString("D4")} is now @{e.After.Name}#{e.After.Discriminator.ToString("D4")}";
+                string message = $"@{e.Before.Name}#{e.Before.Discriminator:D4} is now @{e.After.Name}#{e.After.Discriminator:D4}";
                 if (lastMessage != (lastMessage = message)) LogEvent(message, EventType.UsernameUpdated);
             }
 
             if (e.Before.Status != e.After.Status)
             {
-                string message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} is now {e.After.Status}";
+                string message = $"@{e.After.Name}#{e.After.Discriminator:D4} is now {e.After.Status}";
                 if (lastMessage != (lastMessage = message))
                 {
                     LogEvent(message, EventType.StatusUpdated);
@@ -120,12 +118,12 @@ namespace DiscordBot
             if (e.Before.CurrentGame.GetValueOrDefault(new Game("")).Name != e.After.CurrentGame.GetValueOrDefault(new Game("")).Name)
             {
                 string message = "";
-                string tempMessage = "";
+                string tempMessage;
                 if (e.After.CurrentGame.HasValue && !e.Before.CurrentGame.HasValue)
                 {
                     tempMessage = $"game.start.{e.After.Id}.{e.After.CurrentGame.Value.Name}";
                     if (lastMessage == (lastMessage = tempMessage)) return;
-                    message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} is now playing {e.After.CurrentGame.Value.Name}";
+                    message = $"@{e.After.Name}#{e.After.Discriminator:D4} is now playing {e.After.CurrentGame.Value.Name}";
                     Gamer.GameStarted(e.After);
                 }
                 else if (e.Before.CurrentGame.HasValue && !e.After.CurrentGame.HasValue)
@@ -133,14 +131,14 @@ namespace DiscordBot
                     tempMessage = $"game.stop.{e.After.Id}.{e.Before.CurrentGame.Value.Name}";
                     if (lastMessage == (lastMessage = tempMessage)) return;
                     var time = Gamer.GameStopped(e.After, e.Before.CurrentGame.Value.Name);
-                    message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} is no longer playing {e.Before.CurrentGame.Value.Name} after {Math.Round(time.TotalHours, 2)} hours";
+                    message = $"@{e.After.Name}#{e.After.Discriminator:D4} is no longer playing {e.Before.CurrentGame.Value.Name} after {Math.Round(time.TotalHours, 2)} hours";
                 }
                 else if (e.Before.CurrentGame.HasValue && e.After.CurrentGame.HasValue)
                 {
                     tempMessage = $"game.switch.{e.After.Id}.{e.Before.CurrentGame.Value.Name}.{e.After.CurrentGame.Value.Name}";
                     if (lastMessage == (lastMessage = tempMessage)) return;
                     var time = Gamer.GameStopped(e.After, e.Before.CurrentGame.Value.Name);
-                    message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} switched from playing {e.Before.CurrentGame.Value.Name} to {e.After.CurrentGame.Value.Name}  after {Math.Round(time.TotalHours, 2)} hours";
+                    message = $"@{e.After.Name}#{e.After.Discriminator:D4} switched from playing {e.Before.CurrentGame.Value.Name} to {e.After.CurrentGame.Value.Name}  after {Math.Round(time.TotalHours, 2)} hours";
                     Gamer.GameStarted(e.After);
                 }
 
@@ -149,11 +147,7 @@ namespace DiscordBot
 
             if (e.Before.Nickname != e.After.Nickname)
             {
-                string message = "";
-                if (!string.IsNullOrEmpty(e.After.Nickname))
-                    message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} is now known as {e.After.Nickname} on {e.Server.Name}";
-                else
-                    message = $"@{e.After.Name}#{e.After.Discriminator.ToString("D4")} no longer has a nickname on {e.Server.Name}";
+                string message = !string.IsNullOrEmpty(e.After.Nickname) ? $"@{e.After.Name}#{e.After.Discriminator:D4} is now known as {e.After.Nickname} on {e.Server.Name}" : $"@{e.After.Name}#{e.After.Discriminator:D4} no longer has a nickname on {e.Server.Name}";
 
                 if (lastMessage != (lastMessage = message)) LogEvent(message, EventType.UsernameUpdated);
             }
@@ -170,7 +164,7 @@ namespace DiscordBot
             else if (type == EventType.UsernameUpdated) Console.ForegroundColor = ConsoleColor.Yellow;
             else if (type == EventType.JoinedServer) Console.ForegroundColor = ConsoleColor.Cyan;
             else if (type == EventType.MessageUpdated) Console.ForegroundColor = ConsoleColor.DarkYellow;
-            string logMessage = $"{DateTime.Now.ToString("[HH:mm:ss]")} [{type.ToString()}] {message}";
+            string logMessage = $"{DateTime.Now:[HH:mm:ss]} [{type}] {message}";
             Console.WriteLine(logMessage);
             Console.ForegroundColor = ConsoleColor.Gray;
 
@@ -178,7 +172,7 @@ namespace DiscordBot
             {
                 if (!Directory.Exists(Config.LogDirectoryPath))
                     Directory.CreateDirectory(Config.LogDirectoryPath);
-                File.AppendAllLines($"{Config.LogDirectoryPath}\\{DateTime.Now.ToString("yyyy-MM-dd")}.log", new[] { logMessage });
+                File.AppendAllLines($"{Config.LogDirectoryPath}\\{DateTime.Now:yyyy-MM-dd}.log", new[] { logMessage });
             }
             catch
             {
@@ -242,7 +236,7 @@ namespace DiscordBot
                     if (message.Text.StartsWithAnyStrict(c.Names))
                     {
                         if (message.Channel.Server != null && "!anon".StartsWithAny(c.Names))
-                            LogEvent($"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator.ToString("D4")}: {message.Text}", EventType.MessageReceived);
+                            LogEvent($"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator:D4}: {message.Text}");
                         if (message.User.IsBot)
                         {
                             LogEvent($"Ignored {c.NamesString} command from BOT user {message.User.Name}");
@@ -269,13 +263,7 @@ namespace DiscordBot
             }
         }
 
-        public static Command.Context GetMessageContext(Message message)
-        {
-            if (message.Server == null)
-                return Command.Context.DirectMessage;
-            else
-                return Command.Context.GuildChannel;
-        }
+        public static Command.Context GetMessageContext(Message message) => message.Server == null ? Command.Context.DirectMessage : Command.Context.GuildChannel;
 
         private static string GetSuffix(string text)
         {
@@ -301,7 +289,7 @@ namespace DiscordBot
         public static Action<Message, List<string>> HandleErrors(this Action<Message, List<string>> action)
         {
 
-            return (Message message, List<string> parameters) =>
+            return (message, parameters) =>
             {
                 try
                 {
@@ -364,8 +352,7 @@ namespace DiscordBot
         {
             if (s.Length > maxLength)
             {
-                if (elipses) return $"{s.Substring(0, maxLength - 3).TrimEnd()}...";
-                else return s.Substring(0, maxLength).TrimEnd();
+                return elipses ? $"{s.Substring(0, maxLength - 3).TrimEnd()}..." : s.Substring(0, maxLength).TrimEnd();
             }
             return s;
         }
@@ -373,10 +360,7 @@ namespace DiscordBot
         public static async void DeleteAfterDelay(this Message message, int delay)
         {
             await Task.Delay(delay).ContinueWith(x => message.Delete());
-            if (message.Channel.Server != null)
-                DiscordBot.LogEvent($"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator.ToString("D4")}: Message Deleted", DiscordBot.EventType.BotAction);
-            else
-                DiscordBot.LogEvent($"@{message.User.Name}#{message.User.Discriminator.ToString("D4")}: DM Deleted", DiscordBot.EventType.BotAction);
+            DiscordBot.LogEvent(message.Channel.Server != null ? $"{message.Channel.Server.Name.Shorten(15)}#{message.Channel.Name} - @{message.User.Name}#{message.User.Discriminator:D4}: Message Deleted" : $"@{message.User.Name}#{message.User.Discriminator:D4}: DM Deleted", DiscordBot.EventType.BotAction);
         }
     }
 }

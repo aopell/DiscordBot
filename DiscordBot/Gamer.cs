@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DiscordBot
 {
@@ -45,15 +43,13 @@ namespace DiscordBot
 
         public static void GameStarted(User user)
         {
-            var gamers = LoadGamers();
-            if (gamers == null) gamers = new List<Gamer>();
+            var gamers = LoadGamers() ?? new List<Gamer>();
 
             Gamer person = null;
 
-            foreach (Gamer g in gamers)
+            foreach (Gamer g in gamers.Where(g => g.UserId == user.Id))
             {
-                if (g.UserId == user.Id)
-                    person = g;
+                person = g;
             }
 
             if (person == null)
@@ -61,10 +57,7 @@ namespace DiscordBot
 
             person.StartTracking();
 
-            var duplicates = (from g in gamers where g.UserId == person.UserId select g).ToList();
-
-            for (int i = 0; i < duplicates.Count; i++)
-                gamers.Remove(duplicates[i]);
+            gamers.RemoveAll(g => g.UserId == person.UserId);
 
             gamers.Add(person);
 
@@ -75,8 +68,7 @@ namespace DiscordBot
         {
             if (game == null) return TimeSpan.Zero;
 
-            var gamers = LoadGamers();
-            if (gamers == null) gamers = new List<Gamer>();
+            var gamers = LoadGamers() ?? new List<Gamer>();
 
             Gamer person = null;
 
@@ -95,8 +87,8 @@ namespace DiscordBot
 
             var duplicates = (from g in gamers where g.UserId == person.UserId select g).ToList();
 
-            for (int i = 0; i < duplicates.Count; i++)
-                gamers.Remove(duplicates[i]);
+            foreach (Gamer t in duplicates)
+                gamers.Remove(t);
 
             gamers.Add(person);
 
@@ -131,20 +123,13 @@ namespace DiscordBot
 
         private DiscordGameData GameDataListContains(DateTime date, string game)
         {
-            foreach (var g in GamesPlayed[date])
-                if (g.Game == game)
-                    return g;
-
-            return null;
+            return GamesPlayed[date].FirstOrDefault(g => g.Game == game);
         }
 
         public static Gamer FindById(ulong userId)
         {
             var gamers = LoadGamers();
-            foreach (var g in gamers)
-                if (g.UserId == userId)
-                    return g;
-            return null;
+            return gamers.FirstOrDefault(g => g.UserId == userId);
         }
     }
 }
