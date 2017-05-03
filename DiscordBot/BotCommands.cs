@@ -667,6 +667,42 @@ namespace DiscordBot
                 message.Reply(url);
             });
 
+
+            AddCommand("!dumpsettings", "Dumps the settings file", "", Command.Context.OwnerOnly, (message, args) =>
+            {
+                message.Reply("```json\n" + File.ReadAllText(Config.SettingsPath) + "```");
+            });
+            ;
+            AddCommand("!toggle", "Prevents access to a command until run again", "command", Command.Context.OwnerOnly, (message, args) =>
+            {
+                var result = SettingsManager.GetSetting<Dictionary<ulong, List<string>>>("commandBlacklist");
+                var channels = result.Success ? result.Value : new Dictionary<ulong, List<string>>();
+
+                if (!args[0].StartsWith("!"))
+                    args[0] = '!' + args[0];
+
+                if (channels.ContainsKey(message.Channel.Id))
+                {
+                    if (channels[message.Channel.Id].Contains(args[0]))
+                    {
+                        channels[message.Channel.Id].Remove(args[0]);
+                        message.Reply($"`{args[0]}` re-enabled for this channel");
+                    }
+                    else
+                    {
+                        channels[message.Channel.Id].Add(args[0]);
+                        message.Reply($"`{args[0]}` disabled for this channel");
+                    }
+                }
+                else
+                {
+                    channels.Add(message.Channel.Id, new List<string> { args[0] });
+                    message.Reply($"`{args[0]}` disabled for this channel");
+                }
+
+                SettingsManager.AddSetting("commandBlacklist", channels);
+                SettingsManager.SaveSettings();
+            });
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
                 if (int.TryParse(args[0], out int amount) && amount <= 100)

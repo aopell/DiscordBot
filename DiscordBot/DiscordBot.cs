@@ -201,7 +201,7 @@ namespace DiscordBot
             if (!(ex is BotCommandException) && !(ex is CommandSyntaxException))
             {
                 LogEvent(ex.ToString(), EventType.Error);
-                message.Reply($"```diff\n- ERROR: {ex.Message}\n```");
+                message.Reply($"```diff\n- ERROR: {(message.User.Id == Config.OwnerId ? $"{ex.Message}\n- {ex.StackTrace}" : ex.Message)}\n```");
             }
             else message.Reply($"```diff\n- Command failed: {ex.Message}\n```");
         }
@@ -229,6 +229,9 @@ namespace DiscordBot
 
         public static void CheckCommands(Message message)
         {
+            var checkBlacklist = SettingsManager.GetSetting<Dictionary<ulong, List<string>>>("commandBlacklist");
+            var blacklist = checkBlacklist.Success ? checkBlacklist.Value : null;
+
             foreach (Command c in BotCommands.Commands)
             {
                 try
@@ -241,6 +244,10 @@ namespace DiscordBot
                         {
                             LogEvent($"Ignored {c.NamesString} command from BOT user {message.User.Name}");
                             return;
+                        }
+                        else if (blacklist != null && blacklist.ContainsKey(message.Channel.Id) && blacklist[message.Channel.Id].Intersect(c.Names).Any())
+                        {
+                            LogError(message, "That command is currently disabled for this channel by the bot owner.");
                         }
                         else if (c.CommandContext == Command.Context.OwnerOnly && message.User.Id == Config.OwnerId)
                         {
