@@ -166,6 +166,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="res\shrug.png" />
     <Content Include="simplewords\a.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

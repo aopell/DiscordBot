@@ -703,6 +703,10 @@ namespace DiscordBot
                 SettingsManager.AddSetting("commandBlacklist", channels);
                 SettingsManager.SaveSettings();
             });
+            AddCommand("!shrug", @"¯\_(ツ)_/¯", "", Command.Context.All, async (message, args) =>
+            {
+                await message.Channel.SendFile("res/shrug.png");
+            });
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
                 if (int.TryParse(args[0], out int amount) && amount <= 100)
