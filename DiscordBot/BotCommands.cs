@@ -705,7 +705,8 @@ namespace DiscordBot
             });
             AddCommand("!shrug", @"¯\_(ツ)_/¯", "", Command.Context.All, async (message, args) =>
             {
-                await message.Channel.SendFile("res/shrug.png");
+                await message.Channel.SendMessage("https://cdn.discordapp.com/attachments/199782450098995200/315645495009738752/shrug.png");
+                //await message.Channel.SendFile("res/shrug.png");
             });
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
