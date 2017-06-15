@@ -708,6 +708,10 @@ namespace DiscordBot
                 await message.Channel.SendMessage("https://cdn.discordapp.com/attachments/199782450098995200/315645495009738752/shrug.png");
                 //await message.Channel.SendFile("res/shrug.png");
             });
+            AddCommand("!caeden", ":+1:", "", Command.Context.All, async (message, args) =>
+            {
+                await message.Channel.SendMessage("https://cdn.discordapp.com/attachments/293250411589009419/324046877672734720/17965823_698119007025936_895274269_n.png");
+            });
             AddCommand("!delete", "Deletes the last <number> of messages", "number", Command.Context.DeletePermission, async (message, args) =>
             {
                 if (int.TryParse(args[0], out int amount) && amount <= 100)
