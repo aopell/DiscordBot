@@ -723,6 +723,10 @@ namespace DiscordBot
                 }
                 else DiscordBot.LogError(message, new CommandSyntaxException("!delete"));
             });
+            AddCommand("!totootwo", "Helps Aled with grammar", "", Command.Context.All, (message, args) =>
+            {
+                message.Reply("```\nto: I gave that to you\ntoo: I did that too, I have too much stuff\ntwo: There are two ducks on the lake```");
+            });
 
             Commands = Commands.OrderBy(c => c.NamesString).ToList();
         }
