@@ -32,5 +32,25 @@ namespace DiscordBotNew.CommandLoader
         {
             await m.Channel.SendMessageAsync(text, isTTS, embed, options);
         }
+
+        public static async Task ReplyError(this SocketMessage m, string description, string title = "Error")
+        {
+            await m.Channel.SendMessageAsync(string.Empty, embed: BuildErrorEmbed(description, title));
+        }
+
+        public static async Task ReplyError(this SocketMessage m, Exception error) => await m.ReplyError(error.Message, $"Error - {error.GetType().Name}");
+
+        public static ChannelType GetChannelType(this SocketMessage m)
+        {
+            switch (m.Channel)
+            {
+                case IGroupChannel group:
+                    return ChannelType.Group;
+                case IDMChannel dm:
+                    return ChannelType.DM;
+                default:
+                    return ChannelType.Text;
+            }
+        }
     }
 }

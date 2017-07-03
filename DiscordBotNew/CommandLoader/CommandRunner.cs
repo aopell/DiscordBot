@@ -38,7 +38,13 @@ namespace DiscordBotNew.CommandLoader
 
             if (command == null)
             {
-                await message.Reply("", embed: CommandTools.BuildErrorEmbed($"The command `{prefix}{commandName}` does not exist", "Command Not Found"));
+                await message.ReplyError($"The command `{prefix}{commandName}` does not exist", "Command Not Found");
+                return;
+            }
+
+            if (!(command.GetCustomAttribute<CommandScopeAttribute>()?.ChannelTypes.Contains(message.GetChannelType()) ?? true))
+            {
+                await message.ReplyError($"The command `{prefix}{commandName}` is not valid in the scope {message.GetChannelType()}");
                 return;
             }
 
@@ -47,7 +53,7 @@ namespace DiscordBotNew.CommandLoader
 
             if (args.Length < requiredParameters.Length - 1)
             {
-                await message.Reply("", embed: CommandTools.BuildErrorEmbed($"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info", "Syntax Error"));
+                await message.ReplyError($"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info", "Syntax Error");
                 return;
             }
 
@@ -64,24 +70,30 @@ namespace DiscordBotNew.CommandLoader
                     continue;
                 }
 
-                if (i == parameters.Length - 1 && parameters[i].ParameterType == typeof(string) && parameters[i].GetCustomAttribute<JoinRemainingParametersAttribute>() != null)
+                if (i == parameters.Length - 1 && parameters[i].GetCustomAttribute<JoinRemainingParametersAttribute>() != null)
                 {
-                    values.Add(string.Join(" ", args.Skip(i - 1)));
+                    if (parameters[i].ParameterType == typeof(string))
+                        values.Add(string.Join(" ", args.Skip(i - 1)));
+                    else if (parameters[i].ParameterType == typeof(string[]))
+                        values.Add(args.Skip(i - 1).ToArray());
+                    else
+                        values.Add(null);
                     break;
                 }
 
                 var result = ConvertToType(parameters[i].ParameterType, args[i - 1]);
                 if (result == null)
                 {
-                    await message.Reply("", embed: CommandTools.BuildErrorEmbed($"The value `{args[i - 1]}` of parameter `{parameters[i].Name}` should be type `{parameters[i].ParameterType.Name}`", "Argument Type Error"));
+                    await message.ReplyError($"The value `{args[i - 1]}` of parameter `{parameters[i].Name}` should be type `{parameters[i].ParameterType.Name}`", "Argument Type Error");
                     return;
                 }
 
                 values.Add(result);
             }
 
-            var task = (Task)command.Invoke(null, values.ToArray());
-            await task;
+            /*var task = (Task) */
+            command.Invoke(null, values.ToArray());
+            //await task;
         }
 
         private static object ConvertToType(Type type, string text)
@@ -114,11 +126,11 @@ namespace DiscordBotNew.CommandLoader
                 Color = new Color(33, 150, 243)
             };
 
-            var commands = command == null ? commandMethods : new List<MethodInfo> { GetCommand(command.StartsWith(commandPrefix) ? command.Substring(commandPrefix.Length) : command) };
+            var commands = command == null ? commandMethods.Where(method => method.GetCustomAttribute<CommandScopeAttribute>()?.ChannelTypes.Contains(message.GetChannelType()) ?? true).ToList() : new List<MethodInfo> { GetCommand(command.StartsWith(commandPrefix) ? command.Substring(commandPrefix.Length) : command) };
 
             if (commands[0] == null)
             {
-                await message.Reply("", embed: CommandTools.BuildErrorEmbed($"The requested command {commandPrefix}{command} was not found"));
+                await message.ReplyError($"The requested command {commandPrefix}{command} was not found");
                 return;
             }
 
@@ -131,8 +143,8 @@ namespace DiscordBotNew.CommandLoader
                 title.Append(string.Join(" ", method.GetParameters()
                                                     .Skip(1)
                                                     .Select(param => param.IsOptional
-                                                                     ? $"[{param.ParameterType.Name} {param.Name}]"
-                                                                     : $"<{param.ParameterType.Name} {param.Name}>")));
+                                                                     ? $"[{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}]"
+                                                                     : $"<{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}>")));
                 title.Append("`");
                 builder.AddField(title.ToString(), method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "");
             }

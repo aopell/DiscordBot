@@ -4,11 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Discord.WebSocket;
 
-namespace DiscordBot
+namespace DiscordBotNew
 {
     public class Gamer
     {
+        private const string GameDataPath = SettingsManager.BasePath + "gamedata.json";
+
         public string Username;
         public int Descriminator;
         public ulong UserId;
@@ -28,20 +31,20 @@ namespace DiscordBot
 
         private static void SaveGamers(List<Gamer> gamers)
         {
-            if (!File.Exists(Config.GameDataPath))
-                File.Create(Config.GameDataPath).Close();
-            File.WriteAllText(Config.GameDataPath, JsonConvert.SerializeObject(gamers));
+            if (!File.Exists(GameDataPath))
+                File.Create(GameDataPath).Close();
+            File.WriteAllText(GameDataPath, JsonConvert.SerializeObject(gamers));
         }
 
         private static List<Gamer> LoadGamers()
         {
-            if (!File.Exists(Config.GameDataPath))
-                File.Create(Config.GameDataPath).Close();
+            if (!File.Exists(GameDataPath))
+                File.Create(GameDataPath).Close();
 
-            return JsonConvert.DeserializeObject<List<Gamer>>(File.ReadAllText(Config.GameDataPath));
+            return JsonConvert.DeserializeObject<List<Gamer>>(File.ReadAllText(GameDataPath));
         }
 
-        public static void GameStarted(User user)
+        public static void GameStarted(SocketUser user)
         {
             var gamers = LoadGamers() ?? new List<Gamer>();
 
@@ -53,7 +56,7 @@ namespace DiscordBot
             }
 
             if (person == null)
-                person = new Gamer(user.Name, user.Discriminator, user.Id);
+                person = new Gamer(user.Username, user.DiscriminatorValue, user.Id);
 
             person.StartTracking();
 
@@ -64,7 +67,7 @@ namespace DiscordBot
             SaveGamers(gamers);
         }
 
-        public static TimeSpan GameStopped(User user, string game)
+        public static TimeSpan GameStopped(SocketUser user, string game)
         {
             if (game == null) return TimeSpan.Zero;
 

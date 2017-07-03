@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DiscordBot
+namespace DiscordBotNew
 {
     public class DiscordGameData
     {

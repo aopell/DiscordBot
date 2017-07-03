@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Discord;
 
 namespace DiscordBotNew
 {
@@ -64,7 +65,7 @@ namespace DiscordBotNew
             }
             catch (Exception ex)
             {
-                Program.Log(new Discord.LogMessage(Discord.LogSeverity.Error, nameof(AddSetting), "Error loading or saving settings. Please file a bug report with the following information", ex));
+                Program.Log(new Discord.LogMessage(LogSeverity.Error, nameof(AddSetting), "Error loading or saving settings. Please file a bug report with the following information", ex));
             }
         }
 

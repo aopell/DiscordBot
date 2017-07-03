@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 
 namespace DiscordBotNew.CommandLoader
 {
@@ -34,5 +35,15 @@ namespace DiscordBotNew.CommandLoader
     public class JoinRemainingParametersAttribute : Attribute
     {
 
+    }
+
+    public class CommandScopeAttribute : Attribute
+    {
+        public ChannelType[] ChannelTypes { get; }
+
+        public CommandScopeAttribute(params ChannelType[] channelTypes)
+        {
+            ChannelTypes = channelTypes;
+        }
     }
 }
