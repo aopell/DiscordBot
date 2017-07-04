@@ -57,7 +57,7 @@ namespace DiscordBotNew
             return poll;
         }
 
-        public static async Task End(ISocketMessageChannel c)
+        public static ICommandResult End(ISocketMessageChannel c)
         {
             if (polls.ContainsKey(c.Id))
             {
@@ -80,10 +80,12 @@ namespace DiscordBotNew
                     string messageToSend = winners.Aggregate("", (current, o) => current + $"**{o.Text} ({o.Votes.Count} {(o.Votes.Count == 1 ? "vote" : "votes")}){(p.Anonymous ? "**" : $":** {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
                     messageToSend = p.Options.OrderByDescending(x => x.Votes.Count).Where(o => !winners.Contains(o)).Aggregate(messageToSend, (current, o) => current + $"{o.Text} ({o.Votes.Count} votes){(p.Anonymous ? "" : $": {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
                     builder.Description = messageToSend;
-                    await p.Channel.SendMessageAsync("", embed: builder);
+                    return new SuccessResult("", embed: builder);
                     polls.Remove(c.Id);
                 }
             }
+
+            return new ErrorResult("Poll not found");
         }
 
         public static Poll GetPollById(int id)
@@ -125,33 +127,25 @@ namespace DiscordBotNew
             return options;
         }
 
-        public static async Task CreatePoll(SocketMessage message, double minutes, List<string> args, bool anonymous)
+        public static async Task<ICommandResult> CreatePoll(SocketMessage message, double minutes, List<string> args, bool anonymous)
         {
             if (minutes < 0.01 || minutes > 1440)
             {
-                await message.ReplyError("Please specify a valid positive number of minutes >= 0.01 and <= 1440.");
-                return;
+                return new ErrorResult("Please specify a valid positive number of minutes >= 0.01 and <= 1440.");
             }
 
             Poll p = Create(message.Channel, message.Author, message, minutes, anonymous);
 
             if (p == null)
             {
-                await message.ReplyError($"There is already a{(Poll.GetPoll(message.Channel).Anonymous ? "n anonymous" : "")} poll in progress");
-                return;
+                return new ErrorResult($"There is already a{(Poll.GetPoll(message.Channel).Anonymous ? "n anonymous" : "")} poll in progress");
             }
 
             foreach (string option in args) p.Options.Add(new PollOption(option.TrimStart(), p));
 
             await message.Reply("", embed: p.GetEmbed(message));
 
-            await Task.Delay((int)(minutes * 60000)).ContinueWith(async t =>
-            {
-                if (p.Active)
-                {
-                    await End(message.Channel);
-                }
-            });
+            return await Task.Delay((int)(minutes * 60000)).ContinueWith(t => p.Active ? End(message.Channel) : new SuccessResult());
         }
 
         public Embed GetEmbed(SocketMessage message)

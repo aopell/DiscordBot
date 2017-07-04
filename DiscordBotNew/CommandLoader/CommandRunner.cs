@@ -123,8 +123,31 @@ namespace DiscordBotNew.CommandLoader
         {
             try
             {
-                var task = (Task)command.Invoke(null, parameters);
-                await task;
+                var result = command.Invoke(null, parameters);
+
+                if (result == null) return;
+
+                if (result is Task)
+                {
+                    await (Task)result;
+                    return;
+                }
+
+                ICommandResult commandResult = result as ICommandResult ?? await (Task<ICommandResult>)result;
+
+                switch (commandResult)
+                {
+                    case SuccessResult successResult:
+                        if (successResult.HasContent)
+                            await message.Reply(successResult.Message, successResult.IsTTS, successResult.Embed, successResult.Options);
+                        break;
+                    case ErrorResult errorResult:
+                        await message.ReplyError(errorResult.Message, errorResult.Title);
+                        break;
+                    default:
+                        await message.Reply(commandResult.Message);
+                        break;
+                }
             }
             catch (Exception ex)
             {

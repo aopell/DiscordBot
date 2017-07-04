@@ -10,7 +10,7 @@ namespace DiscordBotNew.CommandLoader
 {
     public static class CommandTools
     {
-        public static Embed BuildErrorEmbed(string description, string title = "Error")
+        private static Embed BuildErrorEmbed(string description, string title = "Error")
         {
             var embed = new EmbedBuilder
             {
@@ -26,7 +26,7 @@ namespace DiscordBotNew.CommandLoader
             return embed;
         }
 
-        public static Embed BuildErrorEmbed(Exception error) => BuildErrorEmbed(error.Message, $"Error - {error.GetType().Name}");
+        private static Embed BuildErrorEmbed(Exception error) => BuildErrorEmbed(error.Message, $"Error - {error.GetType().Name}");
 
         public static async Task Reply(this SocketMessage m, string text, bool isTTS = false, Embed embed = null, RequestOptions options = null)
         {
@@ -46,9 +46,9 @@ namespace DiscordBotNew.CommandLoader
         {
             switch (m.Channel)
             {
-                case IGroupChannel group:
+                case IGroupChannel _:
                     return ChannelType.Group;
-                case IDMChannel dm:
+                case IDMChannel _:
                     return ChannelType.DM;
                 default:
                     return ChannelType.Text;
@@ -59,9 +59,9 @@ namespace DiscordBotNew.CommandLoader
         {
             switch (m)
             {
-                case IGroupChannel group:
+                case IGroupChannel _:
                     return ChannelType.Group;
-                case IDMChannel dm:
+                case IDMChannel _:
                     return ChannelType.DM;
                 default:
                     return ChannelType.Text;

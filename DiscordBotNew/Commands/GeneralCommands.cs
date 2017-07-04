@@ -15,19 +15,13 @@ namespace DiscordBotNew.Commands
         private static Random random = new Random();
 
         [Command("hello", "test"), HelpText("Says hi")]
-        public static async Task Hello(SocketMessage message)
-        {
-            await message.Reply("Hello there! :hand_splayed:");
-        }
+        public static ICommandResult Hello(SocketMessage message) => new SuccessResult("Hello there! :hand_splayed:");
 
         [Command("echo", "say"), HelpText("Repeats the provided text back to you")]
-        public static async Task Echo(SocketMessage message, [JoinRemainingParameters] string text)
-        {
-            await message.Reply(text);
-        }
+        public static ICommandResult Echo(SocketMessage message, [JoinRemainingParameters] string text) => new SuccessResult(text);
 
         [Command("8ball"), HelpText("It knows your future")]
-        public static async Task Magic8Ball(SocketMessage message, [HelpText("yes or no question"), JoinRemainingParameters] string question)
+        public static ICommandResult Magic8Ball(SocketMessage message, [HelpText("yes or no question"), JoinRemainingParameters] string question)
         {
             string[] responses = {
                 "It is certain",
@@ -52,11 +46,11 @@ namespace DiscordBotNew.Commands
                 "Very doubtful"
             };
 
-            await message.Reply($"<@{message.Author.Id}>: ***{question}***\n" + responses[random.Next(responses.Length)]);
+            return new SuccessResult($"<@{message.Author.Id}>: ***{question}***\n" + responses[random.Next(responses.Length)]);
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
-        public static async Task SetPrefix(SocketMessage message, [JoinRemainingParameters] string prefix)
+        public static ICommandResult SetPrefix(SocketMessage message, [JoinRemainingParameters] string prefix)
         {
             bool server = false;
             ulong id;
@@ -94,11 +88,11 @@ namespace DiscordBotNew.Commands
 
             SettingsManager.SaveSettings();
 
-            await message.Reply($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}");
+            return new SuccessResult($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}");
         }
 
         [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number"), CommandScope(ChannelType.Text)]
-        public static async Task Quote(SocketMessage message, ulong id, [HelpText("channel mention")] string channel = null)
+        public static async Task<ICommandResult> Quote(SocketMessage message, ulong id, [HelpText("channel mention")] string channel = null)
         {
             IMessage msg;
             if (message.MentionedChannels.Count != 0)
@@ -110,7 +104,9 @@ namespace DiscordBotNew.Commands
                 msg = await message.Channel.GetMessageAsync(id);
             }
 
-            StringBuilder reply = new StringBuilder();
+            if (msg == null) return new ErrorResult("Message not found");
+
+            var reply = new StringBuilder();
             reply.Append($"Message sent by {msg.Author.Username}#{msg.Author.Discriminator} at {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(msg.Timestamp, "Pacific Standard Time")} PT:\n");
 
             if (!string.IsNullOrWhiteSpace(msg.Content))
@@ -120,19 +116,17 @@ namespace DiscordBotNew.Commands
                 reply.Append($"Attachments:\n{string.Join("\n", msg.Attachments.Select(att => att.Url))}");
 
             await message.Reply(reply.ToString());
-            //foreach (IAttachment attachment in msg.Attachments)
-            //{
-            //    await message.Channel.SendFileAsync(await new HttpClient().GetStreamAsync(attachment.Url), attachment.Filename);
-            //}
 
             foreach (Embed embed in msg.Embeds.OfType<Embed>())
             {
                 await message.Reply("", embed: embed);
             }
+
+            return new SuccessResult();
         }
 
         [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
-        public static async Task Countdown(SocketMessage message, string name, [JoinRemainingParameters] DateTime? date = null)
+        public static ICommandResult Countdown(SocketMessage message, string name, [JoinRemainingParameters] DateTime? date = null)
         {
             var countdowns = SettingsManager.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
@@ -155,8 +149,7 @@ namespace DiscordBotNew.Commands
 
             if (!countdowns.ContainsKey(name))
             {
-                await message.ReplyError($"No countdown with the name {name} was found. Try creating it.");
-                return;
+                return new ErrorResult($"No countdown with the name {name} was found. Try creating it.");
             }
 
             TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
@@ -168,7 +161,7 @@ namespace DiscordBotNew.Commands
             response.Append($"{difference.Seconds} seconds ");
             response.Append($"until {name}");
 
-            await message.Reply(response.ToString());
+            return new SuccessResult(response.ToString());
         }
     }
 }

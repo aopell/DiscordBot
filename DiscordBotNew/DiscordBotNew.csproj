@@ -144,6 +144,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandLoader\ErrorResult.cs" />
+    <Compile Include="CommandLoader\ICommandResult.cs" />
+    <Compile Include="CommandLoader\SuccessResult.cs" />
     <Compile Include="CommandLoader\CommandTools.cs" />
     <Compile Include="Commands\GeneralCommands.cs" />
     <Compile Include="CommandLoader\CommandAttributes.cs" />
