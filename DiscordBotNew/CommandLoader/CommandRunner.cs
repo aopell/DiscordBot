@@ -108,9 +108,15 @@ namespace DiscordBotNew.CommandLoader
                 values.Add(result);
             }
 
+            RunCommand(message, command, values.ToArray());
+        }
+
+        private static async void RunCommand(SocketMessage message, MethodInfo command, object[] parameters)
+        {
             try
             {
-                command.Invoke(null, values.ToArray());
+                var task = (Task)command.Invoke(null, parameters);
+                await task;
             }
             catch (Exception ex)
             {

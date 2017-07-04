@@ -14,7 +14,7 @@ namespace DiscordBotNew.Commands
     public static class ManagementCommands
     {
         [Command("username"), HelpText("Changes the bot's username"), Permissions(ownerOnly: true)]
-        public static async void ChangeUsername(SocketMessage message, [JoinRemainingParameters] string username)
+        public static async Task ChangeUsername(SocketMessage message, [JoinRemainingParameters] string username)
         {
             if (username.Length > 32)
             {
@@ -27,7 +27,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("avatar"), HelpText("Changes the bot's avatar image"), Permissions(ownerOnly: true)]
-        public static async void ChangeAvatar(SocketMessage message, [JoinRemainingParameters] string url)
+        public static async Task ChangeAvatar(SocketMessage message, [JoinRemainingParameters] string url)
         {
             try
             {
@@ -41,7 +41,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("delete"), HelpText("Deletes a specified number of messages (up to 99)"), Permissions(channelPermissions: new[] { ChannelPermission.ManageMessages })]
-        public static async void Delete(SocketMessage message, byte number)
+        public static async Task Delete(SocketMessage message, byte number)
         {
             if (number >= 100)
             {

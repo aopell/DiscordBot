@@ -13,8 +13,7 @@ namespace DiscordBotNew
     {
         public static DiscordSocketClient Client;
 
-        public static void Main(string[] args)
-            => new DiscordBot().MainAsync().GetAwaiter().GetResult();
+        public static void Main(string[] args) => new DiscordBot().MainAsync().GetAwaiter().GetResult();
 
         public async Task MainAsync()
         {
@@ -23,6 +22,7 @@ namespace DiscordBotNew
 
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
+            Client.Ready += Client_Ready;
 
             if (!SettingsManager.GetSetting("token", out string token)) throw new KeyNotFoundException("Token not found in settings file");
             await Client.LoginAsync(TokenType.Bot, token);
@@ -30,6 +30,12 @@ namespace DiscordBotNew
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
+        }
+
+        private static async Task Client_Ready()
+        {
+            if (SettingsManager.GetSetting("botOwner", out ulong id))
+                await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
         }
 
         private async Task Client_MessageReceived(SocketMessage arg)

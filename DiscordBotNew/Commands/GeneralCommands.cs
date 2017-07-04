@@ -15,19 +15,19 @@ namespace DiscordBotNew.Commands
         private static Random random = new Random();
 
         [Command("hello", "test"), HelpText("Says hi")]
-        public static async void Hello(SocketMessage message)
+        public static async Task Hello(SocketMessage message)
         {
             await message.Reply("Hello there! :hand_splayed:");
         }
 
         [Command("echo", "say"), HelpText("Repeats the provided text back to you")]
-        public static async void Echo(SocketMessage message, [JoinRemainingParameters] string text)
+        public static async Task Echo(SocketMessage message, [JoinRemainingParameters] string text)
         {
             await message.Reply(text);
         }
 
         [Command("8ball"), HelpText("It knows your future")]
-        public static async void Magic8Ball(SocketMessage message, [HelpText("yes or no question"), JoinRemainingParameters] string question)
+        public static async Task Magic8Ball(SocketMessage message, [HelpText("yes or no question"), JoinRemainingParameters] string question)
         {
             string[] responses = {
                 "It is certain",
@@ -56,7 +56,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
-        public static async void SetPrefix(SocketMessage message, [JoinRemainingParameters] string prefix)
+        public static async Task SetPrefix(SocketMessage message, [JoinRemainingParameters] string prefix)
         {
             bool server = false;
             ulong id;
@@ -98,7 +98,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number"), CommandScope(ChannelType.Text)]
-        public static async void Quote(SocketMessage message, ulong id, [HelpText("channel mention")] string channel = null)
+        public static async Task Quote(SocketMessage message, ulong id, [HelpText("channel mention")] string channel = null)
         {
             IMessage msg;
             if (message.MentionedChannels.Count != 0)
