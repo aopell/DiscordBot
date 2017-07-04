@@ -11,18 +11,18 @@ namespace DiscordBotNew
 {
     public class Poll
     {
-        public byte Id;
-        public List<PollOption> Options;
-        public DateTime StartTime;
-        public double Length;
-        public bool Active;
-        public bool Anonymous;
+        public byte Id { get; private set; }
+        public List<PollOption> Options { get; }
+        public DateTime StartTime { get; }
+        public double Length { get; }
+        public bool Active { get; private set; }
+        public bool Anonymous { get; }
         public double MinutesLeft => Math.Round((TimeSpan.FromMinutes(Length) - (DateTime.Now - StartTime)).TotalMinutes, 1);
-        public ISocketMessageChannel Channel;
-        public SocketUser Creator;
+        public ISocketMessageChannel Channel { get; }
+        public SocketUser Creator { get; }
         public int TotalVotes => Voters.Count;
 
-        public Dictionary<SocketUser, PollOption> Voters;
+        public Dictionary<SocketUser, PollOption> Voters { get; }
         private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
         private static Dictionary<byte, Poll> pollsById = new Dictionary<byte, Poll>();
 
@@ -57,19 +57,30 @@ namespace DiscordBotNew
             return poll;
         }
 
-        public static void End(ISocketMessageChannel c)
+        public static async Task End(ISocketMessageChannel c)
         {
             if (polls.ContainsKey(c.Id))
             {
-                var p = polls[c.Id];
+                Poll p = polls[c.Id];
                 if (p.Active)
                 {
                     p.Active = false;
+
+                    var builder = new EmbedBuilder
+                    {
+                        Title = "Poll Results",
+                        Color = new Color(33, 150, 243),
+                        Footer = new EmbedFooterBuilder
+                        {
+                            Text = $"{p.TotalVotes} vote{(p.TotalVotes == 1 ? "" : "s")}"
+                        }
+                    };
+
                     var winners = p.GetWinners();
-                    string messageToSend = winners.Aggregate("======== POLL RESULTS ========\n", (current, o) => current + $"**{o.Text} ({o.Votes.Count} {(o.Votes.Count == 1 ? "vote" : "votes")}){(p.Anonymous ? "**" : $":** {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
+                    string messageToSend = winners.Aggregate("", (current, o) => current + $"**{o.Text} ({o.Votes.Count} {(o.Votes.Count == 1 ? "vote" : "votes")}){(p.Anonymous ? "**" : $":** {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
                     messageToSend = p.Options.OrderByDescending(x => x.Votes.Count).Where(o => !winners.Contains(o)).Aggregate(messageToSend, (current, o) => current + $"{o.Text} ({o.Votes.Count} votes){(p.Anonymous ? "" : $": {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
-                    messageToSend += $"({p.TotalVotes} {(p.TotalVotes == 1 ? "total vote" : "total votes")})";
-                    p.Channel.SendMessageAsync(messageToSend);
+                    builder.Description = messageToSend;
+                    await p.Channel.SendMessageAsync("", embed: builder);
                     polls.Remove(c.Id);
                 }
             }
@@ -116,27 +127,6 @@ namespace DiscordBotNew
 
         public static async Task CreatePoll(SocketMessage message, double minutes, List<string> args, bool anonymous)
         {
-            if (args.Count == 0)
-            {
-                Poll po;
-                if ((po = GetPoll(message.Channel)) != null)
-                {
-                    string m = $"***Currently active {(po.Anonymous ? "**anonymous **" : "")}poll started by <@{po.Creator.Id}> has the following options:***\n";
-                    m = po.Options.Aggregate(m, (current, o) => current + $"{po.Options.IndexOf(o) + 1}: {o.Text}\n");
-                    m += po.Anonymous ? $"\n**ONLY VOTES FROM A DIRECT MESSAGE WILL BE COUNTED!** This is **anonymous poll number #{po.Id}.** Use `!anonvote {po.Id} <number|option>`\n*The poll will end in {po.MinutesLeft} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {po.MinutesLeft} minutes unless stopped earlier with `!endpoll`*";
-
-                    if (po.TotalVotes > 0)
-                        m += $"\n\n**ALREADY VOTED ({po.Voters.Count})** {(po.Anonymous ? "" : ": " + string.Join(", ", (from u in po.Voters select (u.Key as IGuildUser)?.Nickname ?? u.Key.Username)))}";
-
-                    await message.Reply(m);
-                }
-                else
-                {
-                    await message.ReplyError("There is no currently active poll in this channel");
-                }
-                return;
-            }
-
             if (minutes < 0.01 || minutes > 1440)
             {
                 await message.ReplyError("Please specify a valid positive number of minutes >= 0.01 and <= 1440.");
@@ -153,26 +143,52 @@ namespace DiscordBotNew
 
             foreach (string option in args) p.Options.Add(new PollOption(option.TrimStart(), p));
 
-            string messageToSend = $"***<@{message.Author.Id}> has started {(anonymous ? "an __anonymous__ " : "a ")}poll with the following options:***\n";
-            messageToSend = p.Options.Aggregate(messageToSend, (current, o) => current + $"{p.Options.IndexOf(o) + 1}: {o.Text}\n");
-            messageToSend += anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__** This is **anonymous poll number #{p.Id}.**\nUse `!anonvote {p.Id} <number|option>` in a direct message to me to vote\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*" : $"\n***Enter `!vote <number|option>` to vote!***\n*The poll will end in {minutes} minutes unless stopped earlier with `!endpoll`*";
+            await message.Reply("", embed: p.GetEmbed(message));
 
-            await message.Reply(messageToSend);
-
-            await Task.Delay((int)(minutes * 60000)).ContinueWith(t =>
+            await Task.Delay((int)(minutes * 60000)).ContinueWith(async t =>
             {
                 if (p.Active)
                 {
-                    End(message.Channel);
+                    await End(message.Channel);
                 }
             });
+        }
+
+        public Embed GetEmbed(SocketMessage message)
+        {
+            var builer = new EmbedBuilder
+            {
+                Title = $"Poll by {Creator.NicknameOrUsername()}",
+                Color = new Color(76, 175, 80),
+                Description = $"Vote using `{CommandTools.GetCommandPrefix(message.Channel)}{(Anonymous ? $"anonvote {Id}" : "vote")} <option number|option text>`{(Anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__**\nThis is **anonymous poll number #{Id}.**" : "")}",
+                Footer = new EmbedFooterBuilder
+                {
+                    Text = $"The poll will end in {MinutesLeft} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(message.Channel)}endpoll'"
+                }
+            };
+
+            string url = message.Author.GetAvatarUrl();
+            if (!string.IsNullOrWhiteSpace(url))
+                builer.ThumbnailUrl = url;
+
+            for (int i = 0; i < Options.Count; i++)
+            {
+                builer.AddInlineField((i + 1).ToString(), Options[i].Text);
+            }
+
+            if (TotalVotes > 0)
+            {
+                builer.AddField("Already Voted", string.Join(", ", Voters.Select(voter => voter.Key.NicknameOrUsername())));
+            }
+
+            return builer;
         }
     }
 
     public class PollOption
     {
-        public string Text;
-        private Poll poll;
+        public string Text { get; }
+        private readonly Poll poll;
 
         public List<SocketUser> Votes => (from v in poll.Voters where v.Value == this select v.Key).ToList();
 

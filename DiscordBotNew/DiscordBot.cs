@@ -9,22 +9,24 @@ using DiscordBotNew.CommandLoader;
 
 namespace DiscordBotNew
 {
-    class Program
+    public class DiscordBot
     {
+        public static DiscordSocketClient Client;
+
         public static void Main(string[] args)
-            => new Program().MainAsync().GetAwaiter().GetResult();
+            => new DiscordBot().MainAsync().GetAwaiter().GetResult();
 
         public async Task MainAsync()
         {
             CommandRunner.LoadCommands();
-            var client = new DiscordSocketClient();
+            Client = new DiscordSocketClient();
 
-            client.Log += Log;
-            client.MessageReceived += Client_MessageReceived;
+            Client.Log += Log;
+            Client.MessageReceived += Client_MessageReceived;
 
             if (!SettingsManager.GetSetting("token", out string token)) throw new KeyNotFoundException("Token not found in settings file");
-            await client.LoginAsync(TokenType.Bot, token);
-            await client.StartAsync();
+            await Client.LoginAsync(TokenType.Bot, token);
+            await Client.StartAsync();
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
@@ -32,8 +34,7 @@ namespace DiscordBotNew
 
         private async Task Client_MessageReceived(SocketMessage arg)
         {
-            SettingsManager.GetSetting("commandPrefix", out string commandPrefix);
-            commandPrefix = commandPrefix ?? "!";
+            string commandPrefix = CommandTools.GetCommandPrefix(arg.Channel);
 
             if (arg.Content.Trim().StartsWith(commandPrefix))
             {

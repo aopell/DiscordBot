@@ -15,7 +15,7 @@ namespace DiscordBotNew.CommandLoader
         private static List<MethodInfo> commandMethods;
         public static void LoadCommands()
         {
-            commandMethods = typeof(Program).Assembly
+            commandMethods = typeof(DiscordBot).Assembly
                                             .GetTypes()
                                             .Where(type => type.IsAbstract && type.IsSealed) // Static types only
                                             .SelectMany(type => type.GetMethods())
@@ -23,7 +23,14 @@ namespace DiscordBotNew.CommandLoader
                                             .ToList();
         }
 
-        private static MethodInfo GetCommand(string name) => commandMethods.FirstOrDefault(method => method.GetCustomAttribute<CommandAttribute>().Names.Contains(name.ToLower()));
+        private static MethodInfo GetCommand(string name, int parameters) => commandMethods.Where(method => method.GetCustomAttribute<CommandAttribute>()
+                                                                                           .Names.Contains(name.ToLower()))
+                                                                                                 .OrderByDescending(method => method.GetParameters().Count(param => !param.IsOptional))
+                                                                                                 .FirstOrDefault(method => method.GetParameters()
+                                                                                                                                .Count(param => !param.IsOptional) - 1 <= parameters);
+        private static IEnumerable<MethodInfo> GetCommands(string name) => commandMethods.Where(method => method.GetCustomAttribute<CommandAttribute>()
+                                                                                                                .Names.Contains(name.ToLower()))
+                                                                                                                .OrderBy(method => method.GetParameters().Count(param => !param.IsOptional));
 
         public static async Task Run(SocketMessage message, string prefix)
         {
@@ -33,8 +40,11 @@ namespace DiscordBotNew.CommandLoader
                         .Cast<Match>()
                         .Select(m => m.Value)
                         .Where(text => !string.IsNullOrWhiteSpace(text))
+                        .Select(text => text.StartsWith("\"") && text.EndsWith("\"") ? text.Substring(1, text.Length - 2) : text)
                         .ToArray();
-            MethodInfo command = GetCommand(commandName);
+            MethodInfo command = GetCommand(commandName, args.Length);
+
+            await DiscordBot.Log(new LogMessage(LogSeverity.Info, "Command", $"@{message.Author.Username}#{message.Author.Discriminator} in {(message.Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{message.Channel.Name}: [{commandName}] {message.Content}"));
 
             if (command == null)
             {
@@ -44,7 +54,14 @@ namespace DiscordBotNew.CommandLoader
 
             if (!(command.GetCustomAttribute<CommandScopeAttribute>()?.ChannelTypes.Contains(message.GetChannelType()) ?? true))
             {
-                await message.ReplyError($"The command `{prefix}{commandName}` is not valid in the scope {message.GetChannelType()}");
+                await message.ReplyError($"The command `{prefix}{commandName}` is not valid in the scope {message.GetChannelType()}", "Scope Error");
+                return;
+            }
+
+            string permissionError = command.GetCustomAttribute<PermissionsAttribute>()?.GetPermissionError(message);
+            if (permissionError != null)
+            {
+                await message.ReplyError(permissionError, "Permission Error");
                 return;
             }
 
@@ -91,9 +108,14 @@ namespace DiscordBotNew.CommandLoader
                 values.Add(result);
             }
 
-            /*var task = (Task) */
-            command.Invoke(null, values.ToArray());
-            //await task;
+            try
+            {
+                command.Invoke(null, values.ToArray());
+            }
+            catch (Exception ex)
+            {
+                await message.ReplyError(ex);
+            }
         }
 
         private static object ConvertToType(Type type, string text)
@@ -117,8 +139,7 @@ namespace DiscordBotNew.CommandLoader
         [Command("help", "man"), HelpText("Gets help text for all commands or a specific command")]
         public static async Task Help(SocketMessage message, string command = null)
         {
-            SettingsManager.GetSetting("commandPrefix", out string commandPrefix);
-            commandPrefix = commandPrefix ?? "!";
+            string commandPrefix = CommandTools.GetCommandPrefix(message.Channel);
 
             var builder = new EmbedBuilder
             {
@@ -126,7 +147,16 @@ namespace DiscordBotNew.CommandLoader
                 Color = new Color(33, 150, 243)
             };
 
-            var commands = command == null ? commandMethods.Where(method => method.GetCustomAttribute<CommandScopeAttribute>()?.ChannelTypes.Contains(message.GetChannelType()) ?? true).ToList() : new List<MethodInfo> { GetCommand(command.StartsWith(commandPrefix) ? command.Substring(commandPrefix.Length) : command) };
+            var commands = command == null
+                           ? commandMethods.Where(method => method.GetCustomAttribute<CommandScopeAttribute>()
+                                                                  ?.ChannelTypes.Contains(message.GetChannelType())
+                                                                  ?? true)
+                                           .Where(method => method.GetCustomAttribute<PermissionsAttribute>()?.GetPermissionError(message) == null)
+                                           .ToList()
+                           : GetCommands(command.StartsWith(commandPrefix)
+                           ? command.Substring(commandPrefix.Length)
+                           : command)
+                           .ToList();
 
             if (commands[0] == null)
             {
@@ -134,7 +164,7 @@ namespace DiscordBotNew.CommandLoader
                 return;
             }
 
-            foreach (var method in commands)
+            foreach (MethodInfo method in commands)
             {
                 var title = new StringBuilder();
                 title.Append("`");
@@ -143,8 +173,8 @@ namespace DiscordBotNew.CommandLoader
                 title.Append(string.Join(" ", method.GetParameters()
                                                     .Skip(1)
                                                     .Select(param => param.IsOptional
-                                                                     ? $"[{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}]"
-                                                                     : $"<{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}>")));
+                                                                     ? $"[{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}]"
+                                                                     : $"<{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}>")));
                 title.Append("`");
                 builder.AddField(title.ToString(), method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "");
             }

@@ -130,14 +130,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLoader\CommandTools.cs" />
-    <Compile Include="Commands\BotCommands.cs" />
+    <Compile Include="Commands\GeneralCommands.cs" />
     <Compile Include="CommandLoader\CommandAttributes.cs" />
     <Compile Include="CommandLoader\CommandRunner.cs" />
     <Compile Include="Commands\DiscordGameData.cs" />
     <Compile Include="Commands\Gamer.cs" />
+    <Compile Include="Commands\ManagementCommands.cs" />
     <Compile Include="Commands\Poll.cs" />
     <Compile Include="Commands\PollCommands.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="DiscordBot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SettingsManager.cs" />
   </ItemGroup>
