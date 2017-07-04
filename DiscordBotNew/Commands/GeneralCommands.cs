@@ -130,5 +130,45 @@ namespace DiscordBotNew.Commands
                 await message.Reply("", embed: embed);
             }
         }
+
+        [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
+        public static async Task Countdown(SocketMessage message, string name, [JoinRemainingParameters] DateTime? date = null)
+        {
+            var countdowns = SettingsManager.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+
+            if (date != null)
+            {
+                var pacificTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time").Offset);
+
+                if (countdowns.ContainsKey(name))
+                {
+                    countdowns[name] = pacificTime;
+                }
+                else
+                {
+                    countdowns.Add(name, pacificTime);
+                }
+
+                SettingsManager.AddSetting("countdowns", countdowns);
+                SettingsManager.SaveSettings();
+            }
+
+            if (!countdowns.ContainsKey(name))
+            {
+                await message.ReplyError($"No countdown with the name {name} was found. Try creating it.");
+                return;
+            }
+
+            TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
+
+            var response = new StringBuilder();
+            response.Append(difference.Days != 0 ? $"{difference.Days} days " : "");
+            response.Append($"{difference.Hours} hours ");
+            response.Append($"{difference.Minutes} minutes ");
+            response.Append($"{difference.Seconds} seconds ");
+            response.Append($"until {name}");
+
+            await message.Reply(response.ToString());
+        }
     }
 }

@@ -94,14 +94,22 @@ namespace DiscordBotNew.CommandLoader
                     else if (parameters[i].ParameterType == typeof(string[]))
                         values.Add(args.Skip(i - 1).ToArray());
                     else
-                        values.Add(null);
+                    {
+                        object converted = ConvertToType(parameters[i].ParameterType, string.Join(" ", args.Skip(i - 1)));
+                        if (converted == null)
+                        {
+                            await message.ReplyError($"The value `{string.Join(" ", args.Skip(i - 1))}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`", "Argument Type Error");
+                            return;
+                        }
+                        values.Add(converted);
+                    }
                     break;
                 }
 
                 var result = ConvertToType(parameters[i].ParameterType, args[i - 1]);
                 if (result == null)
                 {
-                    await message.ReplyError($"The value `{args[i - 1]}` of parameter `{parameters[i].Name}` should be type `{parameters[i].ParameterType.Name}`", "Argument Type Error");
+                    await message.ReplyError($"The value `{args[i - 1]}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`", "Argument Type Error");
                     return;
                 }
 
@@ -132,6 +140,11 @@ namespace DiscordBotNew.CommandLoader
                     return Enum.Parse(type, text);
                 if (type == typeof(string))
                     return text;
+                if (Nullable.GetUnderlyingType(type) != null)
+                {
+                    MethodInfo parse = Nullable.GetUnderlyingType(type).GetMethod("Parse", new[] { typeof(string) });
+                    return parse?.Invoke(null, new object[] { text });
+                }
 
                 MethodInfo parseMethod = type.GetMethod("Parse", new[] { typeof(string) });
                 return parseMethod?.Invoke(null, new object[] { text });
