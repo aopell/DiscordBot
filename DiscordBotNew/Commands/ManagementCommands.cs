@@ -48,7 +48,20 @@ namespace DiscordBotNew.Commands
                 await message.ReplyError("The maximum number of messages to delete is 99 (plus the command message)");
                 return;
             }
-            await message.Channel.DeleteMessagesAsync(await message.Channel.GetMessagesAsync(number + 1).Flatten());
+
+            var toDelete = (await message.Channel.GetMessagesAsync(number + 1).Flatten()).ToArray();
+
+            var bulkDelete = toDelete.Where(msg => msg.Timestamp + TimeSpan.FromDays(14) > DateTimeOffset.Now);
+            var remaining = toDelete.Except(bulkDelete);
+
+            await message.Channel.DeleteMessagesAsync(bulkDelete);
+            foreach (IMessage msg in remaining)
+            {
+                await msg.DeleteAsync();
+            }
         }
+
+        [Command("kill"), HelpText("Kills the bot"), Permissions(ownerOnly: true)]
+        public static async Task Kill(SocketMessage message) => Environment.Exit(0);
     }
 }

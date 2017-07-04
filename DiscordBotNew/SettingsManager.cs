@@ -9,7 +9,7 @@ namespace DiscordBotNew
 {
     public static class SettingsManager
     {
-        public const string BasePath = "D:\\home\\data\\jobs\\continuous\\DiscordBotNew\\";
+        public const string BasePath = "D:\\home\\data\\jobs\\continuous\\NetcatBot\\";
         private const string SettingsPath = BasePath + "settings.json";
 
         private static JObject settings;
