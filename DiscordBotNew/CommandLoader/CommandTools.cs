@@ -10,34 +10,9 @@ namespace DiscordBotNew.CommandLoader
 {
     public static class CommandTools
     {
-        private static Embed BuildErrorEmbed(string description, string title = "Error")
-        {
-            var embed = new EmbedBuilder
-            {
-                Title = title,
-                Description = description,
-                Color = new Color(244, 67, 54),
-                Footer = new EmbedFooterBuilder
-                {
-                    Text = "If you believe this should not have happened, please submit a bug report"
-                }
-            };
-
-            return embed;
-        }
-
-        private static Embed BuildErrorEmbed(Exception error) => BuildErrorEmbed(error.Message, $"Error - {error.GetType().Name}");
-
-        public static async Task Reply(this SocketMessage m, string text, bool isTTS = false, Embed embed = null, RequestOptions options = null)
-        {
-            await DiscordBot.Log(new LogMessage(LogSeverity.Info, "Reply", $"{(m.Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{m.Channel.Name}: {text}"));
-            await m.Channel.SendMessageAsync(text, isTTS, embed, options);
-        }
-
         public static async Task ReplyError(this SocketMessage m, string description, string title = "Error")
         {
-            await DiscordBot.Log(new LogMessage(LogSeverity.Error, "ErrorReply", $"{(m.Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{m.Channel.Name}: [{title}] {description}"));
-            await m.Channel.SendMessageAsync(string.Empty, embed: BuildErrorEmbed(description, title));
+
         }
 
         public static async Task ReplyError(this SocketMessage m, Exception error) => await m.ReplyError(error.Message, $"Error - {error.GetType().Name}");
@@ -86,6 +61,6 @@ namespace DiscordBotNew.CommandLoader
             return commandPrefix;
         }
 
-        public static string NicknameOrUsername(this SocketUser user) => (user as IGuildUser)?.Nickname ?? user.Username;
+        public static string NicknameOrUsername(this IUser user) => (user as IGuildUser)?.Nickname ?? user.Username;
     }
 }

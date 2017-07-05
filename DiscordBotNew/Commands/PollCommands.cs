@@ -13,12 +13,12 @@ namespace DiscordBotNew.Commands
     public static class PollCommands
     {
         [Command("poll"), HelpText("Prints the channel's active poll"), CommandScope(ChannelType.Text)]
-        public static ICommandResult GetPoll(SocketMessage message)
+        public static ICommandResult GetPoll(DiscordMessageContext context)
         {
             Poll po;
-            if ((po = Poll.GetPoll(message.Channel)) != null)
+            if ((po = Poll.GetPoll(context.Channel)) != null)
             {
-                return new SuccessResult("", embed: po.GetEmbed(message));
+                return new SuccessResult("", embed: po.GetEmbed(context));
             }
             else
             {
@@ -27,34 +27,34 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("poll"), HelpText("Starts a poll with the given length (in minutes) and the given options"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> StartPoll(SocketMessage message, double length, string option1, string option2, [JoinRemainingParameters] string[] otherOptions = null)
+        public static async Task<ICommandResult> StartPoll(DiscordMessageContext context, double length, string option1, string option2, [JoinRemainingParameters] string[] otherOptions = null)
         {
             var options = new List<string> { option1, option2 };
             if (otherOptions != null) options.AddRange(otherOptions);
-            return await Poll.CreatePoll(message, length, options, false);
+            return await Poll.CreatePoll(context, length, options, false);
         }
 
         [Command("anonpoll"), HelpText("Starts an anonymous poll with the given length (in minutes) and the given options"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> StartAnonPoll(SocketMessage message, double length, string option1, string option2, [JoinRemainingParameters] string[] otherOptions = null)
+        public static async Task<ICommandResult> StartAnonPoll(DiscordMessageContext context, double length, string option1, string option2, [JoinRemainingParameters] string[] otherOptions = null)
         {
             var options = new List<string> { option1, option2 };
             if (otherOptions != null) options.AddRange(otherOptions);
-            return await Poll.CreatePoll(message, length, options, true);
+            return await Poll.CreatePoll(context, length, options, true);
         }
 
         [Command("vote"), HelpText("Votes in the channel's active poll"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Vote(SocketMessage message, [HelpText("option number|option text"), JoinRemainingParameters]string option)
+        public static ICommandResult Vote(DiscordMessageContext context, [HelpText("option number|option text"), JoinRemainingParameters]string option)
         {
-            Poll p = Poll.GetPoll(message.Channel);
+            Poll p = Poll.GetPoll(context.Channel);
             if (p != null && !p.Anonymous && p.Active)
             {
                 bool update = false;
-                if (message.Author.IsBot)
+                if (context.MessageAuthor.IsBot)
                 {
                     return new ErrorResult("BOTs can't vote in polls");
                 }
 
-                if (p.Voters.ContainsKey(message.Author))
+                if (p.Voters.ContainsKey(context.MessageAuthor))
                 {
                     update = true;
                     if (p.MinutesLeft < 0.5)
@@ -66,14 +66,14 @@ namespace DiscordBotNew.Commands
                 bool num = true;
                 if (int.TryParse(option, out int i) && i > 0 && i <= p.Options.Count)
                 {
-                    p.Voters[message.Author] = p.Options[i - 1];
+                    p.Voters[context.MessageAuthor] = p.Options[i - 1];
                 }
                 else if (p.Options.Any(x => x.Text == option))
                 {
                     num = false;
                     if (p.Options.Count(x => x.Text == option) == 1)
                     {
-                        p.Voters[message.Author] = p.Options.First(x => x.Text == option);
+                        p.Voters[context.MessageAuthor] = p.Options.First(x => x.Text == option);
                     }
                     else
                     {
@@ -85,7 +85,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult("That poll option doesn't exist");
                 }
 
-                return new SuccessResult(!update ? $"<@{message.Author.Id}>: Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"<@{message.Author.Id}>: Vote update to {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged");
+                return new SuccessResult(!update ? $"<@{context.MessageAuthor.Id}>: Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"<@{context.MessageAuthor.Id}>: Vote update to {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged");
             }
             else
             {
@@ -96,25 +96,25 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("anonvote"), HelpText("Anonymously votes in the anonymous poll with the provided ID number"), CommandScope(ChannelType.DM)]
-        public static async Task<ICommandResult> AnonVote(SocketMessage message, [HelpText("poll ID")]int pollId, [HelpText("option number|option text"), JoinRemainingParameters]string option)
+        public static async Task<ICommandResult> AnonVote(DiscordMessageContext context, [HelpText("poll ID")]int pollId, [HelpText("option number|option text"), JoinRemainingParameters]string option)
         {
             Poll p = Poll.GetPollById(pollId);
 
             if (p != null && p.Active)
             {
-                if (await p.Channel.GetUserAsync(message.Author.Id) == null)
+                if (await p.Channel.GetUserAsync(context.MessageAuthor.Id) == null)
                 {
                     return new ErrorResult("That poll doesn't exist");
                 }
 
                 bool update = false;
-                if (message.Author.IsBot)
+                if (context.MessageAuthor.IsBot)
                 {
                     return new ErrorResult($"BOTs can't vote in polls");
                 }
 
 
-                if (p.Voters.ContainsKey(message.Author))
+                if (p.Voters.ContainsKey(context.MessageAuthor))
                 {
                     update = true;
                     if (p.MinutesLeft < 0.5)
@@ -128,14 +128,14 @@ namespace DiscordBotNew.Commands
                     bool num = true;
                     if (int.TryParse(option, out int i) && i > 0 && i <= p.Options.Count)
                     {
-                        p.Voters[message.Author] = p.Options[i - 1];
+                        p.Voters[context.MessageAuthor] = p.Options[i - 1];
                     }
                     else if (p.Options.Any(x => x.Text == option))
                     {
                         num = false;
                         if (p.Options.Count(x => x.Text == option) == 1)
                         {
-                            p.Voters[message.Author] = p.Options.First(x => x.Text == option);
+                            p.Voters[context.MessageAuthor] = p.Options.First(x => x.Text == option);
                         }
                         else
                         {
@@ -147,7 +147,7 @@ namespace DiscordBotNew.Commands
                         return new ErrorResult("That poll option doesn't exist");
                     }
 
-                    return new SuccessResult(!update ? $"<@{message.Author.Id}>: Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"<@{message.Author.Id}>: Vote update to {(num ? "option #" : "")}{option}{(num ? "" : "'")} acknowledged");
+                    return new SuccessResult(!update ? $"<@{context.MessageAuthor.Id}>: Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"<@{context.MessageAuthor.Id}>: Vote update to {(num ? "option #" : "")}{option}{(num ? "" : "'")} acknowledged");
                 }
                 catch (Exception ex)
                 {
@@ -161,12 +161,12 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("endpoll"), HelpText("Ends the channel's active poll"), CommandScope(ChannelType.Text)]
-        public static ICommandResult EndPoll(SocketMessage message)
+        public static ICommandResult EndPoll(DiscordMessageContext context)
         {
-            Poll p = Poll.GetPoll(message.Channel);
+            Poll p = Poll.GetPoll(context.Channel);
             if (p != null && p.Active)
             {
-                return Poll.End(message.Channel);
+                return Poll.End(context.Channel);
             }
             return new ErrorResult("No poll currently in progress");
         }

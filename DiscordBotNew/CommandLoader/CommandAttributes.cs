@@ -54,16 +54,16 @@ namespace DiscordBotNew.CommandLoader
         private readonly GuildPermission[] guildPermissions;
         private readonly bool botOwnerOnly;
 
-        public string GetPermissionError(SocketMessage message)
+        public string GetPermissionError(DiscordMessageContext context)
         {
             SettingsManager.GetSetting("botOwner", out ulong id);
-            if (id == message.Author.Id) return null;
-            if (botOwnerOnly && id != message.Author.Id) return "Only the bot owner can run that command";
+            if (id == context.MessageAuthor.Id) return null;
+            if (botOwnerOnly && id != context.MessageAuthor.Id) return "Only the bot owner can run that command";
 
-            var guildChannel = message.Channel as IGuildChannel;
+            var guildChannel = context.Channel as IGuildChannel;
             if (guildChannel == null) return "That command requires permissions that only exist in server channels";
-            var missingChannelPermissions = channelPermissions.Where(perm => !((IGuildUser)message.Author).GetPermissions((IGuildChannel)message.Channel).Has(perm));
-            var missingGuildPermissions = guildPermissions.Where(perm => !((IGuildUser)message.Author).GuildPermissions.Has(perm));
+            var missingChannelPermissions = channelPermissions.Where(perm => !((IGuildUser)context.MessageAuthor).GetPermissions((IGuildChannel)context.Channel).Has(perm));
+            var missingGuildPermissions = guildPermissions.Where(perm => !((IGuildUser)context.MessageAuthor).GuildPermissions.Has(perm));
             var missingPermissionStrings = missingChannelPermissions.Select(perm => perm.ToString()).Concat(missingGuildPermissions.Select(perm => perm.ToString())).ToArray();
             return missingPermissionStrings.Length > 0 ? $"The following required permissions were missing: {string.Join(", ", missingPermissionStrings)}" : null;
         }

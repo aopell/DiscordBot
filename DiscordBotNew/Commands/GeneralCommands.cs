@@ -15,13 +15,13 @@ namespace DiscordBotNew.Commands
         private static Random random = new Random();
 
         [Command("hello", "test"), HelpText("Says hi")]
-        public static ICommandResult Hello(SocketMessage message) => new SuccessResult("Hello there! :hand_splayed:");
+        public static ICommandResult Hello(ICommandContext context) => new SuccessResult("Hello there! :hand_splayed:");
 
         [Command("echo", "say"), HelpText("Repeats the provided text back to you")]
-        public static ICommandResult Echo(SocketMessage message, [JoinRemainingParameters] string text) => new SuccessResult(text);
+        public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters] string text) => new SuccessResult(text);
 
         [Command("8ball"), HelpText("It knows your future")]
-        public static ICommandResult Magic8Ball(SocketMessage message, [HelpText("yes or no question"), JoinRemainingParameters] string question)
+        public static ICommandResult Magic8Ball(ICommandContext context, [HelpText("yes or no question"), JoinRemainingParameters] string question)
         {
             string[] responses = {
                 "It is certain",
@@ -46,23 +46,25 @@ namespace DiscordBotNew.Commands
                 "Very doubtful"
             };
 
-            return new SuccessResult($"<@{message.Author.Id}>: ***{question}***\n" + responses[random.Next(responses.Length)]);
+            var messageContext = context as DiscordMessageContext;
+            if (messageContext != null)
+                return new SuccessResult($"<@{messageContext.MessageAuthor.Id}>: ***{question}***\n" + responses[random.Next(responses.Length)]);
+            return new SuccessResult(responses[random.Next(responses.Length)]);
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
-        public static ICommandResult SetPrefix(SocketMessage message, [JoinRemainingParameters] string prefix)
+        public static ICommandResult SetPrefix(DiscordMessageContext context, [JoinRemainingParameters] string prefix)
         {
             bool server = false;
             ulong id;
-            if (message.GetChannelType() == ChannelType.Text)
+            if (context.ChannelType == ChannelType.Text)
             {
-                var guildChannel = message.Channel as IGuildChannel;
-                id = guildChannel?.Guild.Id ?? message.Channel.Id;
-                server = guildChannel != null;
+                id = context.Guild?.Id ?? context.Channel.Id;
+                server = context.Guild != null;
             }
             else
             {
-                id = message.Channel.Id;
+                id = context.Channel.Id;
             }
 
             if (SettingsManager.GetSetting("customPrefixes", out Dictionary<ulong, string> prefixes))
@@ -92,41 +94,39 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> Quote(SocketMessage message, ulong id, [HelpText("channel mention")] string channel = null)
+        public static async Task<ICommandResult> Quote(DiscordMessageContext context, ulong id, [HelpText("channel mention")] string channel = null)
         {
             IMessage msg;
-            if (message.MentionedChannels.Count != 0)
+            if (context.Message.MentionedChannels.Count != 0)
             {
-                msg = await ((ISocketMessageChannel)DiscordBot.Client.GetChannel(message.MentionedChannels.First().Id)).GetMessageAsync(id);
+                msg = await ((ISocketMessageChannel)context.BotClient.GetChannel(context.Message.MentionedChannels.First().Id)).GetMessageAsync(id);
             }
             else
             {
-                msg = await message.Channel.GetMessageAsync(id);
+                msg = await context.Channel.GetMessageAsync(id);
             }
 
             if (msg == null) return new ErrorResult("Message not found");
 
-            var reply = new StringBuilder();
-            reply.Append($"Message sent by {msg.Author.Username}#{msg.Author.Discriminator} at {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(msg.Timestamp, "Pacific Standard Time")} PT:\n");
-
-            if (!string.IsNullOrWhiteSpace(msg.Content))
-                reply.Append($"{msg.Content}\n");
+            var builder = new EmbedBuilder()
+            {
+                Author = new EmbedAuthorBuilder
+                {
+                    Name = msg.Author.NicknameOrUsername(),
+                    IconUrl = msg.Author.GetAvatarUrl() ?? "https://discordapp.com/assets/6debd47ed13483642cf09e832ed0bc1b.png"
+                },
+                Timestamp = msg.Timestamp,
+                Description = msg.Content
+            };
 
             if (msg.Attachments.Count > 0)
-                reply.Append($"Attachments:\n{string.Join("\n", msg.Attachments.Select(att => att.Url))}");
+                builder.ImageUrl = msg.Attachments.First().Url;
 
-            await message.Reply(reply.ToString());
-
-            foreach (Embed embed in msg.Embeds.OfType<Embed>())
-            {
-                await message.Reply("", embed: embed);
-            }
-
-            return new SuccessResult();
+            return new SuccessResult("", embed: builder);
         }
 
         [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
-        public static ICommandResult Countdown(SocketMessage message, string name, [JoinRemainingParameters] DateTime? date = null)
+        public static ICommandResult Countdown(ICommandContext context, string name, [JoinRemainingParameters] DateTime? date = null)
         {
             var countdowns = SettingsManager.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 

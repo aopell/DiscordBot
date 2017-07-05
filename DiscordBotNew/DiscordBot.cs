@@ -11,7 +11,7 @@ namespace DiscordBotNew
 {
     public class DiscordBot
     {
-        public static DiscordSocketClient Client;
+        public DiscordSocketClient Client;
 
         public static void Main(string[] args) => new DiscordBot().MainAsync().GetAwaiter().GetResult();
 
@@ -32,7 +32,7 @@ namespace DiscordBotNew
             await Task.Delay(-1);
         }
 
-        private static async Task Client_Ready()
+        private async Task Client_Ready()
         {
             if (SettingsManager.GetSetting("botOwner", out ulong id))
                 await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
@@ -44,7 +44,7 @@ namespace DiscordBotNew
 
             if (arg.Content.Trim().StartsWith(commandPrefix))
             {
-                await CommandRunner.Run(arg, commandPrefix);
+                await CommandRunner.Run(new DiscordMessageContext(arg, Client), commandPrefix);
             }
         }
 

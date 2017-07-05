@@ -144,15 +144,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandLoader\DiscordChannelDescriptionContext.cs" />
+    <Compile Include="CommandLoader\DiscordMessageContext.cs" />
     <Compile Include="CommandLoader\ErrorResult.cs" />
+    <Compile Include="CommandLoader\ICommandContext.cs" />
     <Compile Include="CommandLoader\ICommandResult.cs" />
     <Compile Include="CommandLoader\SuccessResult.cs" />
     <Compile Include="CommandLoader\CommandTools.cs" />
     <Compile Include="Commands\GeneralCommands.cs" />
     <Compile Include="CommandLoader\CommandAttributes.cs" />
     <Compile Include="CommandLoader\CommandRunner.cs" />
-    <Compile Include="Commands\DiscordGameData.cs" />
-    <Compile Include="Commands\Gamer.cs" />
     <Compile Include="Commands\ManagementCommands.cs" />
     <Compile Include="Commands\Poll.cs" />
     <Compile Include="Commands\PollCommands.cs" />

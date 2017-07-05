@@ -14,23 +14,23 @@ namespace DiscordBotNew.Commands
     public static class ManagementCommands
     {
         [Command("username"), HelpText("Changes the bot's username"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> ChangeUsername(SocketMessage message, [JoinRemainingParameters] string username)
+        public static async Task<ICommandResult> ChangeUsername(ICommandContext context, [JoinRemainingParameters] string username)
         {
             if (username.Length > 32)
             {
                 return new ErrorResult($"Username must be no more than 32 characters in length. ({username.Length} > 32)");
             }
 
-            await DiscordBot.Client.CurrentUser.ModifyAsync(bot => bot.Username = username);
+            await context.BotClient.CurrentUser.ModifyAsync(bot => bot.Username = username);
             return new SuccessResult("Changed username successfully");
         }
 
         [Command("avatar"), HelpText("Changes the bot's avatar image"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> ChangeAvatar(SocketMessage message, [JoinRemainingParameters] string url)
+        public static async Task<ICommandResult> ChangeAvatar(ICommandContext context, [JoinRemainingParameters] string url)
         {
             try
             {
-                await DiscordBot.Client.CurrentUser.ModifyAsync(async bot => bot.Avatar = new Image(await new HttpClient().GetStreamAsync(url)));
+                await context.BotClient.CurrentUser.ModifyAsync(async bot => bot.Avatar = new Image(await new HttpClient().GetStreamAsync(url)));
                 return new SuccessResult("Avatar changed successfully!");
             }
             catch (Exception ex)
@@ -40,19 +40,19 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("delete"), HelpText("Deletes a specified number of messages (up to 99)"), Permissions(channelPermissions: new[] { ChannelPermission.ManageMessages })]
-        public static async Task<ICommandResult> Delete(SocketMessage message, byte number)
+        public static async Task<ICommandResult> Delete(DiscordMessageContext context, byte number)
         {
             if (number >= 100)
             {
                 return new ErrorResult("The maximum number of messages to delete is 99 (plus the command message)");
             }
 
-            var toDelete = (await message.Channel.GetMessagesAsync(number + 1).Flatten()).ToArray();
+            var toDelete = (await context.Channel.GetMessagesAsync(number + 1).Flatten()).ToArray();
 
             var bulkDelete = toDelete.Where(msg => msg.Timestamp + TimeSpan.FromDays(14) > DateTimeOffset.Now);
             var remaining = toDelete.Except(bulkDelete);
 
-            await message.Channel.DeleteMessagesAsync(bulkDelete);
+            await context.Channel.DeleteMessagesAsync(bulkDelete);
             foreach (IMessage msg in remaining)
             {
                 await msg.DeleteAsync();
@@ -62,6 +62,6 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("kill"), HelpText("Kills the bot"), Permissions(ownerOnly: true)]
-        public static void Kill(SocketMessage message) => Environment.Exit(0);
+        public static void Kill(ICommandContext context) => Environment.Exit(0);
     }
 }

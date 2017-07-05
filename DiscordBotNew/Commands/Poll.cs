@@ -80,8 +80,8 @@ namespace DiscordBotNew
                     string messageToSend = winners.Aggregate("", (current, o) => current + $"**{o.Text} ({o.Votes.Count} {(o.Votes.Count == 1 ? "vote" : "votes")}){(p.Anonymous ? "**" : $":** {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
                     messageToSend = p.Options.OrderByDescending(x => x.Votes.Count).Where(o => !winners.Contains(o)).Aggregate(messageToSend, (current, o) => current + $"{o.Text} ({o.Votes.Count} votes){(p.Anonymous ? "" : $": {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
                     builder.Description = messageToSend;
-                    return new SuccessResult("", embed: builder);
                     polls.Remove(c.Id);
+                    return new SuccessResult("", embed: builder);
                 }
             }
 
@@ -127,41 +127,41 @@ namespace DiscordBotNew
             return options;
         }
 
-        public static async Task<ICommandResult> CreatePoll(SocketMessage message, double minutes, List<string> args, bool anonymous)
+        public static async Task<ICommandResult> CreatePoll(DiscordMessageContext context, double minutes, List<string> args, bool anonymous)
         {
             if (minutes < 0.01 || minutes > 1440)
             {
                 return new ErrorResult("Please specify a valid positive number of minutes >= 0.01 and <= 1440.");
             }
 
-            Poll p = Create(message.Channel, message.Author, message, minutes, anonymous);
+            Poll p = Create(context.Channel, context.MessageAuthor, context.Message, minutes, anonymous);
 
             if (p == null)
             {
-                return new ErrorResult($"There is already a{(Poll.GetPoll(message.Channel).Anonymous ? "n anonymous" : "")} poll in progress");
+                return new ErrorResult($"There is already a{(Poll.GetPoll(context.Channel).Anonymous ? "n anonymous" : "")} poll in progress");
             }
 
             foreach (string option in args) p.Options.Add(new PollOption(option.TrimStart(), p));
 
-            await message.Reply("", embed: p.GetEmbed(message));
+            await context.Reply("", embed: p.GetEmbed(context));
 
-            return await Task.Delay((int)(minutes * 60000)).ContinueWith(t => p.Active ? End(message.Channel) : new SuccessResult());
+            return await Task.Delay((int)(minutes * 60000)).ContinueWith(t => p.Active ? End(context.Channel) : new SuccessResult());
         }
 
-        public Embed GetEmbed(SocketMessage message)
+        public Embed GetEmbed(DiscordMessageContext context)
         {
             var builer = new EmbedBuilder
             {
                 Title = $"Poll by {Creator.NicknameOrUsername()}",
                 Color = new Color(76, 175, 80),
-                Description = $"Vote using `{CommandTools.GetCommandPrefix(message.Channel)}{(Anonymous ? $"anonvote {Id}" : "vote")} <option number|option text>`{(Anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__**\nThis is **anonymous poll number #{Id}.**" : "")}",
+                Description = $"Vote using `{CommandTools.GetCommandPrefix(context.Channel)}{(Anonymous ? $"anonvote {Id}" : "vote")} <option number|option text>`{(Anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__**\nThis is **anonymous poll number #{Id}.**" : "")}",
                 Footer = new EmbedFooterBuilder
                 {
-                    Text = $"The poll will end in {MinutesLeft} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(message.Channel)}endpoll'"
+                    Text = $"The poll will end in {MinutesLeft} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(context.Channel)}endpoll'"
                 }
             };
 
-            string url = message.Author.GetAvatarUrl();
+            string url = context.MessageAuthor.GetAvatarUrl();
             if (!string.IsNullOrWhiteSpace(url))
                 builer.ThumbnailUrl = url;
 
