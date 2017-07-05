@@ -104,7 +104,7 @@ namespace DiscordBotNew
                                      async m =>
                                      {
                                          var context = new DiscordChannelDescriptionContext(m.Groups[1].Value, channel, this);
-                                         return (await CommandRunner.Run(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as ISocketMessageChannel), true)).ToString();
+                                         return (await CommandRunner.Run(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as ISocketMessageChannel), true)).ToString().Trim();
                                      });
                     updatingChannels.Add(channel.Id);
                     try
