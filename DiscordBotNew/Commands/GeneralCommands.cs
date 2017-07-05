@@ -123,6 +123,11 @@ namespace DiscordBotNew.Commands
             if (msg.Attachments.Count > 0)
                 builder.ImageUrl = msg.Attachments.First().Url;
 
+            foreach (Embed embed in msg.Embeds.Where(x => x.Type == EmbedType.Rich))
+            {
+                await msg.Channel.SendMessageAsync("", embed: embed);
+            }
+
             return new SuccessResult("", embed: builder);
         }
 
