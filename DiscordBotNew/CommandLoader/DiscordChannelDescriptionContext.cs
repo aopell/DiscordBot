@@ -11,21 +11,28 @@ namespace DiscordBotNew.CommandLoader
     public class DiscordChannelDescriptionContext : ICommandContext
     {
         public IGuildChannel Channel { get; }
+        public string FullCommand { get; }
+        public DiscordBot Bot { get; }
 
-        public DiscordChannelDescriptionContext(IGuildChannel channel)
+        public DiscordChannelDescriptionContext(string command, IGuildChannel channel, DiscordBot bot)
         {
+            FullCommand = command;
             Channel = channel;
+            Bot = bot;
         }
 
-        public DiscordSocketClient BotClient { get; }
         public Task Reply(string message)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
         public Task ReplyError(string message, string title)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
+
+        public Task ReplyError(Exception ex) => ReplyError(ex.Message, ex.GetType().Name);
+
+        public LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"Channel description of {Channel.Guild.Name}  #{Channel.Name}: [{commandName}] {FullCommand}");
     }
 }

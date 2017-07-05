@@ -32,9 +32,9 @@ namespace DiscordBotNew.CommandLoader
                                                                                                                 .Names.Contains(name.ToLower()))
                                                                                                                 .OrderBy(method => method.GetParameters().Count(param => !param.IsOptional));
 
-        public static async Task Run(DiscordMessageContext context, string prefix)
+        public static async Task<ICommandResult> Run(string commandMessage, ICommandContext context, string prefix, bool awaitResult)
         {
-            var args = context.Message.Content.Substring(prefix.Length).Split(' ');
+            var args = commandMessage.Trim().Substring(prefix.Length).Split(' ');
             string commandName = args[0];
             args = Regex.Matches(string.Join(" ", args.Skip(1)), @"[\""].+?[\""]|[^ ]+")
                         .Cast<Match>()
@@ -44,25 +44,13 @@ namespace DiscordBotNew.CommandLoader
                         .ToArray();
             MethodInfo command = GetCommand(commandName, args.Length);
 
-            await DiscordBot.Log(new LogMessage(LogSeverity.Info, "Command", $"@{context.MessageAuthor.Username}#{context.MessageAuthor.Discriminator} in {(context.Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{context.Channel.Name}: [{commandName}] {context.Message.Content}"));
+            await DiscordBot.Log(context.LogMessage(commandName));
 
             if (command == null)
             {
-                await context.ReplyError($"The command `{prefix}{commandName}` does not exist", "Command Not Found");
-                return;
-            }
-
-            if (!(command.GetCustomAttribute<CommandScopeAttribute>()?.ChannelTypes.Contains(context.ChannelType) ?? true))
-            {
-                await context.ReplyError($"The command `{prefix}{commandName}` is not valid in the scope {context.ChannelType}", "Scope Error");
-                return;
-            }
-
-            string permissionError = command.GetCustomAttribute<PermissionsAttribute>()?.GetPermissionError(context);
-            if (permissionError != null)
-            {
-                await context.ReplyError(permissionError, "Permission Error");
-                return;
+                string message = $"The command `{prefix}{commandName}` does not exist";
+                await context.ReplyError(message, "Command Not Found");
+                return new ErrorResult(message, "Command Not Found");
             }
 
             var parameters = command.GetParameters();
@@ -70,8 +58,26 @@ namespace DiscordBotNew.CommandLoader
 
             if (args.Length < requiredParameters.Length - 1)
             {
-                await context.ReplyError($"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info", "Syntax Error");
-                return;
+                string message = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info";
+                await context.ReplyError(message, "Syntax Error");
+                return new ErrorResult(message, "Syntax Error");
+            }
+
+            if (context is DiscordMessageContext discordContext)
+            {
+                if (!(command.GetCustomAttribute<CommandScopeAttribute>()?.ChannelTypes.Contains(discordContext.ChannelType) ?? true))
+                {
+                    string message = $"The command `{prefix}{commandName}` is not valid in the scope {discordContext.ChannelType}";
+                    await context.ReplyError(message, "Scope Error");
+                    return new ErrorResult(message, "Scope Error");
+                }
+
+                string permissionError = command.GetCustomAttribute<PermissionsAttribute>()?.GetPermissionError(discordContext);
+                if (permissionError != null)
+                {
+                    await context.ReplyError(permissionError, "Permission Error");
+                    return new ErrorResult(permissionError, "Permission Error");
+                }
             }
 
             var values = new List<object>
@@ -98,8 +104,10 @@ namespace DiscordBotNew.CommandLoader
                         object converted = ConvertToType(parameters[i].ParameterType, string.Join(" ", args.Skip(i - 1)));
                         if (converted == null)
                         {
-                            await context.ReplyError($"The value `{string.Join(" ", args.Skip(i - 1))}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`", "Argument Type Error");
-                            return;
+                            string message = $"The value `{string.Join(" ", args.Skip(i - 1))}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`";
+                            string title = "Argument Type Error";
+                            await context.ReplyError(message, title);
+                            return new ErrorResult(message, title);
                         }
                         values.Add(converted);
                     }
@@ -109,28 +117,34 @@ namespace DiscordBotNew.CommandLoader
                 var result = ConvertToType(parameters[i].ParameterType, args[i - 1]);
                 if (result == null)
                 {
-                    await context.ReplyError($"The value `{args[i - 1]}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`", "Argument Type Error");
-                    return;
+                    string message = $"The value `{args[i - 1]}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`";
+                    string title = "Argument Type Error";
+                    await context.ReplyError(message, title);
+                    return new ErrorResult(message, title);
                 }
 
                 values.Add(result);
             }
 
+            if (awaitResult)
+                return await RunCommand(context, command, values.ToArray());
+
             RunCommand(context, command, values.ToArray());
+            return new SuccessResult();
         }
 
-        private static async void RunCommand(DiscordMessageContext context, MethodInfo command, object[] parameters)
+        private static async Task<ICommandResult> RunCommand(ICommandContext context, MethodInfo command, object[] parameters)
         {
             try
             {
                 var result = command.Invoke(null, parameters);
 
-                if (result == null) return;
+                if (result == null) return new SuccessResult();
 
                 if (!result.GetType().IsGenericType && result is Task)
                 {
                     await (Task)result;
-                    return;
+                    return new SuccessResult();
                 }
 
                 ICommandResult commandResult = result as ICommandResult ?? await (Task<ICommandResult>)result;
@@ -139,7 +153,17 @@ namespace DiscordBotNew.CommandLoader
                 {
                     case SuccessResult successResult:
                         if (successResult.HasContent)
-                            await context.Reply(successResult.Message, successResult.IsTTS, successResult.Embed, successResult.Options);
+                        {
+                            switch (context)
+                            {
+                                case DiscordMessageContext messageContext:
+                                    await messageContext.Reply(successResult.Message, successResult.IsTTS, successResult.Embed, successResult.Options);
+                                    break;
+                                default:
+                                    await context.Reply(successResult.Message);
+                                    break;
+                            }
+                        }
                         break;
                     case ErrorResult errorResult:
                         await context.ReplyError(errorResult.Message, errorResult.Title);
@@ -148,10 +172,13 @@ namespace DiscordBotNew.CommandLoader
                         await context.Reply(commandResult.Message);
                         break;
                 }
+
+                return commandResult;
             }
             catch (Exception ex)
             {
                 await context.ReplyError(ex);
+                return new ErrorResult(ex);
             }
         }
 
@@ -181,7 +208,7 @@ namespace DiscordBotNew.CommandLoader
         [Command("help", "man"), HelpText("Gets help text for all commands or a specific command")]
         public static ICommandResult Help(DiscordMessageContext context, string command = null)
         {
-            string commandPrefix = CommandTools.GetCommandPrefix(context.Channel);
+            string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
 
             var builder = new EmbedBuilder
             {

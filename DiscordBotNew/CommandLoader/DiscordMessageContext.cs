@@ -16,12 +16,12 @@ namespace DiscordBotNew.CommandLoader
         public SocketUser MessageAuthor => Message.Author;
         public IGuild Guild => (Channel as IGuildChannel)?.Guild;
 
-        public DiscordSocketClient BotClient { get; }
+        public DiscordBot Bot { get; }
 
-        public DiscordMessageContext(SocketMessage message, DiscordSocketClient client)
+        public DiscordMessageContext(SocketMessage message, DiscordBot bot)
         {
             Message = message;
-            BotClient = client;
+            Bot = bot;
         }
         public async Task Reply(string message) => await Reply(message, false);
         public async Task Reply(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null)
@@ -36,6 +36,7 @@ namespace DiscordBotNew.CommandLoader
             await DiscordBot.Log(new LogMessage(LogSeverity.Error, "ErrorReply", $"{(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{title}] {description}"));
             await Channel.SendMessageAsync(string.Empty, embed: BuildErrorEmbed(description, title));
         }
+        public LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"@{MessageAuthor.Username}#{MessageAuthor.Discriminator} in {(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{commandName}] {Message.Content}");
 
         private static Embed BuildErrorEmbed(string description, string title = "Error")
         {

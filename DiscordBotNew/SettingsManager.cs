@@ -7,17 +7,22 @@ using Discord;
 
 namespace DiscordBotNew
 {
-    public static class SettingsManager
+    public class SettingsManager
     {
         public const string BasePath = "D:\\home\\data\\jobs\\continuous\\NetcatBot\\";
-        private const string SettingsPath = BasePath + "settings.json";
+        private string SettingsPath { get; }
 
-        private static JObject settings;
+        private JObject settings;
+
+        public SettingsManager(string settingsPath)
+        {
+            SettingsPath = settingsPath;
+        }
 
         /// <summary>
         /// Creates a JSON file for settings at <see cref="SettingsPath"/>
         /// </summary>
-        private static void CreateSettingsFile()
+        private void CreateSettingsFile()
         {
             try
             {
@@ -36,7 +41,7 @@ namespace DiscordBotNew
         /// <summary>
         /// Loads the contents of the settings file into <see cref="settings"/>
         /// </summary>
-        private static void LoadSettings()
+        private void LoadSettings()
         {
             if (settings == null)
             {
@@ -51,7 +56,7 @@ namespace DiscordBotNew
         /// </summary>
         /// <param name="setting">Setting name</param>
         /// <param name="value">Setting value</param>
-        public static void AddSetting(string setting, object value)
+        public void AddSetting(string setting, object value)
         {
             try
             {
@@ -75,7 +80,7 @@ namespace DiscordBotNew
         /// </summary>
         /// <param name="setting">Setting with boolean value</param>
         /// <returns>Setting value or null if setting doesn't exist or is not a boolean</returns>
-        public static bool? GetBooleanSetting(string setting)
+        public bool? GetBooleanSetting(string setting)
         {
             try
             {
@@ -95,7 +100,7 @@ namespace DiscordBotNew
         /// <param name="setting">Setting name</param>
         /// <param name="result">Result value</param>
         /// <returns>True when setting was successfully found, false when setting is not found</returns>
-        public static bool GetSetting<T>(string setting, out T result)
+        public bool GetSetting<T>(string setting, out T result)
         {
             result = default(T);
 
@@ -125,7 +130,7 @@ namespace DiscordBotNew
         /// <summary>
         /// Saves all queued settings to <see cref="SettingsPath"/>
         /// </summary>
-        public static void SaveSettings()
+        public void SaveSettings()
         {
             File.WriteAllText(SettingsPath, settings.ToString(Formatting.Indented));
             settings = null;
@@ -135,7 +140,7 @@ namespace DiscordBotNew
         /// <summary>
         /// Completely delete the settings file at <see cref="SettingsPath"/>. This action is irreversable.
         /// </summary>
-        public static void DeleteSettings()
+        public void DeleteSettings()
         {
             File.Delete(SettingsPath);
             settings = null;

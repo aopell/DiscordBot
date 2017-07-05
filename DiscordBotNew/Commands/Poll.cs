@@ -154,10 +154,10 @@ namespace DiscordBotNew
             {
                 Title = $"Poll by {Creator.NicknameOrUsername()}",
                 Color = new Color(76, 175, 80),
-                Description = $"Vote using `{CommandTools.GetCommandPrefix(context.Channel)}{(Anonymous ? $"anonvote {Id}" : "vote")} <option number|option text>`{(Anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__**\nThis is **anonymous poll number #{Id}.**" : "")}",
+                Description = $"Vote using `{CommandTools.GetCommandPrefix(context, context.Channel)}{(Anonymous ? $"anonvote {Id}" : "vote")} <option number|option text>`{(Anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__**\nThis is **anonymous poll number #{Id}.**" : "")}",
                 Footer = new EmbedFooterBuilder
                 {
-                    Text = $"The poll will end in {MinutesLeft} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(context.Channel)}endpoll'"
+                    Text = $"The poll will end in {MinutesLeft} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(context, context.Channel)}endpoll'"
                 }
             };
 

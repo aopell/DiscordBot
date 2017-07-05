@@ -67,7 +67,7 @@ namespace DiscordBotNew.Commands
                 id = context.Channel.Id;
             }
 
-            if (SettingsManager.GetSetting("customPrefixes", out Dictionary<ulong, string> prefixes))
+            if (context.Bot.Settings.GetSetting("customPrefixes", out Dictionary<ulong, string> prefixes))
             {
                 if (prefixes.ContainsKey(id))
                 {
@@ -78,17 +78,17 @@ namespace DiscordBotNew.Commands
                     prefixes.Add(id, prefix);
                 }
 
-                SettingsManager.AddSetting("customPrefixes", prefixes);
+                context.Bot.Settings.AddSetting("customPrefixes", prefixes);
             }
             else
             {
-                SettingsManager.AddSetting("customPrefixes", new Dictionary<ulong, string>
+                context.Bot.Settings.AddSetting("customPrefixes", new Dictionary<ulong, string>
                 {
                     { id, prefix }
                 });
             }
 
-            SettingsManager.SaveSettings();
+            context.Bot.Settings.SaveSettings();
 
             return new SuccessResult($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}");
         }
@@ -99,7 +99,7 @@ namespace DiscordBotNew.Commands
             IMessage msg;
             if (context.Message.MentionedChannels.Count != 0)
             {
-                msg = await ((ISocketMessageChannel)context.BotClient.GetChannel(context.Message.MentionedChannels.First().Id)).GetMessageAsync(id);
+                msg = await ((ISocketMessageChannel)context.Bot.Client.GetChannel(context.Message.MentionedChannels.First().Id)).GetMessageAsync(id);
             }
             else
             {
@@ -128,7 +128,7 @@ namespace DiscordBotNew.Commands
         [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
         public static ICommandResult Countdown(ICommandContext context, string name, [JoinRemainingParameters] DateTime? date = null)
         {
-            var countdowns = SettingsManager.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
             if (date != null)
             {
@@ -143,8 +143,8 @@ namespace DiscordBotNew.Commands
                     countdowns.Add(name, pacificTime);
                 }
 
-                SettingsManager.AddSetting("countdowns", countdowns);
-                SettingsManager.SaveSettings();
+                context.Bot.Settings.AddSetting("countdowns", countdowns);
+                context.Bot.Settings.SaveSettings();
             }
 
             if (!countdowns.ContainsKey(name))

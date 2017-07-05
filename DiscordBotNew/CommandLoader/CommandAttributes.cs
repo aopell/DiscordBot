@@ -56,7 +56,7 @@ namespace DiscordBotNew.CommandLoader
 
         public string GetPermissionError(DiscordMessageContext context)
         {
-            SettingsManager.GetSetting("botOwner", out ulong id);
+            context.Bot.Settings.GetSetting("botOwner", out ulong id);
             if (id == context.MessageAuthor.Id) return null;
             if (botOwnerOnly && id != context.MessageAuthor.Id) return "Only the bot owner can run that command";
 

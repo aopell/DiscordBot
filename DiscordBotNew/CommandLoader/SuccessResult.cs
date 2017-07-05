@@ -34,12 +34,15 @@ namespace DiscordBotNew.CommandLoader
             StringBuilder builder = new StringBuilder();
             builder.Append(Message);
             builder.AppendLine();
-            builder.AppendLine($"**{Embed.Title}**");
-            builder.AppendLine(Embed.Description);
-            foreach (var field in Embed.Fields)
+            if (Embed != null)
             {
-                builder.AppendLine($"**{field.Name}**");
-                builder.AppendLine(field.Value);
+                builder.AppendLine($"**{Embed.Title}**");
+                builder.AppendLine(Embed.Description);
+                foreach (var field in Embed.Fields)
+                {
+                    builder.AppendLine($"**{field.Name}**");
+                    builder.AppendLine(field.Value);
+                }
             }
 
             return builder.ToString();

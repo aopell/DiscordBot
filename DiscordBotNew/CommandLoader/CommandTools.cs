@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -43,12 +44,29 @@ namespace DiscordBotNew.CommandLoader
             }
         }
 
-        public static string GetCommandPrefix(ISocketMessageChannel channel)
+        public static async Task<string> ReplaceAsync(this Regex regex, string input, Func<Match, Task<string>> replacementFn)
         {
-            SettingsManager.GetSetting("commandPrefix", out string commandPrefix);
+            var sb = new StringBuilder();
+            var lastIndex = 0;
+
+            foreach (Match match in regex.Matches(input))
+            {
+                sb.Append(input, lastIndex, match.Index - lastIndex)
+                  .Append(await replacementFn(match).ConfigureAwait(false));
+
+                lastIndex = match.Index + match.Length;
+            }
+
+            sb.Append(input, lastIndex, input.Length - lastIndex);
+            return sb.ToString();
+        }
+
+        public static string GetCommandPrefix(ICommandContext context, ISocketMessageChannel channel)
+        {
+            context.Bot.Settings.GetSetting("commandPrefix", out string commandPrefix);
             commandPrefix = commandPrefix ?? "!";
 
-            if (SettingsManager.GetSetting("customPrefixes", out Dictionary<ulong, string> prefixes))
+            if (context.Bot.Settings.GetSetting("customPrefixes", out Dictionary<ulong, string> prefixes))
             {
                 if (channel.GetChannelType() == ChannelType.Text)
                 {

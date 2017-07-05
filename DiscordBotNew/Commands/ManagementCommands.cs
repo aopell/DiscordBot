@@ -21,7 +21,7 @@ namespace DiscordBotNew.Commands
                 return new ErrorResult($"Username must be no more than 32 characters in length. ({username.Length} > 32)");
             }
 
-            await context.BotClient.CurrentUser.ModifyAsync(bot => bot.Username = username);
+            await context.Bot.Client.CurrentUser.ModifyAsync(bot => bot.Username = username);
             return new SuccessResult("Changed username successfully");
         }
 
@@ -30,7 +30,7 @@ namespace DiscordBotNew.Commands
         {
             try
             {
-                await context.BotClient.CurrentUser.ModifyAsync(async bot => bot.Avatar = new Image(await new HttpClient().GetStreamAsync(url)));
+                await context.Bot.Client.CurrentUser.ModifyAsync(async bot => bot.Avatar = new Image(await new HttpClient().GetStreamAsync(url)));
                 return new SuccessResult("Avatar changed successfully!");
             }
             catch (Exception ex)
