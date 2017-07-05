@@ -19,10 +19,10 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Hello(ICommandContext context) => new SuccessResult("Hello there! :hand_splayed:");
 
         [Command("echo", "say"), HelpText("Repeats the provided text back to you")]
-        public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters] string text) => new SuccessResult(text);
+        public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters, HelpText("The message to repeat")] string text) => new SuccessResult(text);
 
         [Command("8ball"), HelpText("It knows your future")]
-        public static ICommandResult Magic8Ball(ICommandContext context, [HelpText("yes or no question"), JoinRemainingParameters] string question)
+        public static ICommandResult Magic8Ball(ICommandContext context, [JoinRemainingParameters, HelpText("A yes or no question")] string question)
         {
             string[] responses = {
                 "It is certain",
@@ -54,7 +54,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
-        public static ICommandResult SetPrefix(DiscordMessageContext context, [JoinRemainingParameters] string prefix)
+        public static ICommandResult SetPrefix(DiscordMessageContext context, [JoinRemainingParameters, HelpText("The new prefix for this channel or server")] string prefix)
         {
             bool server = false;
             ulong id;
@@ -95,7 +95,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> Quote(DiscordMessageContext context, ulong id, [HelpText("channel mention")] string channel = null)
+        public static async Task<ICommandResult> Quote(DiscordMessageContext context, [DisplayName("message ID"), HelpText("The message to quote")] ulong id, [DisplayName("channel mention"), HelpText("The channel to search")] string channel = null)
         {
             IMessage msg;
             if (context.Message.MentionedChannels.Count != 0)
@@ -127,7 +127,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
-        public static ICommandResult Countdown(ICommandContext context, string name, [JoinRemainingParameters] DateTime? date = null)
+        public static ICommandResult Countdown(ICommandContext context, string name, [JoinRemainingParameters, HelpText("The time to count down to")] DateTime? date = null)
         {
             var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
@@ -166,7 +166,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("back"), HelpText("Creates a backronym from the given text")]
-        public static ICommandResult Back(ICommandContext context, string acronym, byte count = 1, bool useComplexWords = false)
+        public static ICommandResult Back(ICommandContext context, string acronym, [HelpText("The number of backronyms to generate (up to 10)")]byte count = 1, [HelpText("Whether or not to use the larger English dictionary")] bool useComplexWords = false)
         {
             count = count < 1 ? (byte)1 : count > 10 ? (byte)10 : count;
 

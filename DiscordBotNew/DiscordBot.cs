@@ -92,6 +92,7 @@ namespace DiscordBotNew
 
         private async void Timer()
         {
+#if !DEBUG
             Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
             if (ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions))
             {
@@ -117,6 +118,7 @@ namespace DiscordBotNew
                     }
                 }
             }
+#endif
         }
 
         private async Task Client_Ready()

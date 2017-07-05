@@ -20,6 +20,7 @@ namespace DiscordBotNew.CommandLoader
                                             .Where(type => type.IsAbstract && type.IsSealed) // Static types only
                                             .SelectMany(type => type.GetMethods())
                                             .Where(method => method.GetCustomAttribute<CommandAttribute>() != null)
+                                            .OrderBy(method => method.GetCustomAttribute<CommandAttribute>().Names[0])
                                             .ToList();
         }
 
@@ -214,7 +215,7 @@ namespace DiscordBotNew.CommandLoader
         }
 
         [Command("help", "man"), HelpText("Gets help text for all commands or a specific command")]
-        public static ICommandResult Help(DiscordMessageContext context, string command = null)
+        public static ICommandResult Help(DiscordMessageContext context, [HelpText("Gets help for this specific command, or all commands if set to '*'")]string command = null, [HelpText("Whether or not to show parameter descriptions")] bool detailed = false)
         {
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
 
@@ -224,15 +225,15 @@ namespace DiscordBotNew.CommandLoader
                 Color = new Color(33, 150, 243)
             };
 
-            var commands = command == null
+            var commands = command == null || command == "*"
                            ? commandMethods.Where(method => method.GetCustomAttribute<CommandScopeAttribute>()
                                                                   ?.ChannelTypes.Contains(context.ChannelType)
                                                                   ?? true)
                                            .Where(method => method.GetCustomAttribute<PermissionsAttribute>()?.GetPermissionError(context) == null)
                                            .ToList()
                            : GetCommands(command.StartsWith(commandPrefix)
-                           ? command.Substring(commandPrefix.Length)
-                           : command)
+                                                ? command.Substring(commandPrefix.Length)
+                                                : command)
                            .ToList();
 
             if (commands[0] == null)
@@ -249,10 +250,56 @@ namespace DiscordBotNew.CommandLoader
                 title.Append(string.Join(" ", method.GetParameters()
                                                     .Skip(1)
                                                     .Select(param => param.IsOptional
-                                                                     ? $"[{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")} = {param.DefaultValue}]"
-                                                                     : $"<{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}>")));
+                                                                     ? $"[{param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}{(param.DefaultValue == null ? "" : $" = {param.DefaultValue}")}]"
+                                                                     : $"<{param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}>")));
                 title.Append("`");
-                builder.AddField(title.ToString(), method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "");
+                var text = new StringBuilder();
+                text.AppendLine(method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "*No help text found*");
+                if (detailed)
+                {
+                    if (method.GetParameters().Length > 1)
+                    {
+                        text.AppendLine("**Parameters**");
+                    }
+
+                    foreach (var parameter in method.GetParameters().Skip(1))
+                    {
+                        text.Append("`");
+                        if (!parameter.IsOptional)
+                        {
+                            text.Append(parameter.ParameterType.Name);
+                            text.Append(" ");
+                            text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
+                            text.Append(parameter.GetCustomAttribute<JoinRemainingParametersAttribute>() == null ? "" : "...");
+                            text.Append("`");
+                            var helpText = parameter.GetCustomAttribute<HelpTextAttribute>();
+                            if (helpText != null)
+                            {
+                                text.Append(": ");
+                                text.Append(helpText.Text);
+                            }
+                        }
+                        else
+                        {
+                            text.Append("Optional ");
+                            text.Append(parameter.ParameterType.Name);
+                            text.Append(" ");
+                            text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
+                            text.Append(parameter.GetCustomAttribute<JoinRemainingParametersAttribute>() == null ? "" : "...");
+                            if (parameter.DefaultValue != null)
+                                text.Append($" = {parameter.DefaultValue}");
+                            text.Append("`");
+                            var helpText = parameter.GetCustomAttribute<HelpTextAttribute>();
+                            if (helpText != null)
+                            {
+                                text.Append(": ");
+                                text.Append(helpText.Text);
+                            }
+                        }
+                        text.AppendLine();
+                    }
+                }
+                builder.AddField(title.ToString(), text.ToString());
             }
 
 
