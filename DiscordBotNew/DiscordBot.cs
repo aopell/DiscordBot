@@ -136,7 +136,7 @@ namespace DiscordBotNew
             var context = new DiscordMessageContext(arg, this);
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
 
-            if (arg.Content.Trim().StartsWith(commandPrefix))
+            if (arg.Content.Trim().StartsWith(commandPrefix) && !arg.Author.IsBot)
             {
                 await CommandRunner.Run(arg.Content, context, commandPrefix, false);
             }
