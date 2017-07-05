@@ -249,7 +249,7 @@ namespace DiscordBotNew.CommandLoader
                 title.Append(string.Join(" ", method.GetParameters()
                                                     .Skip(1)
                                                     .Select(param => param.IsOptional
-                                                                     ? $"[{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}]"
+                                                                     ? $"[{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")} = {param.DefaultValue}]"
                                                                      : $"<{param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}>")));
                 title.Append("`");
                 builder.AddField(title.ToString(), method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "");
