@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -162,6 +163,34 @@ namespace DiscordBotNew.Commands
             response.Append($"until {name}");
 
             return new SuccessResult(response.ToString());
+        }
+
+        [Command("back"), HelpText("Creates a backronym from the given text")]
+        public static ICommandResult Back(ICommandContext context, string acronym, byte count = 1, bool useComplexWords = false)
+        {
+            count = count < 1 ? (byte)1 : count > 10 ? (byte)10 : count;
+
+            string backronym = "";
+            for (int i = 0; i < count; i++)
+            {
+                backronym += acronym.ToUpper() + ": ";
+                foreach (char c in acronym)
+                {
+                    if (File.Exists($"{(useComplexWords ? "" : "simple")}words\\{char.ToLower(c)}.txt"))
+                    {
+                        string[] words = File.ReadAllLines($"{(useComplexWords ? "" : "simple")}words\\{char.ToLower(c)}.txt");
+                        string word = words[random.Next(words.Length)];
+                        if (word.Length > 1)
+                            backronym += char.ToUpper(word[0]) + word.Substring(1) + " ";
+                        else
+                            backronym += char.ToUpper(word[0]) + " ";
+                    }
+                }
+
+                backronym += "\n";
+            }
+
+            return new SuccessResult(backronym);
         }
     }
 }
