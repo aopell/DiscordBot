@@ -19,7 +19,7 @@ namespace DiscordBotNew
 
         public static void Main(string[] args) => new DiscordBot().MainAsync().GetAwaiter().GetResult();
 
-        private bool updatingDescriptions = false;
+        private List<ulong> updatingChannels = new List<ulong>();
 
         public async Task MainAsync()
         {
@@ -58,7 +58,7 @@ namespace DiscordBotNew
         {
             await Log(new LogMessage(LogSeverity.Info, "Ch Update", $"Channel updated: {((IChannel)arg2).Name}"));
 
-            if (!updatingDescriptions && arg2 is ITextChannel textChannel)
+            if (!updatingChannels.Contains(arg2.Id) && arg2 is ITextChannel textChannel)
             {
                 var channelDescriptions = ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions)
                                               ? descriptions
@@ -87,7 +87,7 @@ namespace DiscordBotNew
                 ChannelDescriptions.SaveSettings();
             }
 
-            updatingDescriptions = false;
+            updatingChannels.Remove(arg2.Id);
         }
 
         private async void Timer()
@@ -106,14 +106,14 @@ namespace DiscordBotNew
                                          var context = new DiscordChannelDescriptionContext(m.Groups[1].Value, channel, this);
                                          return (await CommandRunner.Run(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as ISocketMessageChannel), true)).ToString();
                                      });
-                    updatingDescriptions = true;
+                    updatingChannels.Add(channel.Id);
                     try
                     {
                         await channel.ModifyAsync(ch => ch.Topic = newDesc);
                     }
                     catch (Exception ex)
                     {
-                        updatingDescriptions = false;
+                        updatingChannels.Remove(channel.Id);
                     }
                 }
             }
