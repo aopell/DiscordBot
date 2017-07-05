@@ -14,7 +14,7 @@ namespace DiscordBotNew.Commands
     public static class ManagementCommands
     {
         [Command("username"), HelpText("Changes the bot's username"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> ChangeUsername(ICommandContext context, [JoinRemainingParameters] string username)
+        public static async Task<ICommandResult> ChangeUsername(DiscordMessageContext context, [JoinRemainingParameters] string username)
         {
             if (username.Length > 32)
             {
@@ -26,7 +26,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("avatar"), HelpText("Changes the bot's avatar image"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> ChangeAvatar(ICommandContext context, [JoinRemainingParameters] string url)
+        public static async Task<ICommandResult> ChangeAvatar(DiscordMessageContext context, [JoinRemainingParameters] string url)
         {
             try
             {
@@ -62,6 +62,6 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("kill"), HelpText("Kills the bot"), Permissions(ownerOnly: true)]
-        public static void Kill(ICommandContext context) => Environment.Exit(0);
+        public static void Kill(DiscordMessageContext context) => Environment.Exit(0);
     }
 }
