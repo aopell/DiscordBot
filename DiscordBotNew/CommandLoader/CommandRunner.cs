@@ -127,7 +127,7 @@ namespace DiscordBotNew.CommandLoader
 
                 if (result == null) return;
 
-                if (result is Task)
+                if (!result.GetType().IsGenericType && result is Task)
                 {
                     await (Task)result;
                     return;
