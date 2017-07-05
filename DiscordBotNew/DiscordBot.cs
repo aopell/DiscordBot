@@ -107,7 +107,14 @@ namespace DiscordBotNew
                                          return (await CommandRunner.Run(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as ISocketMessageChannel), true)).ToString();
                                      });
                     updatingDescriptions = true;
-                    await channel.ModifyAsync(ch => ch.Topic = newDesc);
+                    try
+                    {
+                        await channel.ModifyAsync(ch => ch.Topic = newDesc);
+                    }
+                    catch (Exception ex)
+                    {
+                        updatingDescriptions = false;
+                    }
                 }
             }
         }

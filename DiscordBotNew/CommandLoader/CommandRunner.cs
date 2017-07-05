@@ -56,6 +56,14 @@ namespace DiscordBotNew.CommandLoader
             var parameters = command.GetParameters();
             var requiredParameters = parameters.Where(param => !param.IsOptional).ToArray();
 
+            Type contextType = context.GetType();
+            if (!parameters[0].ParameterType.IsAssignableFrom(contextType))
+            {
+                string message = $"That command is not valid in the context {context.GetType().Name}";
+                await context.ReplyError(message, "Invalid Context");
+                return new ErrorResult(message, "Invalid Context");
+            }
+
             if (args.Length < requiredParameters.Length - 1)
             {
                 string message = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info";
