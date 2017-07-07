@@ -80,5 +80,6 @@ namespace DiscordBotNew.CommandLoader
         }
 
         public static string NicknameOrUsername(this IUser user) => (user as IGuildUser)?.Nickname ?? user.Username;
+        public static string AvatarUrlOrDefaultAvatar(this IUser user) => user.GetAvatarUrl() ?? "https://discordapp.com/assets/6debd47ed13483642cf09e832ed0bc1b.png";
     }
 }

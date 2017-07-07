@@ -158,12 +158,13 @@ namespace DiscordBotNew
                 Footer = new EmbedFooterBuilder
                 {
                     Text = $"The poll will end in {MinutesLeft} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(context, context.Channel)}endpoll'"
+                },
+                Author = new EmbedAuthorBuilder
+                {
+                    Name = context.Message.Author.NicknameOrUsername(),
+                    IconUrl = context.Message.Author.AvatarUrlOrDefaultAvatar()
                 }
             };
-
-            string url = context.MessageAuthor.GetAvatarUrl();
-            if (!string.IsNullOrWhiteSpace(url))
-                builer.ThumbnailUrl = url;
 
             for (int i = 0; i < Options.Count; i++)
             {

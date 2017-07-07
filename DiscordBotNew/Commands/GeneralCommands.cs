@@ -119,7 +119,7 @@ namespace DiscordBotNew.Commands
                 Author = new EmbedAuthorBuilder
                 {
                     Name = msg.Author.NicknameOrUsername(),
-                    IconUrl = msg.Author.GetAvatarUrl() ?? "https://discordapp.com/assets/6debd47ed13483642cf09e832ed0bc1b.png"
+                    IconUrl = msg.Author.AvatarUrlOrDefaultAvatar()
                 },
                 Timestamp = msg.Timestamp,
                 Description = msg.Content
