@@ -54,8 +54,13 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
-        public static ICommandResult SetPrefix(DiscordMessageContext context, [JoinRemainingParameters, HelpText("The new prefix for this channel or server")] string prefix)
+        public static ICommandResult SetPrefix(DiscordMessageContext context, [JoinRemainingParameters, HelpText("The new prefix for this channel or server (up to 16 characters)")] string prefix)
         {
+            if (prefix.Length > 16)
+            {
+                return new ErrorResult("Prefix must be no more than 16 characters in length");
+            }
+
             bool server = false;
             ulong id;
             if (context.ChannelType == ChannelType.Text)
@@ -132,13 +137,13 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
-        public static ICommandResult Countdown(ICommandContext context, string name, [JoinRemainingParameters, HelpText("The time to count down to")] DateTime? date = null)
+        public static ICommandResult Countdown(ICommandContext context, string name, [JoinRemainingParameters, HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID")] string timezone = "Pacific Standard Time")
         {
             var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
             if (date != null)
             {
-                var pacificTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time").Offset);
+                var pacificTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, timezone).Offset);
 
                 if (countdowns.ContainsKey(name))
                 {
