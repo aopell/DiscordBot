@@ -222,39 +222,38 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `leaderboard` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few minutes...");
+            await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
 
             using (messageChannel.EnterTypingState())
             {
 
                 var channels = await guild.GetTextChannelsAsync();
-                Dictionary<ulong, int> messagesPerUser = new Dictionary<ulong, int>();
-                Dictionary<ulong, int> messagesPerChannel = new Dictionary<ulong, int>();
-                Dictionary<ulong, string> usernameLookup = new Dictionary<ulong, string>();
+                var messagesPerUser = new Dictionary<ulong, int>();
+                var messagesPerChannel = new Dictionary<ulong, int>();
+                var usernameLookup = new Dictionary<ulong, string>();
                 int totalMessages = 0;
 
                 foreach (var channel in channels)
                 {
-                    IEnumerable<IMessage> messages = await channel.GetMessagesAsync().Flatten();
-                    IMessage lastMessage = null;
-                    while (lastMessage != messages.Last())
-                    {
-                        lastMessage = messages.Last();
-                        messages = messages.Concat(await channel.GetMessagesAsync(lastMessage, Direction.Before).Flatten());
-                    }
-
                     int messagesInChannel = 0;
-                    foreach (var message in messages)
-                    {
-                        if (!messagesPerUser.ContainsKey(message.Author.Id))
-                        {
-                            messagesPerUser.Add(message.Author.Id, 0);
-                            usernameLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
-                        }
 
-                        messagesPerUser[message.Author.Id]++;
-                        messagesInChannel++;
-                    }
+                    var pages = channel.GetMessagesAsync(int.MaxValue);
+
+                    await pages.ForEachAsync(page =>
+                    {
+                        foreach (IMessage message in page)
+                        {
+                            if (!messagesPerUser.ContainsKey(message.Author.Id))
+                            {
+                                messagesPerUser.Add(message.Author.Id, 0);
+                                usernameLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
+                            }
+
+                            messagesPerUser[message.Author.Id]++;
+                            messagesInChannel++;
+                        }
+                    });
+
                     messagesPerChannel[channel.Id] = messagesInChannel;
                     totalMessages += messagesInChannel;
                 }
