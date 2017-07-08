@@ -202,5 +202,82 @@ namespace DiscordBotNew.Commands
 
             return new SuccessResult(backronym);
         }
+
+        [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
+        public async static Task<ICommandResult> Leaderboard(ICommandContext context)
+        {
+            IGuild guild;
+            ITextChannel messageChannel;
+            switch (context)
+            {
+                case DiscordMessageContext d:
+                    guild = d.Guild;
+                    messageChannel = (ITextChannel)d.Channel;
+                    break;
+                case DiscordChannelDescriptionContext d:
+                    guild = d.Channel.Guild;
+                    messageChannel = (ITextChannel)d.Channel;
+                    break;
+                default:
+                    return new ErrorResult($"The `leaderboard` command is not valid in the context `{context.GetType().Name}`");
+            }
+
+            await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few minutes...");
+
+            using (messageChannel.EnterTypingState())
+            {
+
+                var channels = await guild.GetTextChannelsAsync();
+                Dictionary<ulong, int> messagesPerUser = new Dictionary<ulong, int>();
+                Dictionary<ulong, int> messagesPerChannel = new Dictionary<ulong, int>();
+                Dictionary<ulong, string> usernameLookup = new Dictionary<ulong, string>();
+                int totalMessages = 0;
+
+                foreach (var channel in channels)
+                {
+                    IEnumerable<IMessage> messages = await channel.GetMessagesAsync().Flatten();
+                    IMessage lastMessage = null;
+                    while (lastMessage != messages.Last())
+                    {
+                        lastMessage = messages.Last();
+                        messages = messages.Concat(await channel.GetMessagesAsync(lastMessage, Direction.Before).Flatten());
+                    }
+
+                    int messagesInChannel = 0;
+                    foreach (var message in messages)
+                    {
+                        if (!messagesPerUser.ContainsKey(message.Author.Id))
+                        {
+                            messagesPerUser.Add(message.Author.Id, 0);
+                            usernameLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
+                        }
+
+                        messagesPerUser[message.Author.Id]++;
+                        messagesInChannel++;
+                    }
+                    messagesPerChannel[channel.Id] = messagesInChannel;
+                    totalMessages += messagesInChannel;
+                }
+
+                var userMessages = messagesPerUser.ToList().OrderByDescending(x => x.Value);
+                var channelMessages = messagesPerChannel.ToList().OrderByDescending(x => x.Value);
+
+                StringBuilder builder = new StringBuilder("**Messages Leaderboard**\n```\n");
+                builder.AppendLine("Channels");
+                foreach (var channel in channelMessages)
+                {
+                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (float)totalMessages * 100, (await guild.GetChannelAsync(channel.Key)).Name);
+                }
+                builder.AppendLine("\nUsers");
+                foreach (var user in userMessages)
+                {
+                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   {2}\n", user.Value, user.Value / (float)totalMessages * 100, usernameLookup[user.Key]);
+                }
+                builder.AppendLine($"\nTotal messages in server: {totalMessages}");
+                builder.Append("```");
+
+                return new SuccessResult(builder.ToString());
+            }
+        }
     }
 }

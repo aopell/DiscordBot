@@ -29,8 +29,15 @@ namespace DiscordBotNew.CommandLoader
             await DiscordBot.Log(new LogMessage(LogSeverity.Info, "Reply", $"{Guild?.Name ?? "DM"} #{Channel.Name}: {message}"));
             await Channel.SendMessageAsync(message, isTTS, embed, options);
         }
-        public async Task ReplyError(Exception ex) => await ReplyError(ex.Message, ex.GetType().Name);
 
+        public async Task ReplyError(Exception ex)
+        {
+#if DEBUG
+            await ReplyError(ex.ToString(), ex.GetType().Name);
+#else
+            await ReplyError(ex.Message, ex.GetType().Name);
+#endif
+        }
         public async Task ReplyError(string description, string title = "Error")
         {
             await DiscordBot.Log(new LogMessage(LogSeverity.Error, "ErrorReply", $"{(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{title}] {description}"));

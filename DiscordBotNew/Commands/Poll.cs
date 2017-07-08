@@ -152,7 +152,7 @@ namespace DiscordBotNew
         {
             var builer = new EmbedBuilder
             {
-                Title = $"Poll by {Creator.NicknameOrUsername()}",
+                Title = "Poll",
                 Color = new Color(76, 175, 80),
                 Description = $"Vote using `{CommandTools.GetCommandPrefix(context, context.Channel)}{(Anonymous ? $"anonvote {Id}" : "vote")} <option number|option text>`{(Anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__**\nThis is **anonymous poll number #{Id}.**" : "")}",
                 Footer = new EmbedFooterBuilder
