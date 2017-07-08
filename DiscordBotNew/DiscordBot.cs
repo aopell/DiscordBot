@@ -56,7 +56,7 @@ namespace DiscordBotNew
 
         private async Task Client_ChannelUpdated(SocketChannel arg1, SocketChannel arg2)
         {
-            await Log(new LogMessage(LogSeverity.Info, "Ch Update", $"Channel updated: {((IChannel)arg2).Name}"));
+            await Log(new LogMessage(LogSeverity.Info, "Ch Update", $"Channel updated: {(arg2 as IGuildChannel)?.Guild.Name ?? ""}#{((IChannel)arg2).Name}"));
 
             if (!updatingChannels.Contains(arg2.Id) && arg2 is ITextChannel textChannel)
             {

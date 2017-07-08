@@ -204,7 +204,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
-        public async static Task<ICommandResult> Leaderboard(ICommandContext context)
+        public static async Task<ICommandResult> Leaderboard(ICommandContext context)
         {
             IGuild guild;
             ITextChannel messageChannel;
@@ -235,11 +235,18 @@ namespace DiscordBotNew.Commands
 
                 foreach (var channel in channels)
                 {
+                    var permissions = (await guild.GetCurrentUserAsync()).GetPermissions(channel);
+                    if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
+                    {
+                        await messageChannel.SendMessageAsync($"No permission to access #{channel.Name}");
+                        continue;
+                    }
+
                     int messagesInChannel = 0;
 
                     var pages = channel.GetMessagesAsync(int.MaxValue);
 
-                    await pages.ForEachAsync(page =>
+                    pages.ForEach(page =>
                     {
                         foreach (IMessage message in page)
                         {
@@ -258,8 +265,8 @@ namespace DiscordBotNew.Commands
                     totalMessages += messagesInChannel;
                 }
 
-                var userMessages = messagesPerUser.ToList().OrderByDescending(x => x.Value);
-                var channelMessages = messagesPerChannel.ToList().OrderByDescending(x => x.Value);
+                var userMessages = messagesPerUser.OrderByDescending(x => x.Value);
+                var channelMessages = messagesPerChannel.OrderByDescending(x => x.Value);
 
                 StringBuilder builder = new StringBuilder("**Messages Leaderboard**\n```\n");
                 builder.AppendLine("Channels");
