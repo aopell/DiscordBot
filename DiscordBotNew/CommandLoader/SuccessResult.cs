@@ -36,12 +36,26 @@ namespace DiscordBotNew.CommandLoader
             builder.AppendLine();
             if (Embed != null)
             {
-                builder.AppendLine($"**{Embed.Title}**");
-                builder.AppendLine(Embed.Description);
+                if (!string.IsNullOrWhiteSpace(Embed.Author?.Name))
+                {
+                    builder.AppendLine($"**{Embed.Author.Value.Name}**");
+                }
+                if (!string.IsNullOrWhiteSpace(Embed.Title))
+                {
+                    builder.AppendLine($"**{Embed.Title}**");
+                }
+                if (!string.IsNullOrWhiteSpace(Embed.Description))
+                {
+                    builder.AppendLine(Embed.Description);
+                }
                 foreach (var field in Embed.Fields)
                 {
                     builder.AppendLine($"**{field.Name}**");
                     builder.AppendLine(field.Value);
+                }
+                if (!string.IsNullOrWhiteSpace(Embed.Footer?.Text))
+                {
+                    builder.AppendLine(Embed.Footer.Value.Text);
                 }
             }
 
