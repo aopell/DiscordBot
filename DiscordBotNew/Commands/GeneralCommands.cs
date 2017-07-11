@@ -293,6 +293,9 @@ namespace DiscordBotNew.Commands
                     {
                         targetUser = discordContext.Message.MentionedUsers.First();
                     }
+                    else if (discordContext.Message.Tags.Count > 0 && discordContext.Message.Tags.First().Type == TagType.UserMention && (targetUser = context.Bot.Client.GetUser(discordContext.Message.Tags.First().Key)) != null)
+                    {
+                    }
                     else
                     {
                         targetUser = (SocketUser)await CommandTools.GetUserByUsername(user, discordContext.Channel);
@@ -305,7 +308,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `status` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            if (!context.Bot.UserStatuses.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses))
+            if (targetUser == null || !context.Bot.UserStatuses.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses))
             {
                 return new ErrorResult("No status history data found");
             }
