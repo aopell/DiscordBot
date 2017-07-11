@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
+using DiscordBotNew.Commands;
 
 namespace DiscordBotNew
 {
@@ -15,7 +16,8 @@ namespace DiscordBotNew
     {
         public DiscordSocketClient Client { get; private set; }
         public SettingsManager Settings { get; private set; }
-        public SettingsManager ChannelDescriptions { get; private set; }
+        private SettingsManager channelDescriptions;
+        public SettingsManager UserStatuses { get; private set; }
 
         public static void Main(string[] args) => new DiscordBot().MainAsync().GetAwaiter().GetResult();
 
@@ -26,13 +28,15 @@ namespace DiscordBotNew
             CommandRunner.LoadCommands();
             CreateFiles();
             Settings = new SettingsManager(SettingsManager.BasePath + "settings.json");
-            ChannelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
+            channelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
+            UserStatuses = new SettingsManager(SettingsManager.BasePath + "statuses.json");
             Client = new DiscordSocketClient();
 
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
             Client.Ready += Client_Ready;
             Client.ChannelUpdated += Client_ChannelUpdated;
+            Client.GuildMemberUpdated += Client_GuildMemberUpdated;
 
             if (!Settings.GetSetting("token", out string token)) throw new KeyNotFoundException("Token not found in settings file");
             await Client.LoginAsync(TokenType.Bot, token);
@@ -42,12 +46,47 @@ namespace DiscordBotNew
             await Task.Delay(-1);
         }
 
+        private async Task Client_GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
+        {
+            await Log(new LogMessage(LogSeverity.Info, "UserUpdate", $"{arg2.Username} updated"));
+
+            if (arg1.Status != arg2.Status)
+            {
+                Dictionary<ulong, UserStatusInfo> statuses;
+                statuses = UserStatuses.GetSetting("statuses", out statuses) ? statuses : new Dictionary<ulong, UserStatusInfo>();
+                DateTimeOffset currentTime = DateTimeOffset.Now;
+
+                if (statuses.ContainsKey(arg2.Id))
+                {
+                    var previousStatus = statuses[arg2.Id];
+                    previousStatus.StatusLastChanged = currentTime;
+                    if (arg1.Status == UserStatus.Online)
+                    {
+                        previousStatus.LastOnline = currentTime;
+                    }
+                }
+                else
+                {
+                    UserStatusInfo status = new UserStatusInfo
+                    {
+                        StatusLastChanged = currentTime,
+                        LastOnline = arg1.Status == UserStatus.Online ? currentTime : DateTimeOffset.MinValue
+                    };
+                    statuses.Add(arg2.Id, status);
+                }
+
+                UserStatuses.AddSetting("statuses", statuses);
+                UserStatuses.SaveSettings();
+            }
+        }
+
         private void CreateFiles()
         {
-            CreateFile("settings.json");
-            CreateFile("descriptions.json");
+            createFile("settings.json");
+            createFile("descriptions.json");
+            createFile("statuses.json");
 
-            void CreateFile(string filename)
+            void createFile(string filename)
             {
                 if (!File.Exists(SettingsManager.BasePath + filename))
                     File.Create(SettingsManager.BasePath + filename).Close();
@@ -60,7 +99,7 @@ namespace DiscordBotNew
 
             if (!updatingChannels.Contains(arg2.Id) && arg2 is ITextChannel textChannel)
             {
-                var channelDescriptions = ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions)
+                var channelDescriptions = this.channelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions)
                                               ? descriptions
                                               : new Dictionary<ulong, string>();
                 Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
@@ -83,8 +122,8 @@ namespace DiscordBotNew
                     }
                 }
 
-                ChannelDescriptions.AddSetting("descriptions", channelDescriptions);
-                ChannelDescriptions.SaveSettings();
+                this.channelDescriptions.AddSetting("descriptions", channelDescriptions);
+                this.channelDescriptions.SaveSettings();
             }
 
             updatingChannels.Remove(arg2.Id);
@@ -94,7 +133,7 @@ namespace DiscordBotNew
         {
 #if !DEBUG
             Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
-            if (ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions))
+            if (channelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions))
             {
                 foreach (var item in descriptions)
                 {

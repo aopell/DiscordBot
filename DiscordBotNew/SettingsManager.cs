@@ -133,7 +133,6 @@ namespace DiscordBotNew
         public void SaveSettings()
         {
             File.WriteAllText(SettingsPath, settings.ToString(Formatting.Indented));
-            settings = null;
         }
 
 

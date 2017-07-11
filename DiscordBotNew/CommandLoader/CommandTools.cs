@@ -81,5 +81,25 @@ namespace DiscordBotNew.CommandLoader
 
         public static string NicknameOrUsername(this IUser user) => (user as IGuildUser)?.Nickname ?? user.Username;
         public static string AvatarUrlOrDefaultAvatar(this IUser user) => user.GetAvatarUrl() ?? "https://discordapp.com/assets/6debd47ed13483642cf09e832ed0bc1b.png";
+
+        public static async Task<IUser> GetUserByUsername(string username, ISocketMessageChannel channel)
+        {
+            var users = (await channel.GetUsersAsync().Flatten()).Where(user => user.Username == username).ToArray();
+            if (users.Length == 1)
+                return users[0];
+            if (users.Length > 0)
+                throw new ArgumentException($"Multiple users were found with the username {username}");
+            throw new ArgumentException($"No user was found with the username {username} in this channel");
+        }
+
+        public static string ToLongString(this TimeSpan difference)
+        {
+            var response = new StringBuilder();
+            response.Append(difference.Days != 0 ? $"{difference.Days} days " : "");
+            response.Append(difference.TotalHours >= 1 ? $"{difference.Hours} hours " : "");
+            response.Append(difference.TotalMinutes >= 1 ? $"{difference.Minutes} minutes " : "");
+            response.Append($"{difference.Seconds} seconds");
+            return response.ToString();
+        }
     }
 }

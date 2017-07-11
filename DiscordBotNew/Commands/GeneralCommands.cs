@@ -165,14 +165,7 @@ namespace DiscordBotNew.Commands
 
             TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
 
-            var response = new StringBuilder();
-            response.Append(difference.Days != 0 ? $"{difference.Days} days " : "");
-            response.Append($"{difference.Hours} hours ");
-            response.Append($"{difference.Minutes} minutes ");
-            response.Append($"{difference.Seconds} seconds ");
-            response.Append($"until {name}");
-
-            return new SuccessResult(response.ToString());
+            return new SuccessResult(difference.ToLongString());
         }
 
         [Command("back"), HelpText("Creates a backronym from the given text")]
@@ -230,6 +223,7 @@ namespace DiscordBotNew.Commands
                 var channels = await guild.GetTextChannelsAsync();
                 var messagesPerUser = new Dictionary<ulong, int>();
                 var messagesPerChannel = new Dictionary<ulong, int>();
+                var channelLookup = new Dictionary<ulong, string>();
                 var usernameLookup = new Dictionary<ulong, string>();
                 int totalMessages = 0;
 
@@ -263,6 +257,7 @@ namespace DiscordBotNew.Commands
 
                     messagesPerChannel[channel.Id] = messagesInChannel;
                     totalMessages += messagesInChannel;
+                    channelLookup.Add(channel.Id, channel.Name);
                 }
 
                 var userMessages = messagesPerUser.OrderByDescending(x => x.Value);
@@ -272,7 +267,7 @@ namespace DiscordBotNew.Commands
                 builder.AppendLine("Channels");
                 foreach (var channel in channelMessages)
                 {
-                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (float)totalMessages * 100, (await guild.GetChannelAsync(channel.Key)).Name);
+                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (float)totalMessages * 100, channelLookup[channel.Key]);
                 }
                 builder.AppendLine("\nUsers");
                 foreach (var user in userMessages)
@@ -284,6 +279,77 @@ namespace DiscordBotNew.Commands
 
                 return new SuccessResult(builder.ToString());
             }
+        }
+
+        [Command("status"), HelpText("Gets when a user was last online")]
+        public static async Task<ICommandResult> Status(ICommandContext context, [DisplayName("username | @ mention")] string user)
+        {
+            SocketUser targetUser;
+
+            switch (context)
+            {
+                case DiscordMessageContext discordContext:
+                    if (discordContext.Message.MentionedUsers.Count > 0)
+                    {
+                        targetUser = discordContext.Message.MentionedUsers.First();
+                    }
+                    else
+                    {
+                        targetUser = (SocketUser)await CommandTools.GetUserByUsername(user, discordContext.Channel);
+                    }
+                    break;
+                case DiscordChannelDescriptionContext channelDescription:
+                    targetUser = (SocketUser)await CommandTools.GetUserByUsername(user, (ISocketMessageChannel)channelDescription.Channel);
+                    break;
+                default:
+                    return new ErrorResult($"The `status` command is not valid in the context `{context.GetType().Name}`");
+            }
+
+            if (!context.Bot.UserStatuses.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses))
+            {
+                return new ErrorResult("No status history data found");
+            }
+
+            if (statuses.ContainsKey(targetUser.Id))
+            {
+                var statusInfo = statuses[targetUser.Id];
+
+                Color? color;
+                switch (targetUser.Status)
+                {
+                    case UserStatus.Online:
+                        color = new Color(76, 175, 80);
+                        break;
+                    case UserStatus.Idle:
+                    case UserStatus.AFK:
+                        color = new Color(255, 235, 59);
+                        break;
+                    case UserStatus.DoNotDisturb:
+                        color = new Color(244, 67, 54);
+                        break;
+                    default:
+                        color = null;
+                        break;
+                }
+
+                EmbedBuilder statusEmbed = new EmbedBuilder
+                {
+                    Author = new EmbedAuthorBuilder
+                    {
+                        Name = targetUser.NicknameOrUsername(),
+                        IconUrl = targetUser.AvatarUrlOrDefaultAvatar()
+                    },
+                    Color = color
+                };
+
+                statusEmbed.AddInlineField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString());
+                if (targetUser.Status != UserStatus.Online)
+                    statusEmbed.AddInlineField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
+
+                return new SuccessResult("", embed: statusEmbed);
+            }
+
+            return new ErrorResult("User status history not found");
         }
     }
 }

@@ -154,9 +154,11 @@
     <Compile Include="Commands\GeneralCommands.cs" />
     <Compile Include="CommandLoader\CommandAttributes.cs" />
     <Compile Include="CommandLoader\CommandRunner.cs" />
+    <Compile Include="Commands\Leaderboard.cs" />
     <Compile Include="Commands\ManagementCommands.cs" />
     <Compile Include="Commands\Poll.cs" />
     <Compile Include="Commands\PollCommands.cs" />
+    <Compile Include="Commands\UserStatusInfo.cs" />
     <Compile Include="Commands\UtilityCommands.cs" />
     <Compile Include="DiscordBot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
