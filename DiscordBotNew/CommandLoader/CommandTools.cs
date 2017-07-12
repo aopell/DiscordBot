@@ -95,10 +95,10 @@ namespace DiscordBotNew.CommandLoader
         public static string ToLongString(this TimeSpan difference)
         {
             var response = new StringBuilder();
-            response.Append(difference.Days != 0 ? $"{difference.Days} days " : "");
-            response.Append(difference.TotalHours >= 1 ? $"{difference.Hours} hours " : "");
-            response.Append(difference.TotalMinutes >= 1 ? $"{difference.Minutes} minutes " : "");
-            response.Append($"{difference.Seconds} seconds");
+            response.Append(difference.Days != 0 ? $"{difference.Days} day{(difference.Days == 1 ? "" : "s")} " : "");
+            response.Append(difference.TotalHours >= 1 ? $"{difference.Hours} hour{(difference.Hours == 1 ? "" : "s")} " : "");
+            response.Append(difference.TotalMinutes >= 1 ? $"{difference.Minutes} minute{(difference.Minutes == 1 ? "" : "s")} " : "");
+            response.Append($"{difference.Seconds} second{(difference.Seconds == 1 ? "" : "s")}");
             return response.ToString();
         }
     }

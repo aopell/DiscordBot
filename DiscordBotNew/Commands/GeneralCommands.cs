@@ -342,7 +342,8 @@ namespace DiscordBotNew.Commands
                         Name = targetUser.NicknameOrUsername(),
                         IconUrl = targetUser.AvatarUrlOrDefaultAvatar()
                     },
-                    Color = color
+                    Color = color,
+                    Description = targetUser.Status.ToString()
                 };
 
                 statusEmbed.AddInlineField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString());
