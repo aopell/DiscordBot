@@ -19,7 +19,7 @@ namespace DiscordBotNew.CommandLoader
                                             .GetTypes()
                                             .Where(type => type.IsAbstract && type.IsSealed) // Static types only
                                             .SelectMany(type => type.GetMethods())
-                                            .Where(method => method.GetCustomAttribute<CommandAttribute>() != null)
+                                            .Where(method => method.IsDefined(typeof(CommandAttribute)))
                                             .OrderBy(method => method.GetCustomAttribute<CommandAttribute>().Names[0])
                                             .ToList();
         }
@@ -102,7 +102,7 @@ namespace DiscordBotNew.CommandLoader
                     continue;
                 }
 
-                if (i == parameters.Length - 1 && parameters[i].GetCustomAttribute<JoinRemainingParametersAttribute>() != null)
+                if (i == parameters.Length - 1 && parameters[i].IsDefined(typeof(JoinRemainingParametersAttribute)))
                 {
                     if (parameters[i].ParameterType == typeof(string))
                         values.Add(string.Join(" ", args.Skip(i - 1)));
@@ -250,8 +250,8 @@ namespace DiscordBotNew.CommandLoader
                 title.Append(string.Join(" ", method.GetParameters()
                                                     .Skip(1)
                                                     .Select(param => param.IsOptional
-                                                                     ? $"[{param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}{(param.DefaultValue == null ? "" : $" = {param.DefaultValue}")}]"
-                                                                     : $"<{param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name}{(param.GetCustomAttribute<JoinRemainingParametersAttribute>() != null ? "..." : "")}>")));
+                                                                     ? $"[{param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name}{(param.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "..." : "")}{(param.DefaultValue == null ? "" : $" = {param.DefaultValue}")}]"
+                                                                     : $"<{param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name}{(param.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "..." : "")}>")));
                 title.Append("`");
                 var text = new StringBuilder();
                 text.AppendLine(method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "*No help text found*");
@@ -270,7 +270,7 @@ namespace DiscordBotNew.CommandLoader
                             text.Append(parameter.ParameterType.Name);
                             text.Append(" ");
                             text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
-                            text.Append(parameter.GetCustomAttribute<JoinRemainingParametersAttribute>() == null ? "" : "...");
+                            text.Append(parameter.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "" : "...");
                             text.Append("`");
                             var helpText = parameter.GetCustomAttribute<HelpTextAttribute>();
                             if (helpText != null)
@@ -285,7 +285,7 @@ namespace DiscordBotNew.CommandLoader
                             text.Append(parameter.ParameterType.Name);
                             text.Append(" ");
                             text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
-                            text.Append(parameter.GetCustomAttribute<JoinRemainingParametersAttribute>() == null ? "" : "...");
+                            text.Append(parameter.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "" : "...");
                             if (parameter.DefaultValue != null)
                                 text.Append($" = {parameter.DefaultValue}");
                             text.Append("`");
