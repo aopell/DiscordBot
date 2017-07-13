@@ -18,6 +18,7 @@ namespace DiscordBotNew
         public SettingsManager Settings { get; private set; }
         private SettingsManager channelDescriptions;
         public SettingsManager UserStatuses { get; private set; }
+        public SettingsManager Leaderboards { get; private set; }
 
         public static void Main(string[] args) => new DiscordBot().MainAsync().GetAwaiter().GetResult();
 
@@ -30,6 +31,7 @@ namespace DiscordBotNew
             Settings = new SettingsManager(SettingsManager.BasePath + "settings.json");
             channelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
             UserStatuses = new SettingsManager(SettingsManager.BasePath + "statuses.json");
+            Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
             Client = new DiscordSocketClient();
 
             Client.Log += Log;
@@ -85,6 +87,7 @@ namespace DiscordBotNew
             createFile("settings.json");
             createFile("descriptions.json");
             createFile("statuses.json");
+            createFile("leaderboards.json");
 
             void createFile(string filename)
             {

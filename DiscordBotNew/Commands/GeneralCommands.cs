@@ -197,7 +197,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> Leaderboard(ICommandContext context)
+        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context)
         {
             IGuild guild;
             ITextChannel messageChannel;
@@ -219,65 +219,8 @@ namespace DiscordBotNew.Commands
 
             using (messageChannel.EnterTypingState())
             {
-
-                var channels = await guild.GetTextChannelsAsync();
-                var messagesPerUser = new Dictionary<ulong, int>();
-                var messagesPerChannel = new Dictionary<ulong, int>();
-                var channelLookup = new Dictionary<ulong, string>();
-                var usernameLookup = new Dictionary<ulong, string>();
-                int totalMessages = 0;
-
-                foreach (var channel in channels)
-                {
-                    var permissions = (await guild.GetCurrentUserAsync()).GetPermissions(channel);
-                    if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
-                    {
-                        await messageChannel.SendMessageAsync($"No permission to access #{channel.Name}");
-                        continue;
-                    }
-
-                    int messagesInChannel = 0;
-
-                    var pages = channel.GetMessagesAsync(int.MaxValue);
-
-                    pages.ForEach(page =>
-                    {
-                        foreach (IMessage message in page)
-                        {
-                            if (!messagesPerUser.ContainsKey(message.Author.Id))
-                            {
-                                messagesPerUser.Add(message.Author.Id, 0);
-                                usernameLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
-                            }
-
-                            messagesPerUser[message.Author.Id]++;
-                            messagesInChannel++;
-                        }
-                    });
-
-                    messagesPerChannel[channel.Id] = messagesInChannel;
-                    totalMessages += messagesInChannel;
-                    channelLookup.Add(channel.Id, channel.Name);
-                }
-
-                var userMessages = messagesPerUser.OrderByDescending(x => x.Value);
-                var channelMessages = messagesPerChannel.OrderByDescending(x => x.Value);
-
-                StringBuilder builder = new StringBuilder("**Messages Leaderboard**\n```\n");
-                builder.AppendLine("Channels");
-                foreach (var channel in channelMessages)
-                {
-                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (float)totalMessages * 100, channelLookup[channel.Key]);
-                }
-                builder.AppendLine("\nUsers");
-                foreach (var user in userMessages)
-                {
-                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   {2}\n", user.Value, user.Value / (float)totalMessages * 100, usernameLookup[user.Key]);
-                }
-                builder.AppendLine($"\nTotal messages in server: {totalMessages}");
-                builder.Append("```");
-
-                return new SuccessResult(builder.ToString());
+                Leaderboard leaderboard = await Leaderboard.Generate(guild, context.Bot);
+                return new SuccessResult(leaderboard.ToString());
             }
         }
 
