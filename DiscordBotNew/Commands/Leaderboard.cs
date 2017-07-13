@@ -105,12 +105,12 @@ namespace DiscordBotNew.Commands
             if (user)
             {
                 float current = UserMessages[id] / (float)TotalMessages * 100;
-                return OldLeaderboard.UserMessages.ContainsKey(id) ? (OldLeaderboard.UserMessages[id] / (float)TotalMessages * 100) - current : float.PositiveInfinity;
+                return OldLeaderboard.UserMessages.ContainsKey(id) ? (OldLeaderboard.UserMessages[id] / (float)OldLeaderboard.TotalMessages * 100) - current : float.PositiveInfinity;
             }
             else
             {
                 float current = ChannelMessages[id] / (float)TotalMessages * 100;
-                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? (OldLeaderboard.ChannelMessages[id] / (float)TotalMessages * 100) - current : float.PositiveInfinity;
+                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? (OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100) - current : float.PositiveInfinity;
             }
         }
 
@@ -144,7 +144,7 @@ namespace DiscordBotNew.Commands
                 }
                 else
                 {
-                    builder.AppendFormat("{5}  {0,-7} ({3:+;-;+}{3,4:#;#;0}) {1,8:0.0}% ({4:+;-;+}{4,4:0.0;0.0;0.0}%)   {2}\n", channel.Value, channel.Value / (float)TotalMessages * 100, ChannelLookup[channel.Key], CalculateMessageDifference(channel.Key, false), CalculatePercentageDifference(channel.Key, false), GetDifferenceChar(channel.Key, false));
+                    builder.AppendFormat("{5}  {0,-7} ({3:+;-;+}{3,4:#;#;0}) {1,8:0.0}% ({4:+;-;+}{4,4:0.0;0.0;0.0}%)   #{2}\n", channel.Value, channel.Value / (float)TotalMessages * 100, ChannelLookup[channel.Key], CalculateMessageDifference(channel.Key, false), CalculatePercentageDifference(channel.Key, false), GetDifferenceChar(channel.Key, false));
                 }
             }
             builder.AppendLine("\nUsers");
@@ -165,7 +165,7 @@ namespace DiscordBotNew.Commands
             }
             else
             {
-                builder.AppendLine($"\nTotal messages in server: {TotalMessages} (+{OldLeaderboard.TotalMessages - TotalMessages})");
+                builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
                 builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
             }
             builder.Append("```");
