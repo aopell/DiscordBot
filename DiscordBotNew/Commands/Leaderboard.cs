@@ -16,23 +16,23 @@ namespace DiscordBotNew.Commands
         public Dictionary<ulong, int> UserMessages { get; set; }
         public DateTimeOffset TimeGenerated { get; set; }
 
-        private IEnumerable<KeyValuePair<ulong, int>> orderedUserMessages;
+        private List<KeyValuePair<ulong, int>> orderedUserMessages;
 
-        private IEnumerable<KeyValuePair<ulong, int>> OrderedUserMessages
+        private List<KeyValuePair<ulong, int>> OrderedUserMessages
         {
             get
             {
-                orderedUserMessages = orderedUserMessages ?? UserMessages.OrderByDescending(x => x.Value);
+                orderedUserMessages = orderedUserMessages ?? UserMessages.OrderByDescending(x => x.Value).ToList();
                 return orderedUserMessages;
             }
         }
 
-        private IEnumerable<KeyValuePair<ulong, int>> orderedChannelMessages;
-        private IEnumerable<KeyValuePair<ulong, int>> OrderedChannelMessages
+        private List<KeyValuePair<ulong, int>> orderedChannelMessages;
+        private List<KeyValuePair<ulong, int>> OrderedChannelMessages
         {
             get
             {
-                orderedChannelMessages = orderedChannelMessages ?? ChannelMessages.OrderByDescending(x => x.Value);
+                orderedChannelMessages = orderedChannelMessages ?? ChannelMessages.OrderByDescending(x => x.Value).ToList();
                 return orderedChannelMessages;
             }
         }
@@ -137,13 +137,13 @@ namespace DiscordBotNew.Commands
             int oldIndex;
             if (user)
             {
-                index = OrderedUserMessages.ToList().FindIndex(x => x.Key == id);
-                oldIndex = OldLeaderboard.OrderedUserMessages.ToList().FindIndex(x => x.Key == id);
+                index = OrderedUserMessages.FindIndex(x => x.Key == id);
+                oldIndex = OldLeaderboard.OrderedUserMessages.FindIndex(x => x.Key == id);
             }
             else
             {
-                index = OrderedChannelMessages.ToList().FindIndex(x => x.Key == id);
-                oldIndex = OldLeaderboard.OrderedChannelMessages.ToList().FindIndex(x => x.Key == id);
+                index = OrderedChannelMessages.FindIndex(x => x.Key == id);
+                oldIndex = OldLeaderboard.OrderedChannelMessages.FindIndex(x => x.Key == id);
             }
 
             return oldIndex < 0 ? '*' : (oldIndex < index ? '▼' : (oldIndex == index ? '-' : '▲'));
