@@ -16,9 +16,26 @@ namespace DiscordBotNew.Commands
         public Dictionary<ulong, int> UserMessages { get; set; }
         public DateTimeOffset TimeGenerated { get; set; }
 
-        private IEnumerable<KeyValuePair<ulong, int>> OrderedUserMessages => UserMessages.OrderByDescending(x => x.Value);
-        private IEnumerable<KeyValuePair<ulong, int>> OrderedChannelMessages => ChannelMessages.OrderByDescending(x => x.Value);
+        private IEnumerable<KeyValuePair<ulong, int>> orderedUserMessages;
 
+        private IEnumerable<KeyValuePair<ulong, int>> OrderedUserMessages
+        {
+            get
+            {
+                orderedUserMessages = orderedUserMessages ?? UserMessages.OrderByDescending(x => x.Value);
+                return orderedUserMessages;
+            }
+        }
+
+        private IEnumerable<KeyValuePair<ulong, int>> orderedChannelMessages;
+        private IEnumerable<KeyValuePair<ulong, int>> OrderedChannelMessages
+        {
+            get
+            {
+                orderedChannelMessages = orderedChannelMessages ?? ChannelMessages.OrderByDescending(x => x.Value);
+                return orderedChannelMessages;
+            }
+        }
         private Dictionary<ulong, string> ChannelLookup { get; set; }
         private Dictionary<ulong, string> UserLookup { get; set; }
 
