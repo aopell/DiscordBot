@@ -91,12 +91,12 @@ namespace DiscordBotNew.Commands
             if (user)
             {
                 int current = UserMessages[id];
-                return OldLeaderboard.UserMessages.ContainsKey(id) ? OldLeaderboard.UserMessages[id] - current : double.PositiveInfinity;
+                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - OldLeaderboard.UserMessages[id] : double.PositiveInfinity;
             }
             else
             {
                 int current = ChannelMessages[id];
-                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? OldLeaderboard.ChannelMessages[id] - current : double.PositiveInfinity;
+                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - OldLeaderboard.ChannelMessages[id] : double.PositiveInfinity;
             }
         }
 
@@ -105,12 +105,12 @@ namespace DiscordBotNew.Commands
             if (user)
             {
                 float current = UserMessages[id] / (float)TotalMessages * 100;
-                return OldLeaderboard.UserMessages.ContainsKey(id) ? (OldLeaderboard.UserMessages[id] / (float)OldLeaderboard.TotalMessages * 100) - current : float.PositiveInfinity;
+                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - (OldLeaderboard.UserMessages[id] / (float)OldLeaderboard.TotalMessages * 100) : float.PositiveInfinity;
             }
             else
             {
                 float current = ChannelMessages[id] / (float)TotalMessages * 100;
-                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? (OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100) - current : float.PositiveInfinity;
+                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - (OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100) : float.PositiveInfinity;
             }
         }
 
