@@ -100,7 +100,7 @@ namespace DiscordBotNew
         {
             await Log(new LogMessage(LogSeverity.Info, "Ch Update", $"Channel updated: {(arg2 as IGuildChannel)?.Guild.Name ?? ""}#{((IChannel)arg2).Name}"));
 
-            if (!updatingChannels.Contains(arg2.Id) && arg2 is ITextChannel textChannel)
+            if (!updatingChannels.Contains(arg2.Id) && arg2 is ITextChannel textChannel && textChannel.Topic != ((ITextChannel)arg1).Topic)
             {
                 var channelDescriptions = this.channelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions)
                                               ? descriptions

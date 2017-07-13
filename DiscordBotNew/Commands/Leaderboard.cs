@@ -117,17 +117,17 @@ namespace DiscordBotNew.Commands
             }
         }
 
-        private float CalculatePercentageDifference(ulong id, bool user)
+        private double CalculatePercentageDifference(ulong id, bool user)
         {
             if (user)
             {
-                float current = UserMessages[id] / (float)TotalMessages * 100;
-                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - (OldLeaderboard.UserMessages[id] / (float)OldLeaderboard.TotalMessages * 100) : float.PositiveInfinity;
+                double current = Math.Round(UserMessages[id] / (float)TotalMessages * 100, 1);
+                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - Math.Round(OldLeaderboard.UserMessages[id] / (float)OldLeaderboard.TotalMessages * 100, 1) : float.PositiveInfinity;
             }
             else
             {
-                float current = ChannelMessages[id] / (float)TotalMessages * 100;
-                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - (OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100) : float.PositiveInfinity;
+                double current = Math.Round(ChannelMessages[id] / (float)TotalMessages * 100, 1);
+                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - Math.Round(OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100) : float.PositiveInfinity;
             }
         }
 
