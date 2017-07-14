@@ -1,23 +1,24 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
+using System.Threading;
+using Discord;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Discord;
 
-namespace DiscordBotNew
+namespace DiscordBotNew.Settings
 {
     public class SettingsManager
     {
         public const string BasePath = "D:\\home\\data\\jobs\\continuous\\NetcatBot\\";
         private string SettingsPath { get; }
+        private ReaderWriterLockSlim rwLock { get; }
 
         private JObject settings;
 
         public SettingsManager(string settingsPath)
         {
+            rwLock = new ReaderWriterLockSlim();
             SettingsPath = settingsPath;
-            CreateSettingsFile();
             LoadSettings();
         }
 
@@ -47,9 +48,12 @@ namespace DiscordBotNew
         {
             if (settings == null)
             {
-                CreateSettingsFile();
-                string fileContents = File.ReadAllText(SettingsPath);
-                settings = string.IsNullOrWhiteSpace(fileContents) ? new JObject() : JObject.Parse(fileContents);
+                using (new WriteLock(rwLock))
+                {
+                    CreateSettingsFile();
+                    string fileContents = File.ReadAllText(SettingsPath);
+                    settings = string.IsNullOrWhiteSpace(fileContents) ? new JObject() : JObject.Parse(fileContents);
+                }
             }
         }
 
@@ -62,13 +66,16 @@ namespace DiscordBotNew
         {
             try
             {
-                LoadSettings();
-                if (settings[setting] == null && value != null)
-                    settings.Add(setting, JToken.FromObject(value));
-                else if (value == null && settings[setting] != null)
-                    settings[setting] = null;
-                else if (value != null)
-                    settings[setting] = JToken.FromObject(value);
+                using (new WriteLock(rwLock))
+                {
+                    LoadSettings();
+                    if (settings[setting] == null && value != null)
+                        settings.Add(setting, JToken.FromObject(value));
+                    else if (value == null && settings[setting] != null)
+                        settings[setting] = null;
+                    else if (value != null)
+                        settings[setting] = JToken.FromObject(value);
+                }
             }
             catch (Exception ex)
             {
@@ -91,16 +98,22 @@ namespace DiscordBotNew
             {
                 LoadSettings();
 
-                if (settings[setting] == null) return false;
+                using (new ReadLock(rwLock))
+                {
+                    if (settings[setting] == null) return false;
 
-                result = settings[setting].ToObject<T>();
+                    result = settings[setting].ToObject<T>();
+                }
                 return true;
             }
             catch (Exception ex)
             {
                 try
                 {
-                    result = settings[setting].Value<T>();
+                    using (new ReadLock(rwLock))
+                    {
+                        result = settings[setting].Value<T>();
+                    }
                     return true;
                 }
                 catch (Exception ex2)
@@ -115,7 +128,10 @@ namespace DiscordBotNew
         /// </summary>
         public void SaveSettings()
         {
-            File.WriteAllText(SettingsPath, settings.ToString(Formatting.Indented));
+            using (new WriteLock(rwLock))
+            {
+                File.WriteAllText(SettingsPath, settings.ToString(Formatting.Indented));
+            }
         }
 
 
@@ -124,8 +140,11 @@ namespace DiscordBotNew
         /// </summary>
         public void DeleteSettings()
         {
-            File.Delete(SettingsPath);
-            settings = null;
+            using (new WriteLock(rwLock))
+            {
+                File.Delete(SettingsPath);
+                settings = null;
+            }
         }
     }
 }

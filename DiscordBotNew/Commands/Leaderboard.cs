@@ -127,7 +127,7 @@ namespace DiscordBotNew.Commands
             else
             {
                 double current = Math.Round(ChannelMessages[id] / (float)TotalMessages * 100, 1);
-                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - Math.Round(OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100) : float.PositiveInfinity;
+                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - Math.Round(OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100, 1) : float.PositiveInfinity;
             }
         }
 
