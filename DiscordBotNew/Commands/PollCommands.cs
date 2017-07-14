@@ -18,7 +18,7 @@ namespace DiscordBotNew.Commands
             Poll po;
             if ((po = Poll.GetPoll(context.Channel)) != null)
             {
-                return new SuccessResult("", embed: po.GetEmbed(context));
+                return new SuccessResult(embed: po.GetEmbed(context));
             }
             else
             {

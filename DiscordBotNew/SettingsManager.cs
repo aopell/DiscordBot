@@ -17,6 +17,8 @@ namespace DiscordBotNew
         public SettingsManager(string settingsPath)
         {
             SettingsPath = settingsPath;
+            CreateSettingsFile();
+            LoadSettings();
         }
 
         /// <summary>
@@ -74,25 +76,6 @@ namespace DiscordBotNew
             }
         }
 
-
-        /// <summary>
-        /// Gets the value of the setting with the provided name if that setting has a boolean value
-        /// </summary>
-        /// <param name="setting">Setting with boolean value</param>
-        /// <returns>Setting value or null if setting doesn't exist or is not a boolean</returns>
-        public bool? GetBooleanSetting(string setting)
-        {
-            try
-            {
-                LoadSettings();
-                return settings[setting].Value<bool?>();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         /// <summary>
         /// Gets the value of the setting with the provided name as type <c>T</c>
         /// </summary>
@@ -110,14 +93,14 @@ namespace DiscordBotNew
 
                 if (settings[setting] == null) return false;
 
-                result = settings[setting].Value<T>();
+                result = settings[setting].ToObject<T>();
                 return true;
             }
             catch (Exception ex)
             {
                 try
                 {
-                    result = settings[setting].ToObject<T>();
+                    result = settings[setting].Value<T>();
                     return true;
                 }
                 catch (Exception ex2)

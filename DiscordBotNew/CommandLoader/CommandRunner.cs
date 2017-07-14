@@ -199,9 +199,10 @@ namespace DiscordBotNew.CommandLoader
                     return Enum.Parse(type, text);
                 if (type == typeof(string))
                     return text;
-                if (Nullable.GetUnderlyingType(type) != null)
+                Type underlyingType;
+                if ((underlyingType = Nullable.GetUnderlyingType(type)) != null)
                 {
-                    MethodInfo parse = Nullable.GetUnderlyingType(type).GetMethod("Parse", new[] { typeof(string) });
+                    MethodInfo parse = underlyingType.GetMethod("Parse", new[] { typeof(string) });
                     return parse?.Invoke(null, new object[] { text });
                 }
 
@@ -303,7 +304,7 @@ namespace DiscordBotNew.CommandLoader
             }
 
 
-            return new SuccessResult("", embed: builder);
+            return new SuccessResult(embed: builder);
         }
     }
 }

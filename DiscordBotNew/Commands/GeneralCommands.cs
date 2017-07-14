@@ -133,7 +133,7 @@ namespace DiscordBotNew.Commands
                 await msg.Channel.SendMessageAsync("", embed: embed);
             }
 
-            return new SuccessResult("", embed: builder);
+            return new SuccessResult(embed: builder);
         }
 
         [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
@@ -293,7 +293,7 @@ namespace DiscordBotNew.Commands
                 if (targetUser.Status != UserStatus.Online)
                     statusEmbed.AddInlineField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
 
-                return new SuccessResult("", embed: statusEmbed);
+                return new SuccessResult(embed: statusEmbed);
             }
 
             return new ErrorResult("User status history not found");
