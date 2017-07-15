@@ -69,7 +69,7 @@ namespace DiscordBotNew.Commands
             {
                 leaderboard.OldLeaderboard = oldLeaderboard;
             }
-            else if (type == LeaderboardType.Daily || type == LeaderboardType.Today)
+            else if (type == LeaderboardType.Today)
             {
                 // I'm sure this isn't the right way to do this but quite honestly I was getting annoyed and this works, so ¯\_(ツ)_/¯
                 TimeSpan offset = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, "Pacific Standard Time").Offset;
@@ -78,6 +78,11 @@ namespace DiscordBotNew.Commands
                 leaderboard.TimeGenerated = today;
                 oldLeaderboard = new Leaderboard { TimeGenerated = yesterday };
                 leaderboard.OldLeaderboard = oldLeaderboard;
+            }
+            else if (type == LeaderboardType.Past24Hours)
+            {
+                today = DateTimeOffset.Now - TimeSpan.FromDays(1);
+                yesterday = today - TimeSpan.FromDays(1);
             }
 
             var channels = await guild.GetTextChannelsAsync();
@@ -112,11 +117,11 @@ namespace DiscordBotNew.Commands
                         }
                     });
                 }
-                else if (type == LeaderboardType.Daily || type == LeaderboardType.Today)
+                else if (type == LeaderboardType.Today || type == LeaderboardType.Past24Hours)
                 {
                     oldLeaderboard.ChannelMessages[channel.Id] = 0;
 
-                    List<IMessage> messages = (await channel.GetMessagesAsync().Flatten()).ToList();
+                    List<IMessage> messages = (await channel.GetMessagesAsync(limit: 100).Flatten()).ToList();
                     IMessage lastMessage;
                     do
                     {
@@ -246,16 +251,20 @@ namespace DiscordBotNew.Commands
             }
             else
             {
-                if (Type == LeaderboardType.Full)
+                switch (Type)
                 {
-                    builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
-                    builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
-                }
-                else if (Type == LeaderboardType.Daily || Type == LeaderboardType.Today)
-                {
-                    builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
-                    builder.AppendLine("All delta values are comparisons from the previous day");
-                    builder.AppendLine($"\n\nDEBUG INFO:\n{TimeGenerated}\n{OldLeaderboard.TimeGenerated}");
+                    case LeaderboardType.Full:
+                        builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
+                        break;
+                    case LeaderboardType.Today:
+                        builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine("All current values since midnight PT, delta values are comparisons from the previous day");
+                        break;
+                    case LeaderboardType.Past24Hours:
+                        builder.AppendLine($"\nTotal messages sent in the last 24 hours: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine("All current values since 24 hours ago, delta values are comparisons from the previous 24 hours");
+                        break;
                 }
             }
             builder.Append("```");
@@ -268,6 +277,6 @@ namespace DiscordBotNew.Commands
     {
         Full,
         Today,
-        Daily = 1
+        Past24Hours
     }
 }
