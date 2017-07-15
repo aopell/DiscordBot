@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using DiscordBotNew.CommandLoader;
@@ -83,6 +84,8 @@ namespace DiscordBotNew.Commands
             {
                 today = DateTimeOffset.Now - TimeSpan.FromDays(1);
                 yesterday = today - TimeSpan.FromDays(1);
+                oldLeaderboard = new Leaderboard { TimeGenerated = yesterday };
+                leaderboard.OldLeaderboard = oldLeaderboard;
             }
 
             var channels = await guild.GetTextChannelsAsync();
@@ -220,8 +223,21 @@ namespace DiscordBotNew.Commands
 
         public override string ToString()
         {
-            var builder = new StringBuilder("**Messages Leaderboard**\n```\n");
-            builder.AppendLine("Channels");
+            var builder = new StringBuilder($"**Messages Leaderboard**\n");
+            switch (Type)
+            {
+                case LeaderboardType.Full:
+                    builder.AppendLine("For messages sent from the beginning of time");
+                    break;
+                case LeaderboardType.Today:
+                    builder.AppendLine("For messages since midnight PT");
+                    break;
+                case LeaderboardType.Past24Hours:
+                    builder.AppendLine("For messages in the last 24 hours");
+                    break;
+            }
+
+            builder.AppendLine("```\nChannels");
             foreach (var channel in OrderedChannelMessages)
             {
                 if (OldLeaderboard == null)
