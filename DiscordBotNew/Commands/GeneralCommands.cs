@@ -130,7 +130,7 @@ namespace DiscordBotNew.Commands
 
             foreach (Embed embed in msg.Embeds.Where(x => x.Type == EmbedType.Rich))
             {
-                await msg.Channel.SendMessageAsync("", embed: embed);
+                await context.Channel.SendMessageAsync("", embed: embed);
             }
 
             return new SuccessResult(embed: builder);
