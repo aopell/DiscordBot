@@ -12,8 +12,8 @@ namespace DiscordBotNew.Commands
     {
         public ulong GuildId { get; set; }
         public int TotalMessages { get; set; }
-        public Dictionary<ulong, int> ChannelMessages { get; set; }
-        public Dictionary<ulong, int> UserMessages { get; set; }
+        public Dictionary<ulong, int> ChannelMessages { get; set; } = new Dictionary<ulong, int>();
+        public Dictionary<ulong, int> UserMessages { get; set; } = new Dictionary<ulong, int>();
         public DateTimeOffset TimeGenerated { get; set; }
 
         private List<KeyValuePair<ulong, int>> orderedUserMessages;
@@ -36,8 +36,9 @@ namespace DiscordBotNew.Commands
                 return orderedChannelMessages;
             }
         }
-        private Dictionary<ulong, string> ChannelLookup { get; set; }
-        private Dictionary<ulong, string> UserLookup { get; set; }
+
+        private Dictionary<ulong, string> ChannelLookup { get; set; } = new Dictionary<ulong, string>();
+        private Dictionary<ulong, string> UserLookup { get; set; } = new Dictionary<ulong, string>();
 
         private Leaderboard OldLeaderboard { get; set; }
 
@@ -49,21 +50,28 @@ namespace DiscordBotNew.Commands
             GuildId = guildId;
         }
 
-        public static async Task<Leaderboard> Generate(IGuild guild, DiscordBot bot)
+        public static async Task<Leaderboard> Generate(IGuild guild, DiscordBot bot, LeaderboardType type)
         {
             var leaderboard = new Leaderboard(guild.Id);
 
-            if (bot.Leaderboards.GetSetting(guild.Id.ToString(), out Leaderboard oldLeaderboard))
+            DateTimeOffset today = DateTimeOffset.MinValue;
+            DateTimeOffset yesterday = DateTimeOffset.MinValue;
+
+            Leaderboard oldLeaderboard = new Leaderboard();
+
+            if (type == LeaderboardType.Full && bot.Leaderboards.GetSetting(guild.Id.ToString(), out oldLeaderboard))
             {
+                leaderboard.OldLeaderboard = oldLeaderboard;
+            }
+            else if (type == LeaderboardType.Daily || type == LeaderboardType.Today)
+            {
+                today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time").Date;
+                yesterday = today - TimeSpan.FromDays(1);
+                oldLeaderboard = new Leaderboard { TimeGenerated = yesterday };
                 leaderboard.OldLeaderboard = oldLeaderboard;
             }
 
             var channels = await guild.GetTextChannelsAsync();
-            leaderboard.UserMessages = new Dictionary<ulong, int>();
-            leaderboard.ChannelMessages = new Dictionary<ulong, int>();
-            leaderboard.ChannelLookup = new Dictionary<ulong, string>();
-            leaderboard.UserLookup = new Dictionary<ulong, string>();
-            leaderboard.TotalMessages = 0;
 
             foreach (ITextChannel channel in channels)
             {
@@ -75,30 +83,77 @@ namespace DiscordBotNew.Commands
 
                 int messagesInChannel = 0;
 
-                var pages = channel.GetMessagesAsync(int.MaxValue);
 
-                pages.ForEach(page =>
+                if (type == LeaderboardType.Full)
                 {
-                    foreach (IMessage message in page)
+                    var pages = channel.GetMessagesAsync(int.MaxValue);
+                    pages.ForEach(
+                    page =>
                     {
-                        if (!leaderboard.UserMessages.ContainsKey(message.Author.Id))
+                        foreach (IMessage message in page)
                         {
-                            leaderboard.UserMessages.Add(message.Author.Id, 0);
-                            leaderboard.UserLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
+                            if (!leaderboard.UserMessages.ContainsKey(message.Author.Id))
+                            {
+                                leaderboard.UserMessages.Add(message.Author.Id, 0);
+                                leaderboard.UserLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
+                            }
+
+                            leaderboard.UserMessages[message.Author.Id]++;
+                            messagesInChannel++;
+                        }
+                    });
+                }
+                else if (type == LeaderboardType.Daily || type == LeaderboardType.Today)
+                {
+                    oldLeaderboard.ChannelMessages[channel.Id] = 0;
+
+                    List<IMessage> messages = (await channel.GetMessagesAsync().Flatten()).ToList();
+                    IMessage lastMessage;
+                    do
+                    {
+                        lastMessage = messages.Last();
+
+                        foreach (var message in messages)
+                        {
+                            if (message.Timestamp > today)
+                            {
+                                if (!leaderboard.UserMessages.ContainsKey(message.Author.Id))
+                                {
+                                    leaderboard.UserMessages.Add(message.Author.Id, 0);
+                                    leaderboard.UserLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
+                                }
+
+                                leaderboard.UserMessages[message.Author.Id]++;
+                                messagesInChannel++;
+                            }
+                            else if (message.Timestamp > yesterday)
+                            {
+                                if (!oldLeaderboard.UserMessages.ContainsKey(message.Author.Id))
+                                {
+                                    oldLeaderboard.UserMessages.Add(message.Author.Id, 0);
+                                    oldLeaderboard.UserLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
+                                }
+
+                                oldLeaderboard.UserMessages[message.Author.Id]++;
+                                oldLeaderboard.ChannelMessages[channel.Id]++;
+                                oldLeaderboard.TotalMessages++;
+                            }
                         }
 
-                        leaderboard.UserMessages[message.Author.Id]++;
-                        messagesInChannel++;
-                    }
-                });
+                        messages = (await channel.GetMessagesAsync(lastMessage, Direction.Before).Flatten()).ToList();
+                    } while (lastMessage.Timestamp > yesterday);
+                }
 
                 leaderboard.ChannelMessages[channel.Id] = messagesInChannel;
                 leaderboard.TotalMessages += messagesInChannel;
                 leaderboard.ChannelLookup.Add(channel.Id, channel.Name);
             }
 
-            bot.Leaderboards.AddSetting(guild.Id.ToString(), leaderboard);
-            bot.Leaderboards.SaveSettings();
+            if (type == LeaderboardType.Full)
+            {
+                bot.Leaderboards.AddSetting(guild.Id.ToString(), leaderboard);
+                bot.Leaderboards.SaveSettings();
+            }
 
             return leaderboard;
         }
@@ -189,5 +244,12 @@ namespace DiscordBotNew.Commands
 
             return builder.ToString();
         }
+    }
+
+    public enum LeaderboardType
+    {
+        Full,
+        Today,
+        Daily = 1
     }
 }

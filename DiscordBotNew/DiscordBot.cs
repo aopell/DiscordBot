@@ -88,6 +88,7 @@ namespace DiscordBotNew
             createFile("descriptions.json");
             createFile("statuses.json");
             createFile("leaderboards.json");
+            createFile("daily-leaderboards.json");
 
             void createFile(string filename)
             {

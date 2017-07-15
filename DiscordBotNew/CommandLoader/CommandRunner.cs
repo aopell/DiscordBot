@@ -196,7 +196,7 @@ namespace DiscordBotNew.CommandLoader
             try
             {
                 if (type.IsEnum)
-                    return Enum.Parse(type, text);
+                    return Enum.Parse(type, text, true);
                 if (type == typeof(string))
                     return text;
                 if (Nullable.GetUnderlyingType(type) != null)

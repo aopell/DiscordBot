@@ -197,7 +197,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context)
+        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Full)
         {
             IGuild guild;
             ITextChannel messageChannel;
@@ -219,7 +219,7 @@ namespace DiscordBotNew.Commands
 
             using (messageChannel.EnterTypingState())
             {
-                Leaderboard leaderboard = await Leaderboard.Generate(guild, context.Bot);
+                Leaderboard leaderboard = await Leaderboard.Generate(guild, context.Bot, type);
                 return new SuccessResult(leaderboard.ToString());
             }
         }
