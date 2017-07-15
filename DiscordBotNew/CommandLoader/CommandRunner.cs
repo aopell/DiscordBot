@@ -266,38 +266,33 @@ namespace DiscordBotNew.CommandLoader
                     foreach (var parameter in method.GetParameters().Skip(1))
                     {
                         text.Append("`");
-                        if (!parameter.IsOptional)
+
+                        text.Append(parameter.IsOptional ? "Optional " : "");
+                        text.Append(parameter.ParameterType.Name);
+                        text.Append(" ");
+                        text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
+                        text.Append(parameter.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "..." : "");
+
+
+                        if (parameter.IsOptional && parameter.DefaultValue != null)
                         {
-                            text.Append(parameter.ParameterType.Name);
-                            text.Append(" ");
-                            text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
-                            text.Append(parameter.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "" : "...");
-                            text.Append("`");
-                            var helpText = parameter.GetCustomAttribute<HelpTextAttribute>();
-                            if (helpText != null)
-                            {
-                                text.Append(": ");
-                                text.Append(helpText.Text);
-                            }
+                            text.Append($" = {parameter.DefaultValue}");
                         }
-                        else
+
+                        text.Append("`");
+                        var helpText = parameter.GetCustomAttribute<HelpTextAttribute>();
+                        if (helpText != null)
                         {
-                            text.Append("Optional ");
-                            text.Append(parameter.ParameterType.Name);
-                            text.Append(" ");
-                            text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
-                            text.Append(parameter.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "" : "...");
-                            if (parameter.DefaultValue != null)
-                                text.Append($" = {parameter.DefaultValue}");
-                            text.Append("`");
-                            var helpText = parameter.GetCustomAttribute<HelpTextAttribute>();
-                            if (helpText != null)
-                            {
-                                text.Append(": ");
-                                text.Append(helpText.Text);
-                            }
+                            text.Append(": ");
+                            text.Append(helpText.Text);
                         }
+
                         text.AppendLine();
+
+                        if (parameter.ParameterType.IsEnum)
+                        {
+                            text.AppendLine($"{parameter.ParameterType.Name} Options: `{string.Join(", ", Enum.GetNames(parameter.ParameterType))}`");
+                        }
                     }
                 }
                 builder.AddField(title.ToString(), text.ToString());
