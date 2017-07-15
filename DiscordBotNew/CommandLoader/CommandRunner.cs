@@ -288,10 +288,21 @@ namespace DiscordBotNew.CommandLoader
                         }
 
                         text.AppendLine();
+                    }
 
-                        if (parameter.ParameterType.IsEnum)
+                    foreach (var parameter in method.GetParameters().Where(param => param.ParameterType.IsEnum))
+                    {
+                        text.AppendLine($"**{parameter.ParameterType.Name} Options**");
+                        var names = Enum.GetNames(parameter.ParameterType);
+                        foreach (string name in names)
                         {
-                            text.AppendLine($"{parameter.ParameterType.Name} Options: `{string.Join(", ", Enum.GetNames(parameter.ParameterType))}`");
+                            text.Append($"`{name}`");
+                            var helpText = parameter.ParameterType.GetMember(name).FirstOrDefault().GetCustomAttribute<HelpTextAttribute>();
+                            if (helpText != null)
+                            {
+                                text.Append($": {helpText.Text}");
+                            }
+                            text.AppendLine();
                         }
                     }
                 }

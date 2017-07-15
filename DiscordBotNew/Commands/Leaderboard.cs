@@ -388,9 +388,9 @@ namespace DiscordBotNew.Commands
 
     public enum LeaderboardType
     {
-        Full,
-        Today,
-        Past24Hours,
-        Delta
+        [HelpText("Counts every message sent in the server")] Full,
+        [HelpText("Counts messages sent since midnight PT")] Today,
+        [HelpText("Counts messages sent in the last 24 houts")] Past24Hours,
+        [HelpText("Counts messages since the last leaderboard and adds them to the previous total")] Delta
     }
 }
