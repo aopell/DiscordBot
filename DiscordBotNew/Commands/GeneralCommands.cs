@@ -321,7 +321,7 @@ namespace DiscordBotNew.Commands
             {
                 string url = "http://thecatapi.com/api/images/get?format=src&type=png";
                 HttpClient client = new HttpClient();
-                await context.Channel.SendFileAsync(await client.GetStringAsync(url), "cat.png");
+                await context.Channel.SendFileAsync(await client.GetStreamAsync(url), "cat.png");
             }
             return new SuccessResult();
         }
