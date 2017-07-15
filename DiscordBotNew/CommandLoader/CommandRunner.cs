@@ -315,8 +315,8 @@ namespace DiscordBotNew.CommandLoader
 
         public enum Verbosity
         {
-            Standard,
-            Verbose
+            [HelpText("Shows the command, its help text, and its parameters")] Standard,
+            [HelpText("Shows help text for individual parameters")] Verbose
         }
     }
 }
