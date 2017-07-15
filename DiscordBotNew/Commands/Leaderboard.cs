@@ -16,6 +16,8 @@ namespace DiscordBotNew.Commands
         public Dictionary<ulong, int> UserMessages { get; set; } = new Dictionary<ulong, int>();
         public DateTimeOffset TimeGenerated { get; set; }
 
+        private LeaderboardType Type { get; }
+
         private List<KeyValuePair<ulong, int>> orderedUserMessages;
 
         private List<KeyValuePair<ulong, int>> OrderedUserMessages
@@ -42,17 +44,21 @@ namespace DiscordBotNew.Commands
 
         private Leaderboard OldLeaderboard { get; set; }
 
-        public Leaderboard() { }
+        public Leaderboard()
+        {
+            Type = LeaderboardType.Full;
+        }
 
-        private Leaderboard(ulong guildId)
+        private Leaderboard(ulong guildId, LeaderboardType type)
         {
             TimeGenerated = DateTimeOffset.Now;
             GuildId = guildId;
+            Type = type;
         }
 
         public static async Task<Leaderboard> Generate(IGuild guild, DiscordBot bot, LeaderboardType type)
         {
-            var leaderboard = new Leaderboard(guild.Id);
+            var leaderboard = new Leaderboard(guild.Id, type);
 
             DateTimeOffset today = DateTimeOffset.MinValue;
             DateTimeOffset yesterday = DateTimeOffset.MinValue;
@@ -65,7 +71,7 @@ namespace DiscordBotNew.Commands
             }
             else if (type == LeaderboardType.Daily || type == LeaderboardType.Today)
             {
-                today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time").Date;
+                today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(new DateTimeOffset(DateTime.Now.ToUniversalTime()), "Pacific Standard Time").Date;
                 yesterday = today - TimeSpan.FromDays(1);
                 oldLeaderboard = new Leaderboard { TimeGenerated = yesterday };
                 leaderboard.OldLeaderboard = oldLeaderboard;
@@ -237,8 +243,16 @@ namespace DiscordBotNew.Commands
             }
             else
             {
-                builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
-                builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
+                if (Type == LeaderboardType.Full)
+                {
+                    builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                    builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
+                }
+                else if (Type == LeaderboardType.Daily || Type == LeaderboardType.Today)
+                {
+                    builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                    builder.AppendLine("All delta values are comparisons from the previous day");
+                }
             }
             builder.Append("```");
 
