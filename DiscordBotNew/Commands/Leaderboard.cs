@@ -124,11 +124,13 @@ namespace DiscordBotNew.Commands
                 {
                     oldLeaderboard.ChannelMessages[channel.Id] = 0;
 
-                    List<IMessage> messages = (await channel.GetMessagesAsync(limit: 100).Flatten()).ToList();
+                    List<IMessage> messages = (await channel.GetMessagesAsync().Flatten()).ToList();
                     IMessage lastMessage;
                     do
                     {
-                        lastMessage = messages.Last();
+                        lastMessage = messages.LastOrDefault();
+
+                        if (lastMessage == null) break;
 
                         foreach (var message in messages)
                         {
