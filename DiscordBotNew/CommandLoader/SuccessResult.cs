@@ -20,7 +20,7 @@ namespace DiscordBotNew.CommandLoader
             HasContent = false;
         }
 
-        public SuccessResult(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null)
+        public SuccessResult(string message = "", bool isTTS = false, Embed embed = null, RequestOptions options = null)
         {
             Message = message;
             IsTTS = isTTS;

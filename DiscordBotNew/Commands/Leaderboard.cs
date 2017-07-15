@@ -158,17 +158,17 @@ namespace DiscordBotNew.Commands
             return leaderboard;
         }
 
-        private double CalculateMessageDifference(ulong id, bool user)
+        private int CalculateMessageDifference(ulong id, bool user)
         {
             if (user)
             {
                 int current = UserMessages[id];
-                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - OldLeaderboard.UserMessages[id] : double.PositiveInfinity;
+                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - OldLeaderboard.UserMessages[id] : current;
             }
             else
             {
                 int current = ChannelMessages[id];
-                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - OldLeaderboard.ChannelMessages[id] : double.PositiveInfinity;
+                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - OldLeaderboard.ChannelMessages[id] : current;
             }
         }
 
@@ -176,13 +176,13 @@ namespace DiscordBotNew.Commands
         {
             if (user)
             {
-                double current = Math.Round(UserMessages[id] / (float)TotalMessages * 100, 1);
-                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - Math.Round(OldLeaderboard.UserMessages[id] / (float)OldLeaderboard.TotalMessages * 100, 1) : float.PositiveInfinity;
+                double current = UserMessages[id] / (double)TotalMessages;
+                return OldLeaderboard.UserMessages.ContainsKey(id) ? current - (OldLeaderboard.UserMessages[id] / (double)OldLeaderboard.TotalMessages) : current;
             }
             else
             {
-                double current = Math.Round(ChannelMessages[id] / (float)TotalMessages * 100, 1);
-                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - Math.Round(OldLeaderboard.ChannelMessages[id] / (float)OldLeaderboard.TotalMessages * 100) : float.PositiveInfinity;
+                double current = ChannelMessages[id] / (double)TotalMessages;
+                return OldLeaderboard.ChannelMessages.ContainsKey(id) ? current - (OldLeaderboard.ChannelMessages[id] / (double)OldLeaderboard.TotalMessages) : current;
             }
         }
 
@@ -212,11 +212,11 @@ namespace DiscordBotNew.Commands
             {
                 if (OldLeaderboard == null)
                 {
-                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (float)TotalMessages * 100, ChannelLookup[channel.Key]);
+                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (double)TotalMessages * 100, ChannelLookup[channel.Key]);
                 }
                 else
                 {
-                    builder.AppendFormat("{5}  {0,-7} ({3:+;-;+}{3,4:#;#;0}) {1,8:0.0}% ({4:+;-;+}{4,4:0.0;0.0;0.0}%)   #{2}\n", channel.Value, channel.Value / (float)TotalMessages * 100, ChannelLookup[channel.Key], CalculateMessageDifference(channel.Key, false), CalculatePercentageDifference(channel.Key, false), GetDifferenceChar(channel.Key, false));
+                    builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   #{2}\n", channel.Value, channel.Value / (double)TotalMessages, ChannelLookup[channel.Key], CalculateMessageDifference(channel.Key, false), CalculatePercentageDifference(channel.Key, false), GetDifferenceChar(channel.Key, false));
                 }
             }
             builder.AppendLine("\nUsers");
@@ -224,11 +224,11 @@ namespace DiscordBotNew.Commands
             {
                 if (OldLeaderboard == null)
                 {
-                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   {2}\n", user.Value, user.Value / (float)TotalMessages * 100, UserLookup[user.Key]);
+                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   {2}\n", user.Value, user.Value / (double)TotalMessages * 100, UserLookup[user.Key]);
                 }
                 else
                 {
-                    builder.AppendFormat("{5}  {0,-7} ({3:+;-;+}{3,4:#;#;0}) {1,8:0.0}% ({4:+;-;+}{4,4:0.0;0.0;0.0}%)   {2}\n", user.Value, user.Value / (float)TotalMessages * 100, UserLookup[user.Key], CalculateMessageDifference(user.Key, true), CalculatePercentageDifference(user.Key, true), GetDifferenceChar(user.Key, true));
+                    builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   {2}\n", user.Value, user.Value / (double)TotalMessages, UserLookup[user.Key], CalculateMessageDifference(user.Key, true), CalculatePercentageDifference(user.Key, true), GetDifferenceChar(user.Key, true));
                 }
             }
             if (OldLeaderboard == null)
