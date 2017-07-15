@@ -71,8 +71,11 @@ namespace DiscordBotNew.Commands
             }
             else if (type == LeaderboardType.Daily || type == LeaderboardType.Today)
             {
-                today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(new DateTimeOffset(DateTime.Now.ToUniversalTime()), "Pacific Standard Time").Date;
+                // I'm sure this isn't the right way to do this but quite honestly I was getting annoyed and this works, so ¯\_(ツ)_/¯
+                TimeSpan offset = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, "Pacific Standard Time").Offset;
+                today = new DateTimeOffset(new DateTimeOffset(DateTime.UtcNow.Ticks + TimeSpan.FromHours(offset.Hours).Ticks, offset).Date, offset);
                 yesterday = today - TimeSpan.FromDays(1);
+                leaderboard.TimeGenerated = today;
                 oldLeaderboard = new Leaderboard { TimeGenerated = yesterday };
                 leaderboard.OldLeaderboard = oldLeaderboard;
             }
@@ -252,6 +255,7 @@ namespace DiscordBotNew.Commands
                 {
                     builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
                     builder.AppendLine("All delta values are comparisons from the previous day");
+                    builder.AppendLine($"\n\nDEBUG INFO:\n{TimeGenerated}\n{OldLeaderboard.TimeGenerated}");
                 }
             }
             builder.Append("```");
