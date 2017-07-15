@@ -201,15 +201,18 @@ namespace DiscordBotNew.Commands
         {
             IGuild guild;
             ITextChannel messageChannel;
+            DateTimeOffset timestamp;
             switch (context)
             {
                 case DiscordMessageContext d:
                     guild = d.Guild;
                     messageChannel = (ITextChannel)d.Channel;
+                    timestamp = d.Message.Timestamp;
                     break;
                 case DiscordChannelDescriptionContext d:
                     guild = d.Channel.Guild;
                     messageChannel = (ITextChannel)d.Channel;
+                    timestamp = DateTimeOffset.Now;
                     break;
                 default:
                     return new ErrorResult($"The `leaderboard` command is not valid in the context `{context.GetType().Name}`");
@@ -223,14 +226,14 @@ namespace DiscordBotNew.Commands
                 switch (type)
                 {
                     case LeaderboardType.Full:
-                        leaderboard = await Leaderboard.GenerateFullLeaderboard(guild, context.Bot);
+                        leaderboard = await Leaderboard.GenerateFullLeaderboard(guild, context.Bot, timestamp);
                         break;
                     case LeaderboardType.Today:
                     case LeaderboardType.Past24Hours:
-                        leaderboard = await Leaderboard.GenerateTimeBasedLeaderboard(guild, context.Bot, type);
+                        leaderboard = await Leaderboard.GenerateTimeBasedLeaderboard(guild, context.Bot, type, timestamp);
                         break;
                     case LeaderboardType.Delta:
-                        leaderboard = await Leaderboard.GenerateDelatLeaderboard(guild, context.Bot);
+                        leaderboard = await Leaderboard.GenerateDeltaLeaderboard(guild, context.Bot, timestamp);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(type), type, null);

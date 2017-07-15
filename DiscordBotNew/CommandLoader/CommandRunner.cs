@@ -216,7 +216,7 @@ namespace DiscordBotNew.CommandLoader
         }
 
         [Command("help", "man"), HelpText("Gets help text for all commands or a specific command")]
-        public static ICommandResult Help(DiscordMessageContext context, [HelpText("Gets help for this specific command, or all commands if set to '*'")]string command = null, [HelpText("Whether or not to show parameter descriptions")] bool detailed = false)
+        public static ICommandResult Help(DiscordMessageContext context, [HelpText("Gets help for this specific command, or all commands if set to '*'")]string command = null, [HelpText("Whether or not to show parameter descriptions")] Verbosity verbosity = Verbosity.Standard)
         {
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
 
@@ -256,7 +256,7 @@ namespace DiscordBotNew.CommandLoader
                 title.Append("`");
                 var text = new StringBuilder();
                 text.AppendLine(method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "*No help text found*");
-                if (detailed)
+                if (verbosity == Verbosity.Verbose)
                 {
                     if (method.GetParameters().Length > 1)
                     {
@@ -311,6 +311,12 @@ namespace DiscordBotNew.CommandLoader
 
 
             return new SuccessResult(embed: builder);
+        }
+
+        public enum Verbosity
+        {
+            Standard,
+            Verbose
         }
     }
 }

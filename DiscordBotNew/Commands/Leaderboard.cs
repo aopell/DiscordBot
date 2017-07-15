@@ -52,17 +52,17 @@ namespace DiscordBotNew.Commands
             Type = LeaderboardType.Full;
         }
 
-        private Leaderboard(ulong guildId, LeaderboardType type, DiscordBot bot)
+        private Leaderboard(ulong guildId, LeaderboardType type, DiscordBot bot, DateTimeOffset creationTime)
         {
-            TimeGenerated = DateTimeOffset.Now;
+            TimeGenerated = creationTime;
             GuildId = guildId;
             Type = type;
             this.bot = bot;
         }
 
-        public static async Task<Leaderboard> GenerateFullLeaderboard(IGuild guild, DiscordBot bot)
+        public static async Task<Leaderboard> GenerateFullLeaderboard(IGuild guild, DiscordBot bot, DateTimeOffset creationTime)
         {
-            var leaderboard = new Leaderboard(guild.Id, LeaderboardType.Full, bot);
+            var leaderboard = new Leaderboard(guild.Id, LeaderboardType.Full, bot, creationTime);
 
             if (bot.Leaderboards.GetSetting(guild.Id.ToString(), out Leaderboard oldLeaderboard))
             {
@@ -85,7 +85,7 @@ namespace DiscordBotNew.Commands
                 pages.ForEach(
                 page =>
                 {
-                    foreach (IMessage message in page)
+                    foreach (IMessage message in page.Where(message => message.Timestamp <= creationTime))
                     {
                         if (!leaderboard.UserMessages.ContainsKey(message.Author.Id))
                         {
@@ -109,9 +109,9 @@ namespace DiscordBotNew.Commands
             return leaderboard;
         }
 
-        public static async Task<Leaderboard> GenerateTimeBasedLeaderboard(IGuild guild, DiscordBot bot, LeaderboardType type)
+        public static async Task<Leaderboard> GenerateTimeBasedLeaderboard(IGuild guild, DiscordBot bot, LeaderboardType type, DateTimeOffset creationTime)
         {
-            var leaderboard = new Leaderboard(guild.Id, type, bot);
+            var leaderboard = new Leaderboard(guild.Id, type, bot, creationTime);
 
             Leaderboard oldLeaderboard = new Leaderboard();
             DateTimeOffset today = DateTimeOffset.MinValue;
@@ -156,7 +156,7 @@ namespace DiscordBotNew.Commands
 
                     foreach (var message in messages)
                     {
-                        if (message.Timestamp > today)
+                        if (message.Timestamp > today && message.Timestamp <= creationTime)
                         {
                             if (!leaderboard.UserMessages.ContainsKey(message.Author.Id))
                             {
@@ -167,7 +167,7 @@ namespace DiscordBotNew.Commands
                             leaderboard.UserMessages[message.Author.Id]++;
                             messagesInChannel++;
                         }
-                        else if (message.Timestamp > yesterday)
+                        else if (message.Timestamp > yesterday && message.Timestamp <= creationTime)
                         {
                             if (!oldLeaderboard.UserMessages.ContainsKey(message.Author.Id))
                             {
@@ -191,9 +191,9 @@ namespace DiscordBotNew.Commands
             return leaderboard;
         }
 
-        public static async Task<Leaderboard> GenerateDelatLeaderboard(IGuild guild, DiscordBot bot)
+        public static async Task<Leaderboard> GenerateDeltaLeaderboard(IGuild guild, DiscordBot bot, DateTimeOffset creationTime)
         {
-            var leaderboard = new Leaderboard(guild.Id, LeaderboardType.Delta, bot);
+            var leaderboard = new Leaderboard(guild.Id, LeaderboardType.Delta, bot, creationTime);
 
             if (bot.Leaderboards.GetSetting(guild.Id.ToString(), out Leaderboard oldLeaderboard))
             {
@@ -201,7 +201,7 @@ namespace DiscordBotNew.Commands
             }
             else
             {
-                return await GenerateFullLeaderboard(guild, bot);
+                return await GenerateFullLeaderboard(guild, bot, creationTime);
             }
 
             leaderboard.ChannelMessages = leaderboard.OldLeaderboard.ChannelMessages.ToDictionary(x => x.Key, x => x.Value);
@@ -229,7 +229,7 @@ namespace DiscordBotNew.Commands
 
                     if (lastMessage == null) break;
 
-                    foreach (IMessage message in messages.Where(message => message.Timestamp > leaderboard.OldLeaderboard.TimeGenerated))
+                    foreach (IMessage message in messages.Where(message => message.Timestamp > leaderboard.OldLeaderboard.TimeGenerated && message.Timestamp <= creationTime))
                     {
                         if (!leaderboard.UserMessages.ContainsKey(message.Author.Id))
                         {
