@@ -317,10 +317,12 @@ namespace DiscordBotNew.Commands
         [Command("cat"), HelpText("Cat.")]
         public static async Task<ICommandResult> Cat(DiscordMessageContext context)
         {
-            string url = "http://thecatapi.com/api/images/get?format=src&type=png";
-            HttpClient client = new HttpClient();
-            var stream = await client.GetStreamAsync(url);
-            await context.Channel.SendFileAsync(stream, "cat.png");
+            using (context.Channel.EnterTypingState())
+            {
+                string url = "http://thecatapi.com/api/images/get?format=src&type=png";
+                HttpClient client = new HttpClient();
+                await context.Channel.SendFileAsync(await client.GetStringAsync(url), "cat.png");
+            }
             return new SuccessResult();
         }
     }
