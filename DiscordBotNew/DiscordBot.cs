@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
 using DiscordBotNew.Commands;
@@ -16,6 +17,7 @@ namespace DiscordBotNew
     public class DiscordBot
     {
         public DiscordSocketClient Client { get; private set; }
+        public DiscordRestClient RestClient { get; private set; }
         public SettingsManager Settings { get; private set; }
         private SettingsManager channelDescriptions;
         public SettingsManager UserStatuses { get; private set; }
@@ -34,6 +36,7 @@ namespace DiscordBotNew
             UserStatuses = new SettingsManager(SettingsManager.BasePath + "statuses.json");
             Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
             Client = new DiscordSocketClient();
+            RestClient = new DiscordRestClient();
 
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
@@ -44,6 +47,8 @@ namespace DiscordBotNew
             if (!Settings.GetSetting("token", out string token)) throw new KeyNotFoundException("Token not found in settings file");
             await Client.LoginAsync(TokenType.Bot, token);
             await Client.StartAsync();
+
+            await RestClient.LoginAsync(TokenType.Bot, token);
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
