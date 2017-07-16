@@ -92,13 +92,23 @@ namespace DiscordBotNew.CommandLoader
             throw new ArgumentException($"No user was found with the username {username} in this channel");
         }
 
-        public static string ToLongString(this TimeSpan difference)
+        public static string ToLongString(this TimeSpan difference, bool showSeconds = true, bool showZeroValues = false)
         {
             var response = new StringBuilder();
-            response.Append(difference.Days != 0 ? $"{difference.Days} day{(difference.Days == 1 ? "" : "s")} " : "");
-            response.Append(difference.TotalHours >= 1 ? $"{difference.Hours} hour{(difference.Hours == 1 ? "" : "s")} " : "");
-            response.Append(difference.TotalMinutes >= 1 ? $"{difference.Minutes} minute{(difference.Minutes == 1 ? "" : "s")} " : "");
-            response.Append($"{difference.Seconds} second{(difference.Seconds == 1 ? "" : "s")}");
+            if (showZeroValues)
+            {
+                response.Append(difference.Days != 0 ? $"{difference.Days} day{(difference.Days == 1 ? "" : "s")} " : "");
+                response.Append(difference.TotalHours >= 1 ? $"{difference.Hours} hour{(difference.Hours == 1 ? "" : "s")} " : "");
+                response.Append(difference.TotalMinutes >= 1 ? $"{difference.Minutes} minute{(difference.Minutes == 1 ? "" : "s")} " : "");
+                response.Append(showSeconds ? $"{difference.Seconds} second{(difference.Seconds == 1 ? "" : "s")}" : "");
+            }
+            else
+            {
+                response.Append(difference.Days != 0 ? $"{difference.Days} day{(difference.Days == 1 ? "" : "s")} " : "");
+                response.Append(difference.Hours != 0 ? $"{difference.Hours} hour{(difference.Hours == 1 ? "" : "s")} " : "");
+                response.Append(difference.Minutes != 0 ? $"{difference.Minutes} minute{(difference.Minutes == 1 ? "" : "s")} " : "");
+                response.Append(showSeconds && difference.Seconds != 0 ? $"{difference.Seconds} second{(difference.Seconds == 1 ? "" : "s")}" : "");
+            }
             return response.ToString();
         }
     }

@@ -19,6 +19,7 @@ namespace DiscordBotNew.Commands
         public DateTimeOffset TimeGenerated { get; set; }
 
         private LeaderboardType Type { get; }
+        private TimeSpan TimePeriod { get; }
 
         private List<KeyValuePair<ulong, int>> orderedUserMessages;
 
@@ -53,11 +54,12 @@ namespace DiscordBotNew.Commands
             Type = LeaderboardType.Full;
         }
 
-        private Leaderboard(ulong guildId, LeaderboardType type, DiscordBot bot, DateTimeOffset creationTime)
+        private Leaderboard(ulong guildId, LeaderboardType type, DiscordBot bot, DateTimeOffset creationTime, TimeSpan timePeriod = default(TimeSpan))
         {
             TimeGenerated = creationTime;
             GuildId = guildId;
             Type = type;
+            TimePeriod = timePeriod;
             this.bot = bot;
         }
 
@@ -110,28 +112,32 @@ namespace DiscordBotNew.Commands
             return leaderboard;
         }
 
-        public static async Task<Leaderboard> GenerateTimeBasedLeaderboard(IGuild guild, DiscordBot bot, LeaderboardType type, DateTimeOffset creationTime)
+        public static async Task<Leaderboard> GenerateTimeBasedLeaderboard(IGuild guild, DiscordBot bot, LeaderboardType type, DateTimeOffset creationTime, double hours = 24d)
         {
-            var leaderboard = new Leaderboard(guild.Id, type, bot, creationTime);
+            var leaderboard = new Leaderboard(guild.Id, type, bot, creationTime, TimeSpan.FromHours(hours));
 
             Leaderboard oldLeaderboard = new Leaderboard();
-            DateTimeOffset today = DateTimeOffset.MinValue;
-            DateTimeOffset yesterday = DateTimeOffset.MinValue;
+            DateTimeOffset startTime = DateTimeOffset.MinValue;
+            DateTimeOffset deltaTime = DateTimeOffset.MinValue;
 
             if (type == LeaderboardType.Today)
             {
                 // I'm sure this isn't the right way to do this but quite honestly I was getting annoyed and this works, so ¯\_(ツ)_/¯
                 TimeSpan offset = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, "Pacific Standard Time").Offset;
-                today = new DateTimeOffset(new DateTimeOffset(DateTime.UtcNow.Ticks + TimeSpan.FromHours(offset.Hours).Ticks, offset).Date, offset);
-                leaderboard.TimeGenerated = today;
+                startTime = new DateTimeOffset(new DateTimeOffset(DateTime.UtcNow.Ticks + TimeSpan.FromHours(offset.Hours).Ticks, offset).Date, offset);
+                leaderboard.TimeGenerated = startTime;
             }
             else if (type == LeaderboardType.Past24Hours)
             {
-                today = DateTimeOffset.Now - TimeSpan.FromDays(1);
+                startTime = DateTimeOffset.Now - TimeSpan.FromDays(1);
+            }
+            else if (type == LeaderboardType.Custom)
+            {
+                startTime = DateTimeOffset.Now - TimeSpan.FromHours(hours);
             }
 
-            yesterday = today - TimeSpan.FromDays(1);
-            oldLeaderboard = new Leaderboard { TimeGenerated = yesterday };
+            deltaTime = startTime - TimeSpan.FromHours(hours);
+            oldLeaderboard = new Leaderboard { TimeGenerated = deltaTime };
             leaderboard.OldLeaderboard = oldLeaderboard;
 
             var channels = await guild.GetTextChannelsAsync();
@@ -157,7 +163,7 @@ namespace DiscordBotNew.Commands
 
                     foreach (var message in messages)
                     {
-                        if (message.Timestamp > today && message.Timestamp <= creationTime)
+                        if (message.Timestamp > startTime && message.Timestamp <= creationTime)
                         {
                             if (!leaderboard.UserMessages.ContainsKey(message.Author.Id))
                             {
@@ -168,7 +174,7 @@ namespace DiscordBotNew.Commands
                             leaderboard.UserMessages[message.Author.Id]++;
                             messagesInChannel++;
                         }
-                        else if (message.Timestamp > yesterday && message.Timestamp <= creationTime)
+                        else if (message.Timestamp > deltaTime && message.Timestamp <= creationTime)
                         {
                             if (!oldLeaderboard.UserMessages.ContainsKey(message.Author.Id))
                             {
@@ -183,7 +189,7 @@ namespace DiscordBotNew.Commands
                     }
 
                     messages = (await channel.GetMessagesAsync(lastMessage, Direction.Before).Flatten()).ToList();
-                } while (lastMessage.Timestamp > yesterday);
+                } while (lastMessage.Timestamp > deltaTime);
 
                 leaderboard.ChannelMessages[channel.Id] = messagesInChannel;
                 leaderboard.TotalMessages += messagesInChannel;
@@ -312,78 +318,73 @@ namespace DiscordBotNew.Commands
         {
             IGuild guild = bot.Client.GetGuild(GuildId);
 
-            try
+            var builder = new StringBuilder($"**Messages Leaderboard**\n");
+            switch (Type)
             {
-                var builder = new StringBuilder($"**Messages Leaderboard**\n");
+                case LeaderboardType.Full:
+                case LeaderboardType.Delta:
+                    builder.AppendLine("For messages sent from the beginning of time");
+                    break;
+                case LeaderboardType.Today:
+                    builder.AppendLine("For messages since midnight PT");
+                    break;
+                case LeaderboardType.Custom:
+                case LeaderboardType.Past24Hours:
+                    builder.AppendLine($"For messages in the last {TimePeriod.ToLongString()}");
+                    break;
+            }
+
+            builder.AppendLine("```\nChannels");
+            foreach (var channel in OrderedChannelMessages.Where(channel => ChannelLookup.ContainsKey(channel.Key)))
+            {
+                if (OldLeaderboard == null)
+                {
+                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (double)TotalMessages * 100, ChannelLookup.TryGetValue(channel.Key, out string channelName) ? channelName : "<deleted channel>");
+                }
+                else
+                {
+                    builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   #{2}\n", channel.Value, channel.Value / (double)TotalMessages, ChannelLookup.TryGetValue(channel.Key, out string channelName) ? channelName : "<deleted channel>", CalculateMessageDifference(channel.Key, false), CalculatePercentageDifference(channel.Key, false), GetDifferenceChar(channel.Key, false));
+                }
+            }
+            builder.AppendLine("\nUsers");
+            foreach (var user in OrderedUserMessages)
+            {
+                if (OldLeaderboard == null)
+                {
+                    builder.AppendFormat("{0,-7}({1,4:0.0}%)   {2}\n", user.Value, user.Value / (double)TotalMessages * 100, UserLookup.TryGetValue(user.Key, out string username) ? username : (await guild.GetUserAsync(user.Key))?.NicknameOrUsername() ?? (await bot.RestClient.GetUserAsync(user.Key))?.Username ?? "<unknown user>");
+                }
+                else
+                {
+                    builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   {2}\n", user.Value, user.Value / (double)TotalMessages, UserLookup.TryGetValue(user.Key, out string username) ? username : (await guild.GetUserAsync(user.Key))?.NicknameOrUsername() ?? (await bot.RestClient.GetUserAsync(user.Key))?.Username ?? "<unknown user>", CalculateMessageDifference(user.Key, true), CalculatePercentageDifference(user.Key, true), GetDifferenceChar(user.Key, true));
+                }
+            }
+            if (OldLeaderboard == null)
+            {
+                builder.AppendLine($"\nTotal messages in server: {TotalMessages}");
+            }
+            else
+            {
                 switch (Type)
                 {
                     case LeaderboardType.Full:
                     case LeaderboardType.Delta:
-                        builder.AppendLine("For messages sent from the beginning of time");
+                        builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
                         break;
                     case LeaderboardType.Today:
-                        builder.AppendLine("For messages since midnight PT");
+                        builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine("All current values since midnight PT, delta values are comparisons from the previous day");
                         break;
+                    case LeaderboardType.Custom:
                     case LeaderboardType.Past24Hours:
-                        builder.AppendLine("For messages in the last 24 hours");
+                        builder.AppendLine($"\nTotal messages sent in the last {TimePeriod.ToLongString()}: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine($"All current values since {TimePeriod.ToLongString()} ago, delta values are comparisons from the previous {TimePeriod.ToLongString()}");
                         break;
                 }
-
-                builder.AppendLine("```\nChannels");
-                foreach (var channel in OrderedChannelMessages.Where(channel => ChannelLookup.ContainsKey(channel.Key)))
-                {
-                    if (OldLeaderboard == null)
-                    {
-                        builder.AppendFormat("{0,-7}({1,4:0.0}%)   #{2}\n", channel.Value, channel.Value / (double)TotalMessages * 100, ChannelLookup.TryGetValue(channel.Key, out string channelName) ? channelName : "<deleted channel>");
-                    }
-                    else
-                    {
-                        builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   #{2}\n", channel.Value, channel.Value / (double)TotalMessages, ChannelLookup.TryGetValue(channel.Key, out string channelName) ? channelName : "<deleted channel>", CalculateMessageDifference(channel.Key, false), CalculatePercentageDifference(channel.Key, false), GetDifferenceChar(channel.Key, false));
-                    }
-                }
-                builder.AppendLine("\nUsers");
-                foreach (var user in OrderedUserMessages)
-                {
-                    if (OldLeaderboard == null)
-                    {
-                        builder.AppendFormat("{0,-7}({1,4:0.0}%)   {2}\n", user.Value, user.Value / (double)TotalMessages * 100, UserLookup.TryGetValue(user.Key, out string username) ? username : (await guild.GetUserAsync(user.Key))?.NicknameOrUsername() ?? (await bot.RestClient.GetUserAsync(user.Key))?.Username ?? "<unknown user>");
-                    }
-                    else
-                    {
-                        builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   {2}\n", user.Value, user.Value / (double)TotalMessages, UserLookup.TryGetValue(user.Key, out string username) ? username : (await guild.GetUserAsync(user.Key))?.NicknameOrUsername() ?? (await bot.RestClient.GetUserAsync(user.Key))?.Username ?? "<unknown user>", CalculateMessageDifference(user.Key, true), CalculatePercentageDifference(user.Key, true), GetDifferenceChar(user.Key, true));
-                    }
-                }
-                if (OldLeaderboard == null)
-                {
-                    builder.AppendLine($"\nTotal messages in server: {TotalMessages}");
-                }
-                else
-                {
-                    switch (Type)
-                    {
-                        case LeaderboardType.Full:
-                        case LeaderboardType.Delta:
-                            builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
-                            builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
-                            break;
-                        case LeaderboardType.Today:
-                            builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
-                            builder.AppendLine("All current values since midnight PT, delta values are comparisons from the previous day");
-                            break;
-                        case LeaderboardType.Past24Hours:
-                            builder.AppendLine($"\nTotal messages sent in the last 24 hours: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
-                            builder.AppendLine("All current values since 24 hours ago, delta values are comparisons from the previous 24 hours");
-                            break;
-                    }
-                }
-                builder.Append("```");
-
-                return builder.ToString();
             }
-            catch (Exception ex)
-            {
-                return "";
-            }
+            builder.Append("```");
+
+            return builder.ToString();
         }
     }
 
@@ -392,6 +393,7 @@ namespace DiscordBotNew.Commands
         [HelpText("Counts every message sent in the server")] Full,
         [HelpText("Counts messages sent since midnight PT")] Today,
         [HelpText("Counts messages sent in the last 24 houts")] Past24Hours,
-        [HelpText("Counts messages since the last leaderboard and adds them to the previous total")] Delta
+        [HelpText("Counts messages since the last leaderboard and adds them to the previous total")] Delta,
+        [HelpText("Counts messages sent in the last specified number of hours")] Custom
     }
 }

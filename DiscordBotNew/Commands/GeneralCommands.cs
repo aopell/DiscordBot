@@ -197,7 +197,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Delta)
+        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Delta, double customHours = 24d)
         {
             IGuild guild;
             ITextChannel messageChannel;
@@ -234,6 +234,9 @@ namespace DiscordBotNew.Commands
                         break;
                     case LeaderboardType.Delta:
                         leaderboard = await Leaderboard.GenerateDeltaLeaderboard(guild, context.Bot, timestamp);
+                        break;
+                    case LeaderboardType.Custom:
+                        leaderboard = await Leaderboard.GenerateTimeBasedLeaderboard(guild, context.Bot, type, timestamp, customHours);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(type), type, null);
