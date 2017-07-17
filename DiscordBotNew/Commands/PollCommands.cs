@@ -27,7 +27,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("poll"), HelpText("Starts a poll with the given length (in minutes) and the given options"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> StartPoll(DiscordMessageContext context, [HelpText("The amount of time the poll should be active (in minutes)")] double length, string option1, string option2, [JoinRemainingParameters, HelpText("More space-separated poll options")] string[] otherOptions = null)
+        public static async Task<ICommandResult> StartPoll(DiscordUserMessageContext context, [HelpText("The amount of time the poll should be active (in minutes)")] double length, string option1, string option2, [JoinRemainingParameters, HelpText("More space-separated poll options")] string[] otherOptions = null)
         {
             var options = new List<string> { option1, option2 };
             if (otherOptions != null) options.AddRange(otherOptions);
@@ -35,7 +35,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("anonpoll"), HelpText("Starts an anonymous poll with the given length (in minutes) and the given options"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> StartAnonPoll(DiscordMessageContext context, [HelpText("The amount of time the poll should be active (in minutes)")] double length, string option1, string option2, [JoinRemainingParameters, HelpText("More space-separated poll options")] string[] otherOptions = null)
+        public static async Task<ICommandResult> StartAnonPoll(DiscordUserMessageContext context, [HelpText("The amount of time the poll should be active (in minutes)")] double length, string option1, string option2, [JoinRemainingParameters, HelpText("More space-separated poll options")] string[] otherOptions = null)
         {
             var options = new List<string> { option1, option2 };
             if (otherOptions != null) options.AddRange(otherOptions);
@@ -43,7 +43,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("vote"), HelpText("Votes in the channel's active poll"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Vote(DiscordMessageContext context, [DisplayName("option number|option text"), HelpText("The poll option text or number to vote for"), JoinRemainingParameters]string option)
+        public static ICommandResult Vote(DiscordUserMessageContext context, [DisplayName("option number|option text"), HelpText("The poll option text or number to vote for"), JoinRemainingParameters]string option)
         {
             Poll p = Poll.GetPoll(context.Channel);
             if (p != null && !p.Anonymous && p.Active)
@@ -96,7 +96,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("anonvote"), HelpText("Anonymously votes in the anonymous poll with the provided ID number"), CommandScope(ChannelType.DM)]
-        public static async Task<ICommandResult> AnonVote(DiscordMessageContext context, [DisplayName("poll ID"), HelpText("The ID number of the anonymous poll")] int pollId, [DisplayName("option number|option text"), HelpText("The poll option text or number to vote for"), JoinRemainingParameters]string option)
+        public static async Task<ICommandResult> AnonVote(DiscordUserMessageContext context, [DisplayName("poll ID"), HelpText("The ID number of the anonymous poll")] int pollId, [DisplayName("option number|option text"), HelpText("The poll option text or number to vote for"), JoinRemainingParameters]string option)
         {
             Poll p = Poll.GetPollById(pollId);
 
@@ -161,7 +161,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("endpoll"), HelpText("Ends the channel's active poll"), CommandScope(ChannelType.Text)]
-        public static ICommandResult EndPoll(DiscordMessageContext context)
+        public static ICommandResult EndPoll(DiscordUserMessageContext context)
         {
             Poll p = Poll.GetPoll(context.Channel);
             if (p != null && p.Active)

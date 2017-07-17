@@ -14,7 +14,7 @@ namespace DiscordBotNew.Commands
     public static class ManagementCommands
     {
         [Command("username"), HelpText("Changes the bot's username"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> ChangeUsername(DiscordMessageContext context, [JoinRemainingParameters, HelpText("The new username for the bot")] string username)
+        public static async Task<ICommandResult> ChangeUsername(DiscordUserMessageContext context, [JoinRemainingParameters, HelpText("The new username for the bot")] string username)
         {
             if (username.Length > 32)
             {
@@ -26,7 +26,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("avatar"), HelpText("Changes the bot's avatar image"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> ChangeAvatar(DiscordMessageContext context, [JoinRemainingParameters, HelpText("The image URL for the bot's avatar")] string url)
+        public static async Task<ICommandResult> ChangeAvatar(DiscordUserMessageContext context, [JoinRemainingParameters, HelpText("The image URL for the bot's avatar")] string url)
         {
             try
             {
@@ -40,7 +40,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("delete"), HelpText("Deletes a specified number of messages (up to 99)"), Permissions(channelPermissions: new[] { ChannelPermission.ManageMessages })]
-        public static async Task<ICommandResult> Delete(DiscordMessageContext context, [HelpText("The number of message to delete (up to 99)")] byte number)
+        public static async Task<ICommandResult> Delete(DiscordUserMessageContext context, [HelpText("The number of message to delete (up to 99)")] byte number)
         {
             if (number >= 100)
             {
@@ -62,6 +62,6 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("kill"), HelpText("Kills the bot"), Permissions(ownerOnly: true)]
-        public static void Kill(DiscordMessageContext context) => Environment.Exit(0);
+        public static void Kill(DiscordUserMessageContext context) => Environment.Exit(0);
     }
 }

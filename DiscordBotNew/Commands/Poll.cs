@@ -18,27 +18,27 @@ namespace DiscordBotNew
         public bool Active { get; private set; }
         public bool Anonymous { get; }
         public double MinutesLeft => Math.Round((TimeSpan.FromMinutes(Length) - (DateTime.Now - StartTime)).TotalMinutes, 1);
-        public ISocketMessageChannel Channel { get; }
-        public SocketUser Creator { get; }
+        public IMessageChannel Channel { get; }
+        public IUser Creator { get; }
         public int TotalVotes => Voters.Count;
 
-        public Dictionary<SocketUser, PollOption> Voters { get; }
+        public Dictionary<IUser, PollOption> Voters { get; }
         private static Dictionary<ulong, Poll> polls = new Dictionary<ulong, Poll>();
         private static Dictionary<byte, Poll> pollsById = new Dictionary<byte, Poll>();
 
-        public Poll(ISocketMessageChannel channel, SocketUser creator, double length, bool anonymous, SocketMessage message = null)
+        public Poll(IMessageChannel channel, IUser creator, double length, bool anonymous, IMessage message = null)
         {
             StartTime = DateTime.Now;
             Active = true;
             Channel = channel;
             Options = new List<PollOption>();
             Creator = creator;
-            Voters = new Dictionary<SocketUser, PollOption>();
+            Voters = new Dictionary<IUser, PollOption>();
             Length = length;
             Anonymous = anonymous;
         }
 
-        public static Poll Create(ISocketMessageChannel channel, SocketUser creator, SocketMessage message, double length, bool anonymous)
+        public static Poll Create(IMessageChannel channel, IUser creator, IMessage message, double length, bool anonymous)
         {
             if (polls.ContainsKey(channel.Id)) return null;
 
@@ -57,7 +57,7 @@ namespace DiscordBotNew
             return poll;
         }
 
-        public static ICommandResult End(ISocketMessageChannel c)
+        public static ICommandResult End(IMessageChannel c)
         {
             if (polls.ContainsKey(c.Id))
             {
@@ -100,7 +100,7 @@ namespace DiscordBotNew
             }
         }
 
-        public static Poll GetPoll(ISocketMessageChannel c)
+        public static Poll GetPoll(IMessageChannel c)
         {
             return polls.ContainsKey(c.Id) ? polls[c.Id] : null;
         }
@@ -185,7 +185,7 @@ namespace DiscordBotNew
         public string Text { get; }
         private readonly Poll poll;
 
-        public List<SocketUser> Votes => (from v in poll.Voters where v.Value == this select v.Key).ToList();
+        public List<IUser> Votes => (from v in poll.Voters where v.Value == this select v.Key).ToList();
 
         public PollOption(string text, Poll poll)
         {

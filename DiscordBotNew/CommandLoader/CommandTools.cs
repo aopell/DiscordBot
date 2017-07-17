@@ -18,7 +18,7 @@ namespace DiscordBotNew.CommandLoader
 
         public static async Task ReplyError(this SocketMessage m, Exception error) => await m.ReplyError(error.Message, $"Error - {error.GetType().Name}");
 
-        public static ChannelType GetChannelType(this SocketMessage m)
+        public static ChannelType GetChannelType(this IMessage m)
         {
             switch (m.Channel)
             {
@@ -31,7 +31,7 @@ namespace DiscordBotNew.CommandLoader
             }
         }
 
-        public static ChannelType GetChannelType(this ISocketMessageChannel m)
+        public static ChannelType GetChannelType(this IMessageChannel m)
         {
             switch (m)
             {
@@ -61,7 +61,7 @@ namespace DiscordBotNew.CommandLoader
             return sb.ToString();
         }
 
-        public static string GetCommandPrefix(ICommandContext context, ISocketMessageChannel channel)
+        public static string GetCommandPrefix(ICommandContext context, IMessageChannel channel)
         {
             context.Bot.Settings.GetSetting("commandPrefix", out string commandPrefix);
             commandPrefix = commandPrefix ?? "!";
@@ -82,7 +82,7 @@ namespace DiscordBotNew.CommandLoader
         public static string NicknameOrUsername(this IUser user) => (user as IGuildUser)?.Nickname ?? user.Username;
         public static string AvatarUrlOrDefaultAvatar(this IUser user) => user.GetAvatarUrl() ?? "https://discordapp.com/assets/6debd47ed13483642cf09e832ed0bc1b.png";
 
-        public static async Task<IUser> GetUserByUsername(string username, ISocketMessageChannel channel)
+        public static async Task<IUser> GetUserByUsername(string username, IMessageChannel channel)
         {
             var users = (await channel.GetUsersAsync().Flatten()).Where(user => user.Username == username).ToArray();
             if (users.Length == 1)

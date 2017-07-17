@@ -8,29 +8,29 @@ using Discord.WebSocket;
 
 namespace DiscordBotNew.CommandLoader
 {
-    public class DiscordMessageContext : ICommandContext
+    public abstract class DiscordMessageContext : ICommandContext
     {
-        public SocketMessage Message { get; }
+        public IUserMessage Message { get; }
         public ChannelType ChannelType => Message.GetChannelType();
-        public ISocketMessageChannel Channel => Message.Channel;
-        public SocketUser MessageAuthor => Message.Author;
+        public IMessageChannel Channel => Message.Channel;
+        public IUser MessageAuthor => Message.Author;
         public IGuild Guild => (Channel as IGuildChannel)?.Guild;
 
         public DiscordBot Bot { get; }
 
-        public DiscordMessageContext(SocketMessage message, DiscordBot bot)
+        public DiscordMessageContext(IUserMessage message, DiscordBot bot)
         {
             Message = message;
             Bot = bot;
         }
-        public async Task Reply(string message) => await Reply(message, false);
-        public async Task Reply(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null)
+        public virtual async Task Reply(string message) => await Reply(message, false);
+        public virtual async Task Reply(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null)
         {
             await DiscordBot.Log(new LogMessage(LogSeverity.Info, "Reply", $"{Guild?.Name ?? "DM"} #{Channel.Name}: {message}"));
             await Channel.SendMessageAsync(message, isTTS, embed, options);
         }
 
-        public async Task ReplyError(Exception ex)
+        public virtual async Task ReplyError(Exception ex)
         {
 #if DEBUG
             string message = ex.ToString();
@@ -42,12 +42,12 @@ namespace DiscordBotNew.CommandLoader
             await ReplyError(ex.Message, ex.GetType().Name);
 #endif
         }
-        public async Task ReplyError(string description, string title = "Error")
+        public virtual async Task ReplyError(string description, string title = "Error")
         {
             await DiscordBot.Log(new LogMessage(LogSeverity.Error, "ErrorReply", $"{(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{title}] {description}"));
             await Channel.SendMessageAsync(string.Empty, embed: BuildErrorEmbed(description, title));
         }
-        public LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"@{MessageAuthor.Username}#{MessageAuthor.Discriminator} in {(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{commandName}] {Message.Content}");
+        public virtual LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"@{MessageAuthor.Username}#{MessageAuthor.Discriminator} in {(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{commandName}] {Message.Content}");
 
         private static Embed BuildErrorEmbed(string description, string title = "Error")
         {
@@ -67,5 +67,26 @@ namespace DiscordBotNew.CommandLoader
         }
 
         private static Embed BuildErrorEmbed(Exception error) => BuildErrorEmbed(error.Message, $"Error - {error.GetType().Name}");
+    }
+
+    public class DiscordUserMessageContext : DiscordMessageContext
+    {
+        public DiscordUserMessageContext(IUserMessage message, DiscordBot bot) : base(message, bot) { }
+    }
+
+    public class DiscordDynamicMessageContext : DiscordMessageContext
+    {
+        public DiscordDynamicMessageContext(IUserMessage message, DiscordBot bot) : base(message, bot) { }
+
+        public override Task Reply(string message) => Task.CompletedTask;
+
+        public override Task Reply(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null) => Task.CompletedTask;
+
+        public override Task ReplyError(string message, string title) => Task.CompletedTask;
+
+        public override Task ReplyError(Exception ex) => ReplyError(ex.Message, ex.GetType().Name);
+
+        public override LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"Dynamic message {Message.Id}  #{Channel.Name}: [{commandName}]");
+
     }
 }

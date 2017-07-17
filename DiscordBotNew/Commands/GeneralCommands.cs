@@ -55,7 +55,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
-        public static ICommandResult SetPrefix(DiscordMessageContext context, [JoinRemainingParameters, HelpText("The new prefix for this channel or server (up to 16 characters)")] string prefix)
+        public static ICommandResult SetPrefix(DiscordUserMessageContext context, [JoinRemainingParameters, HelpText("The new prefix for this channel or server (up to 16 characters)")] string prefix)
         {
             if (prefix.Length > 16)
             {
@@ -103,10 +103,10 @@ namespace DiscordBotNew.Commands
         [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number"), CommandScope(ChannelType.Text)]
         public static async Task<ICommandResult> Quote(DiscordMessageContext context, [DisplayName("message ID"), HelpText("The message to quote")] ulong id, [DisplayName("channel mention"), HelpText("The channel to search")] string channel = null)
         {
-            ISocketMessageChannel messageChannel = context.Channel;
-            if (context.Message.MentionedChannels.Count != 0)
+            IMessageChannel messageChannel = context.Channel;
+            if (context.Message.MentionedChannelIds.Count != 0)
             {
-                messageChannel = (ISocketMessageChannel)context.Bot.Client.GetChannel(context.Message.MentionedChannels.First().Id);
+                messageChannel = (IMessageChannel)context.Bot.Client.GetChannel(context.Message.MentionedChannelIds.First());
             }
 
             if (!((IGuildUser)context.MessageAuthor).GetPermissions((IGuildChannel)messageChannel).ReadMessageHistory)
@@ -226,7 +226,10 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `leaderboard` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
+            if (context is DiscordUserMessageContext)
+            {
+                await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
+            }
 
             using (messageChannel.EnterTypingState())
             {
@@ -256,14 +259,14 @@ namespace DiscordBotNew.Commands
         [Command("status"), HelpText("Gets when a user was last online")]
         public static async Task<ICommandResult> Status(ICommandContext context, [DisplayName("username | @ mention")] string user)
         {
-            SocketUser targetUser;
+            IUser targetUser;
 
             switch (context)
             {
                 case DiscordMessageContext discordContext:
-                    if (discordContext.Message.MentionedUsers.Count > 0)
+                    if (discordContext.Message.MentionedUserIds.Count > 0)
                     {
-                        targetUser = discordContext.Message.MentionedUsers.First();
+                        targetUser = await discordContext.Channel.GetUserAsync(discordContext.Message.MentionedUserIds.First());
                     }
                     else if (discordContext.Message.Tags.Count > 0 && discordContext.Message.Tags.First().Type == TagType.UserMention && (targetUser = context.Bot.Client.GetUser(discordContext.Message.Tags.First().Key)) != null)
                     {
@@ -274,7 +277,7 @@ namespace DiscordBotNew.Commands
                     }
                     break;
                 case DiscordChannelDescriptionContext channelDescription:
-                    targetUser = (SocketUser)await CommandTools.GetUserByUsername(user, (ISocketMessageChannel)channelDescription.Channel);
+                    targetUser = (SocketUser)await CommandTools.GetUserByUsername(user, (IMessageChannel)channelDescription.Channel);
                     break;
                 default:
                     return new ErrorResult($"The `status` command is not valid in the context `{context.GetType().Name}`");
@@ -326,6 +329,28 @@ namespace DiscordBotNew.Commands
             }
 
             return new ErrorResult("User status history not found");
+        }
+
+        [Command("dynamicmessage"), HelpText("Creates a message that runs a command automatically every specified number of minutes"), CommandScope(ChannelType.Text), Permissions(channelPermissions: new[] { ChannelPermission.ManageMessages })]
+        public static async Task<ICommandResult> DynamicMessage(DiscordUserMessageContext context, [DisplayName("interval (minutes)"), HelpText("How often to run the command")] ulong interval, [JoinRemainingParameters, HelpText("The command to run")] string command)
+        {
+            var message = await context.Channel.SendMessageAsync($"Loading dynamic message with command '{command}'");
+
+            List<DynamicMessage> dynamicMessages = context.Bot.DynamicMessages.GetSetting("messages", out dynamicMessages) ? dynamicMessages : new List<DynamicMessage>();
+            dynamicMessages.Add(new DynamicMessage
+            {
+                GuildId = context.Guild.Id,
+                ChannelId = message.Channel.Id,
+                MessageId = message.Id,
+                UpdateInterval = interval,
+                CommandText = command
+            });
+            context.Bot.DynamicMessages.AddSetting("messages", dynamicMessages);
+            context.Bot.DynamicMessages.SaveSettings();
+
+            await message.ModifyAsync(msg => msg.Content = "Loading complete, this message will be updated with dynamic content Soon:tm:");
+
+            return new SuccessResult();
         }
 
         [Command("cat"), HelpText("Cat.")]

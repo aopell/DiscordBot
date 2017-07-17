@@ -22,6 +22,7 @@ namespace DiscordBotNew
         private SettingsManager channelDescriptions;
         public SettingsManager UserStatuses { get; private set; }
         public SettingsManager Leaderboards { get; private set; }
+        public SettingsManager DynamicMessages { get; private set; }
 
         public static void Main(string[] args) => new DiscordBot().MainAsync().GetAwaiter().GetResult();
 
@@ -35,6 +36,7 @@ namespace DiscordBotNew
             channelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
             UserStatuses = new SettingsManager(SettingsManager.BasePath + "statuses.json");
             Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
+            DynamicMessages = new SettingsManager(SettingsManager.BasePath + "dynamic-messages.json");
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
 
@@ -94,7 +96,7 @@ namespace DiscordBotNew
             createFile("descriptions.json");
             createFile("statuses.json");
             createFile("leaderboards.json");
-            createFile("daily-leaderboards.json");
+            createFile("dynamic-messages.json");
 
             void createFile(string filename)
             {
@@ -139,7 +141,7 @@ namespace DiscordBotNew
             updatingChannels.Remove(arg2.Id);
         }
 
-        private async void Timer(ulong tick)
+        private async void SecondTimer(ulong tick)
         {
 #if !DEBUG
             bool abort = false;
@@ -155,7 +157,7 @@ namespace DiscordBotNew
                                      async m =>
                                      {
                                          var context = new DiscordChannelDescriptionContext(m.Groups[1].Value, channel, this);
-                                         var result = await CommandRunner.RunTimer(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as ISocketMessageChannel), true, tick);
+                                         var result = await CommandRunner.RunTimer(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as IMessageChannel), true, tick);
                                          abort = result == null;
                                          return result?.ToString().Trim() ?? "";
                                      });
@@ -178,6 +180,60 @@ namespace DiscordBotNew
 #endif
         }
 
+        private async void MinuteTimer(ulong minute)
+        {
+            if (DynamicMessages.GetSetting("messages", out List<DynamicMessage> messages))
+            {
+                List<DynamicMessage> toRemove = new List<DynamicMessage>();
+                foreach (var message in messages)
+                {
+                    if (minute % message.UpdateInterval != 0)
+                    {
+                        continue;
+                    }
+
+                    var channel = (IMessageChannel)Client.GetGuild(message.GuildId).GetChannel(message.ChannelId);
+                    var discordMessage = (IUserMessage)await channel.GetMessageAsync(message.MessageId);
+
+                    if (discordMessage == null)
+                    {
+                        toRemove.Add(message);
+                        continue;
+                    }
+
+                    var context = new DiscordDynamicMessageContext(discordMessage, this);
+                    var result = await CommandRunner.Run(message.CommandText, context, CommandTools.GetCommandPrefix(context, channel), true);
+
+                    await discordMessage.ModifyAsync(
+                    msg =>
+                    {
+                        switch (result)
+                        {
+                            case SuccessResult r:
+                                msg.Content = r.Message;
+                                if (r.Embed != null)
+                                {
+                                    msg.Embed = r.Embed;
+                                }
+                                break;
+                            case ErrorResult r:
+                                msg.Embed = r.GenerateEmbed();
+                                break;
+                            default:
+                                msg.Content = result.ToString();
+                                break;
+                        }
+                    });
+                }
+
+                if (toRemove.Count > 0)
+                {
+                    DynamicMessages.AddSetting("messages", messages.Except(toRemove));
+                    DynamicMessages.SaveSettings();
+                }
+            }
+        }
+
         private async Task Client_Ready()
         {
             if (Settings.GetSetting("botOwner", out ulong id))
@@ -186,14 +242,16 @@ namespace DiscordBotNew
             ulong tick = 0;
             while (true)
             {
-                Timer(tick++);
+                if (tick % 60 == 0)
+                    MinuteTimer(tick / 60);
+                SecondTimer(tick++);
                 await Task.Delay(1000);
             }
         }
 
         private async Task Client_MessageReceived(SocketMessage arg)
         {
-            var context = new DiscordMessageContext(arg, this);
+            var context = new DiscordUserMessageContext((IUserMessage)arg, this);
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
 
             if (arg.Content.Trim().StartsWith(commandPrefix) && !arg.Author.IsBot)
