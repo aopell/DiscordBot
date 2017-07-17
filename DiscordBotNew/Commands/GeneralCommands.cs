@@ -102,15 +102,18 @@ namespace DiscordBotNew.Commands
         [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number"), CommandScope(ChannelType.Text)]
         public static async Task<ICommandResult> Quote(DiscordMessageContext context, [DisplayName("message ID"), HelpText("The message to quote")] ulong id, [DisplayName("channel mention"), HelpText("The channel to search")] string channel = null)
         {
-            IMessage msg;
+            ISocketMessageChannel messageChannel = context.Channel;
             if (context.Message.MentionedChannels.Count != 0)
             {
-                msg = await ((ISocketMessageChannel)context.Bot.Client.GetChannel(context.Message.MentionedChannels.First().Id)).GetMessageAsync(id);
+                messageChannel = (ISocketMessageChannel)context.Bot.Client.GetChannel(context.Message.MentionedChannels.First().Id);
             }
-            else
+
+            if (!((IGuildUser)context.MessageAuthor).GetPermissions((IGuildChannel)messageChannel).ReadMessageHistory)
             {
-                msg = await context.Channel.GetMessageAsync(id);
+                return new ErrorResult("You do not have permission to read messages in that channel", "Permissions Error");
             }
+
+            IMessage msg = await messageChannel.GetMessageAsync(id);
 
             if (msg == null) return new ErrorResult("Message not found");
 
@@ -126,7 +129,11 @@ namespace DiscordBotNew.Commands
             };
 
             if (msg.Attachments.Count > 0)
+            {
                 builder.ImageUrl = msg.Attachments.First().Url;
+                builder.Title = msg.Attachments.First().Filename;
+                builder.Url = builder.ImageUrl;
+            }
 
             foreach (Embed embed in msg.Embeds.Where(x => x.Type == EmbedType.Rich))
             {
@@ -197,7 +204,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Delta, double customHours = 24d)
+        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Delta, [HelpText("Specifies the time frame for custom leaderboards")] double customHours = 24d)
         {
             IGuild guild;
             ITextChannel messageChannel;

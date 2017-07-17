@@ -159,7 +159,6 @@
     <Compile Include="Commands\Poll.cs" />
     <Compile Include="Commands\PollCommands.cs" />
     <Compile Include="Commands\UserStatusInfo.cs" />
-    <Compile Include="Commands\UtilityCommands.cs" />
     <Compile Include="DiscordBot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\ReadLock.cs" />
