@@ -214,7 +214,15 @@ namespace DiscordBotNew
                     }
 
                     var context = new DiscordDynamicMessageContext(discordMessage, this, message.CommandText);
-                    await CommandRunner.Run(message.CommandText, context, CommandTools.GetCommandPrefix(context, channel), false);
+                    string prefix = CommandTools.GetCommandPrefix(context, channel);
+                    if (message.CommandText.StartsWith(prefix))
+                    {
+                        await CommandRunner.Run(message.CommandText, context, prefix, false);
+                    }
+                    else
+                    {
+                        await context.ReplyError($"The string `{message.CommandText}` is not a valid command", "Invalid Command");
+                    }
                 }
 
                 if (toRemove.Count > 0)
