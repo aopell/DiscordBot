@@ -221,7 +221,7 @@ namespace DiscordBotNew
                     }
                     else
                     {
-                        await context.ReplyError($"The string `{message.CommandText}` is not a valid command", "Invalid Command");
+                        await context.ReplyError($"The string `{message.CommandText}`", "Invalid Command");
                     }
                 }
 

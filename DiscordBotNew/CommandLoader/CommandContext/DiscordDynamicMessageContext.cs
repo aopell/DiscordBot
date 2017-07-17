@@ -25,10 +25,7 @@ namespace DiscordBotNew.CommandLoader.CommandContext
             msg =>
             {
                 msg.Content = message;
-                if (embed != null)
-                {
-                    msg.Embed = embed;
-                }
+                msg.Embed = embed;
             }, options);
         }
 
