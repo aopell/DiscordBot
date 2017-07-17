@@ -161,7 +161,7 @@ namespace DiscordBotNew
                                      });
                     if (abort)
                     {
-                        return;
+                        continue;
                     }
 
                     updatingChannels.Add(channel.Id);
