@@ -172,7 +172,7 @@ namespace DiscordBotNew.Commands
 
             TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
 
-            return new SuccessResult(difference.ToLongString());
+            return new SuccessResult($"{difference.ToLongString()} until {name}");
         }
 
         [Command("back"), HelpText("Creates a backronym from the given text")]

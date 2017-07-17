@@ -109,7 +109,7 @@ namespace DiscordBotNew.CommandLoader
                 response.Append(difference.Minutes != 0 ? $"{difference.Minutes} minute{(difference.Minutes == 1 ? "" : "s")} " : "");
                 response.Append(showSeconds && difference.Seconds != 0 ? $"{difference.Seconds} second{(difference.Seconds == 1 ? "" : "s")}" : "");
             }
-            return response.ToString();
+            return response.ToString().Trim();
         }
     }
 }
