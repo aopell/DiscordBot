@@ -203,7 +203,7 @@ namespace DiscordBotNew.Commands
             return new SuccessResult(backronym);
         }
 
-        [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
+        [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text), ChannelDescriptionDelay(21600)]
         public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Delta, [HelpText("Specifies the time frame for custom leaderboards")] double customHours = 24d)
         {
             IGuild guild;
@@ -338,5 +338,14 @@ namespace DiscordBotNew.Commands
             }
             return new SuccessResult();
         }
+
+        [Command("lmgtfy"), HelpText("For when people forget how to use a search engine")]
+        public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult(new Uri($"http://lmgtfy.com/?q={query}").ToString());
+
+        [Command("ping"), HelpText("Displays the bot's latency")]
+        public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms");
+
+        [Command("coin", "flip", "coinflip", "decide"), HelpText("Flips a coin")]
+        public static ICommandResult Coin(ICommandContext context, string side1 = "Heads", string side2 = "Tails") => new SuccessResult(random.Next(2) == 0 ? side1 : side2);
     }
 }

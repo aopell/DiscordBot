@@ -139,9 +139,10 @@ namespace DiscordBotNew
             updatingChannels.Remove(arg2.Id);
         }
 
-        private async void Timer()
+        private async void Timer(ulong tick)
         {
 #if !DEBUG
+            bool abort = false;
             Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
             if (channelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions))
             {
@@ -154,8 +155,15 @@ namespace DiscordBotNew
                                      async m =>
                                      {
                                          var context = new DiscordChannelDescriptionContext(m.Groups[1].Value, channel, this);
-                                         return (await CommandRunner.Run(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as ISocketMessageChannel), true)).ToString().Trim();
+                                         var result = await CommandRunner.RunTimer(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as ISocketMessageChannel), true, tick);
+                                         abort = result == null;
+                                         return result?.ToString().Trim() ?? "";
                                      });
+                    if (abort)
+                    {
+                        return;
+                    }
+
                     updatingChannels.Add(channel.Id);
                     try
                     {
@@ -175,10 +183,11 @@ namespace DiscordBotNew
             if (Settings.GetSetting("botOwner", out ulong id))
                 await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
 
+            ulong tick = 0;
             while (true)
             {
-                Timer();
-                await Task.Delay(10000);
+                Timer(tick++);
+                await Task.Delay(1000);
             }
         }
 

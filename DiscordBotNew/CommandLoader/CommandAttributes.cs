@@ -53,6 +53,15 @@ namespace DiscordBotNew.CommandLoader
         }
     }
 
+    public class ChannelDescriptionDelayAttribute : Attribute
+    {
+        public ulong DelaySeconds { get; }
+        public ChannelDescriptionDelayAttribute(ulong seconds)
+        {
+            DelaySeconds = seconds;
+        }
+    }
+
     public class PermissionsAttribute : Attribute
     {
         private readonly ChannelPermission[] channelPermissions;

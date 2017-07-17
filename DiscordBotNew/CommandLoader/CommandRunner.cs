@@ -33,6 +33,26 @@ namespace DiscordBotNew.CommandLoader
                                                                                                                 .Names.Contains(name.ToLower()))
                                                                                                                 .OrderBy(method => method.GetParameters().Count(param => !param.IsOptional));
 
+        public static async Task<ICommandResult> RunTimer(string commandMessage, ICommandContext context, string prefix, bool awaitResult, ulong tick)
+        {
+            var args = commandMessage.Trim().Substring(prefix.Length).Split(' ');
+            string commandName = args[0];
+            args = Regex.Matches(string.Join(" ", args.Skip(1)), @"[\""].+?[\""]|[^ ]+")
+                        .Cast<Match>()
+                        .Select(m => m.Value)
+                        .Where(text => !string.IsNullOrWhiteSpace(text))
+                        .Select(text => text.StartsWith("\"") && text.EndsWith("\"") ? text.Substring(1, text.Length - 2) : text)
+                        .ToArray();
+            MethodInfo command = GetCommand(commandName, args.Length);
+
+            if (tick % (command.GetCustomAttribute<ChannelDescriptionDelayAttribute>()?.DelaySeconds ?? 10) == 0)
+            {
+                return await Run(commandMessage, context, prefix, awaitResult);
+            }
+
+            return null;
+        }
+
         public static async Task<ICommandResult> Run(string commandMessage, ICommandContext context, string prefix, bool awaitResult)
         {
             var args = commandMessage.Trim().Substring(prefix.Length).Split(' ');
