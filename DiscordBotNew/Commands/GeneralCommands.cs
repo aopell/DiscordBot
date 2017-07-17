@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
+using DiscordBotNew.CommandLoader.CommandContext;
+using DiscordBotNew.CommandLoader.CommandResult;
 using Newtonsoft.Json.Linq;
 
 namespace DiscordBotNew.Commands
@@ -349,6 +351,9 @@ namespace DiscordBotNew.Commands
             context.Bot.DynamicMessages.SaveSettings();
 
             await message.ModifyAsync(msg => msg.Content = "Loading complete, this message will be updated with dynamic content Soon:tm:");
+
+            var dynamicMessageContext = new DiscordDynamicMessageContext(message, context.Bot, command);
+            await CommandRunner.Run(command, dynamicMessageContext, CommandTools.GetCommandPrefix(dynamicMessageContext, message.Channel), false);
 
             return new SuccessResult();
         }

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
+using DiscordBotNew.CommandLoader.CommandContext;
+using DiscordBotNew.CommandLoader.CommandResult;
 
 namespace DiscordBotNew
 {

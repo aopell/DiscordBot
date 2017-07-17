@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 
-namespace DiscordBotNew.CommandLoader
+namespace DiscordBotNew.CommandLoader.CommandContext
 {
     public class DiscordChannelDescriptionContext : ICommandContext
     {

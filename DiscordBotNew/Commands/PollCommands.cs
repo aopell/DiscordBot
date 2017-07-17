@@ -7,6 +7,8 @@ using Discord;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
 using DiscordBotNew;
+using DiscordBotNew.CommandLoader.CommandContext;
+using DiscordBotNew.CommandLoader.CommandResult;
 
 namespace DiscordBotNew.Commands
 {

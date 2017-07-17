@@ -1,4 +1,4 @@
-﻿namespace DiscordBotNew.CommandLoader
+﻿namespace DiscordBotNew.CommandLoader.CommandResult
 {
     public interface ICommandResult
     {

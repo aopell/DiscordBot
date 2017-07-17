@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 
-namespace DiscordBotNew.CommandLoader
+namespace DiscordBotNew.CommandLoader.CommandResult
 {
     public class ErrorResult : ICommandResult
     {

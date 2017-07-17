@@ -144,12 +144,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandLoader\DiscordChannelDescriptionContext.cs" />
-    <Compile Include="CommandLoader\DiscordMessageContext.cs" />
-    <Compile Include="CommandLoader\ErrorResult.cs" />
-    <Compile Include="CommandLoader\ICommandContext.cs" />
-    <Compile Include="CommandLoader\ICommandResult.cs" />
-    <Compile Include="CommandLoader\SuccessResult.cs" />
+    <Compile Include="CommandLoader\CommandContext\DiscordChannelDescriptionContext.cs" />
+    <Compile Include="CommandLoader\CommandContext\DiscordDynamicMessageContext.cs" />
+    <Compile Include="CommandLoader\CommandContext\DiscordMessageContext.cs" />
+    <Compile Include="CommandLoader\CommandContext\DiscordUserMessageContext.cs" />
+    <Compile Include="CommandLoader\CommandResult\ErrorResult.cs" />
+    <Compile Include="CommandLoader\CommandContext\ICommandContext.cs" />
+    <Compile Include="CommandLoader\CommandResult\ICommandResult.cs" />
+    <Compile Include="CommandLoader\CommandResult\SuccessResult.cs" />
     <Compile Include="CommandLoader\CommandTools.cs" />
     <Compile Include="Commands\DynamicMessage.cs" />
     <Compile Include="Commands\GeneralCommands.cs" />

@@ -9,6 +9,7 @@ using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
+using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.Commands;
 using DiscordBotNew.Settings;
 
@@ -201,29 +202,8 @@ namespace DiscordBotNew
                         continue;
                     }
 
-                    var context = new DiscordDynamicMessageContext(discordMessage, this);
-                    var result = await CommandRunner.Run(message.CommandText, context, CommandTools.GetCommandPrefix(context, channel), true);
-
-                    await discordMessage.ModifyAsync(
-                    msg =>
-                    {
-                        switch (result)
-                        {
-                            case SuccessResult r:
-                                msg.Content = r.Message;
-                                if (r.Embed != null)
-                                {
-                                    msg.Embed = r.Embed;
-                                }
-                                break;
-                            case ErrorResult r:
-                                msg.Embed = r.GenerateEmbed();
-                                break;
-                            default:
-                                msg.Content = result.ToString();
-                                break;
-                        }
-                    });
+                    var context = new DiscordDynamicMessageContext(discordMessage, this, message.CommandText);
+                    await CommandRunner.Run(message.CommandText, context, CommandTools.GetCommandPrefix(context, channel), false);
                 }
 
                 if (toRemove.Count > 0)

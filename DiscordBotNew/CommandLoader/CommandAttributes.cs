@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using DiscordBotNew.CommandLoader.CommandContext;
 
 namespace DiscordBotNew.CommandLoader
 {

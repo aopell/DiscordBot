@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Discord;
-using Discord.WebSocket;
 
-namespace DiscordBotNew.CommandLoader
+namespace DiscordBotNew.CommandLoader.CommandContext
 {
     public abstract class DiscordMessageContext : ICommandContext
     {
@@ -49,7 +46,7 @@ namespace DiscordBotNew.CommandLoader
         }
         public virtual LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"@{MessageAuthor.Username}#{MessageAuthor.Discriminator} in {(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{commandName}] {Message.Content}");
 
-        private static Embed BuildErrorEmbed(string description, string title = "Error")
+        protected static Embed BuildErrorEmbed(string description, string title = "Error")
         {
             var embed = new EmbedBuilder
             {
@@ -66,27 +63,6 @@ namespace DiscordBotNew.CommandLoader
             return embed;
         }
 
-        private static Embed BuildErrorEmbed(Exception error) => BuildErrorEmbed(error.Message, $"Error - {error.GetType().Name}");
-    }
-
-    public class DiscordUserMessageContext : DiscordMessageContext
-    {
-        public DiscordUserMessageContext(IUserMessage message, DiscordBot bot) : base(message, bot) { }
-    }
-
-    public class DiscordDynamicMessageContext : DiscordMessageContext
-    {
-        public DiscordDynamicMessageContext(IUserMessage message, DiscordBot bot) : base(message, bot) { }
-
-        public override Task Reply(string message) => Task.CompletedTask;
-
-        public override Task Reply(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null) => Task.CompletedTask;
-
-        public override Task ReplyError(string message, string title) => Task.CompletedTask;
-
-        public override Task ReplyError(Exception ex) => ReplyError(ex.Message, ex.GetType().Name);
-
-        public override LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"Dynamic message {Message.Id}  #{Channel.Name}: [{commandName}]");
-
+        protected static Embed BuildErrorEmbed(Exception error) => BuildErrorEmbed(error.Message, $"Error - {error.GetType().Name}");
     }
 }

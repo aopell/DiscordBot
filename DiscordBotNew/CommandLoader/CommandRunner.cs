@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord.WebSocket;
 using Discord;
+using DiscordBotNew.CommandLoader.CommandContext;
+using DiscordBotNew.CommandLoader.CommandResult;
 
 namespace DiscordBotNew.CommandLoader
 {
