@@ -20,12 +20,23 @@ namespace DiscordBotNew
         public DiscordSocketClient Client { get; private set; }
         public DiscordRestClient RestClient { get; private set; }
         public SettingsManager Settings { get; private set; }
+
+        private const string ExceptionFilePath = "exception.txt";
         private SettingsManager channelDescriptions;
         public SettingsManager UserStatuses { get; private set; }
         public SettingsManager Leaderboards { get; private set; }
         public SettingsManager DynamicMessages { get; private set; }
 
-        public static void Main(string[] args) => new DiscordBot().MainAsync().GetAwaiter().GetResult();
+        public static void Main(string[] args)
+        {
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            new DiscordBot().MainAsync().GetAwaiter().GetResult();
+        }
+
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            File.WriteAllText(ExceptionFilePath, e.ExceptionObject.ToString());
+        }
 
         private List<ulong> updatingChannels = new List<ulong>();
 
@@ -217,7 +228,14 @@ namespace DiscordBotNew
         private async Task Client_Ready()
         {
             if (Settings.GetSetting("botOwner", out ulong id))
+            {
                 await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+                if (File.Exists(ExceptionFilePath))
+                {
+                    await Client.GetUser(id).SendMessageAsync(File.ReadAllText(ExceptionFilePath));
+                    File.Delete(ExceptionFilePath);
+                }
+            }
 
             ulong tick = 0;
             while (true)

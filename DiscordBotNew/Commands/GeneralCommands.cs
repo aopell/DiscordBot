@@ -336,6 +336,8 @@ namespace DiscordBotNew.Commands
         [Command("dynamicmessage"), HelpText("Creates a message that runs a command automatically every specified number of minutes"), CommandScope(ChannelType.Text), Permissions(channelPermissions: new[] { ChannelPermission.ManageMessages })]
         public static async Task<ICommandResult> DynamicMessage(DiscordUserMessageContext context, [DisplayName("interval (minutes)"), HelpText("How often to run the command")] ulong interval, [JoinRemainingParameters, HelpText("The command to run")] string command)
         {
+            if (interval == 0) return new ErrorResult("Interval must be greater than zero");
+
             var message = await context.Channel.SendMessageAsync($"Loading dynamic message with command '{command}'");
 
             List<DynamicMessage> dynamicMessages = context.Bot.DynamicMessages.GetSetting("messages", out dynamicMessages) ? dynamicMessages : new List<DynamicMessage>();
