@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
+using Newtonsoft.Json.Linq;
 
 namespace DiscordBotNew.Commands
 {
@@ -330,17 +331,19 @@ namespace DiscordBotNew.Commands
         [Command("cat"), HelpText("Cat.")]
         public static async Task<ICommandResult> Cat(DiscordMessageContext context)
         {
-            using (context.Channel.EnterTypingState())
+            JObject obj;
+            string catUrl;
+            var client = new HttpClient();
+            do
             {
-                string url = "http://thecatapi.com/api/images/get?format=src&type=png";
-                HttpClient client = new HttpClient();
-                await context.Channel.SendFileAsync(await client.GetStreamAsync(url), "cat.png");
-            }
-            return new SuccessResult();
+                string json = await client.GetStringAsync("http://random.cat/meow");
+                obj = JObject.Parse(json);
+            } while ((catUrl = obj["file"].Value<string>()).EndsWith(".gif"));
+            return new SuccessResult(catUrl);
         }
 
         [Command("lmgtfy"), HelpText("For when people forget how to use a search engine")]
-        public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult(new Uri($"http://lmgtfy.com/?q={query}").ToString());
+        public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult(Uri.EscapeDataString($"http://lmgtfy.com/?q={query}"));
 
         [Command("ping"), HelpText("Displays the bot's latency")]
         public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms");
