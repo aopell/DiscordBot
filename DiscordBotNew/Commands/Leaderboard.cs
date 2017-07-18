@@ -254,10 +254,19 @@ namespace DiscordBotNew.Commands
                     messages = (await channel.GetMessagesAsync(lastMessage, Direction.Before).Flatten()).ToList();
                 } while (lastMessage.Timestamp > leaderboard.OldLeaderboard.TimeGenerated);
 
-                leaderboard.ChannelMessages[channel.Id] += messagesInChannel;
+                if (!leaderboard.ChannelMessages.ContainsKey(channel.Id))
+                {
+                    leaderboard.ChannelMessages.Add(channel.Id, messagesInChannel);
+                }
+                else
+                {
+                    leaderboard.ChannelMessages[channel.Id] += messagesInChannel;
+                }
                 leaderboard.TotalMessages += messagesInChannel;
                 if (!leaderboard.ChannelLookup.ContainsKey(channel.Id))
+                {
                     leaderboard.ChannelLookup.Add(channel.Id, channel.Name);
+                }
             }
 
             bot.Leaderboards.AddSetting(guild.Id.ToString(), leaderboard);

@@ -59,12 +59,7 @@ namespace DiscordBotNew.CommandLoader
         {
             var args = commandMessage.Trim().Substring(prefix.Length).Split(' ');
             string commandName = args[0];
-            args = Regex.Matches(string.Join(" ", args.Skip(1)), @"[\""].+?[\""]|[^ ]+")
-                        .Cast<Match>()
-                        .Select(m => m.Value)
-                        .Where(text => !string.IsNullOrWhiteSpace(text))
-                        .Select(text => text.StartsWith("\"") && text.EndsWith("\"") ? text.Substring(1, text.Length - 2) : text)
-                        .ToArray();
+            args = CommandTools.ParseArguments(string.Join(" ", args.Skip(1)));
             MethodInfo command = GetCommand(commandName, args.Length);
 
             await DiscordBot.Log(context.LogMessage(commandName));
@@ -127,7 +122,7 @@ namespace DiscordBotNew.CommandLoader
                 if (i == parameters.Length - 1 && parameters[i].IsDefined(typeof(JoinRemainingParametersAttribute)))
                 {
                     if (parameters[i].ParameterType == typeof(string))
-                        values.Add(string.Join(" ", args.Skip(i - 1)));
+                        values.Add(string.Join(" ", commandMessage.Trim().Substring(prefix.Length).Split(' ').Skip(i)));
                     else if (parameters[i].ParameterType == typeof(string[]))
                         values.Add(args.Skip(i - 1).ToArray());
                     else
@@ -135,10 +130,7 @@ namespace DiscordBotNew.CommandLoader
                         object converted = ConvertToType(parameters[i].ParameterType, string.Join(" ", args.Skip(i - 1)));
                         if (converted == null)
                         {
-                            string message = $"The value `{string.Join(" ", args.Skip(i - 1))}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`";
-                            string title = "Argument Type Error";
-                            await context.ReplyError(message, title);
-                            return new ErrorResult(message, title);
+                            return await ThrowTypeError(context, string.Join(" ", args.Skip(i - 1)), parameters[i]);
                         }
                         values.Add(converted);
                     }
@@ -148,10 +140,7 @@ namespace DiscordBotNew.CommandLoader
                 var result = ConvertToType(parameters[i].ParameterType, args[i - 1]);
                 if (result == null)
                 {
-                    string message = $"The value `{args[i - 1]}` of parameter `{parameters[i].Name}` should be type `{Nullable.GetUnderlyingType(parameters[i].ParameterType)?.Name ?? parameters[i].ParameterType.Name}`";
-                    string title = "Argument Type Error";
-                    await context.ReplyError(message, title);
-                    return new ErrorResult(message, title);
+                    return await ThrowTypeError(context, args[i - 1], parameters[i]);
                 }
 
                 values.Add(result);
@@ -162,6 +151,14 @@ namespace DiscordBotNew.CommandLoader
 
             RunCommand(context, command, values.ToArray());
             return new SuccessResult();
+        }
+
+        private static async Task<ICommandResult> ThrowTypeError(ICommandContext context, string value, ParameterInfo parameter)
+        {
+            string message = $"The value `{value}` of parameter `{parameter.Name}` should be type `{Nullable.GetUnderlyingType(parameter.ParameterType)?.Name ?? parameter.ParameterType.Name}`";
+            string title = "Argument Type Error";
+            await context.ReplyError(message, title);
+            return new ErrorResult(message, title);
         }
 
         private static async Task<ICommandResult> RunCommand(ICommandContext context, MethodInfo command, object[] parameters)

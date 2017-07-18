@@ -112,5 +112,64 @@ namespace DiscordBotNew.CommandLoader
             }
             return response.ToString().Trim();
         }
+
+        public static string[] ParseArguments(string input)
+        {
+            var args = new List<string>();
+            var currentString = new StringBuilder();
+            bool insideQuote = false;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (!insideQuote && input[i] == ' ')
+                {
+                    args.Add(currentString.ToString());
+                    currentString.Clear();
+                }
+                else if (input[i] == '"')
+                {
+                    if (insideQuote)
+                    {
+                        args.Add(currentString.ToString());
+                        currentString.Clear();
+                        insideQuote = false;
+                        if (i < input.Length - 1 && input[i + 1] == ' ')
+                        {
+                            i++;
+                        }
+                    }
+                    else
+                    {
+                        insideQuote = true;
+                    }
+                }
+                else if (input[i] == '\\' && i < input.Length - 1)
+                {
+                    switch (input[i + 1])
+                    {
+                        case '\\':
+                            currentString.Append('\\');
+                            i++;
+                            break;
+                        case '"':
+                            currentString.Append('"');
+                            i++;
+                            break;
+                        default:
+                            currentString.Append('\\');
+                            break;
+                    }
+                }
+                else
+                {
+                    currentString.Append(input[i]);
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(currentString.ToString()))
+            {
+                args.Add(currentString.ToString());
+            }
+
+            return args.ToArray();
+        }
     }
 }

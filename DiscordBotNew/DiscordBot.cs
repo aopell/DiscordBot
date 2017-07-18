@@ -237,7 +237,12 @@ namespace DiscordBotNew
         {
             if (Settings.GetSetting("botOwner", out ulong id))
             {
+#if !DEBUG
                 await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+#else
+                await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+#endif
+
                 if (File.Exists(ExceptionFilePath))
                 {
                     await Client.GetUser(id).SendMessageAsync(File.ReadAllText(ExceptionFilePath));

@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.CommandLoader.CommandResult;
+using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json.Linq;
 
 namespace DiscordBotNew.Commands
@@ -375,7 +377,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("lmgtfy"), HelpText("For when people forget how to use a search engine")]
-        public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult(Uri.EscapeDataString($"http://lmgtfy.com/?q={query}"));
+        public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult("http://lmgtfy.com/?q=" + Uri.EscapeDataString(query));
 
         [Command("ping"), HelpText("Displays the bot's latency")]
         public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms");
