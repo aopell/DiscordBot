@@ -74,7 +74,7 @@ namespace DiscordBotNew.Commands
             await context.Reply("This is going to take a while");
             // Channel Name => User Name => Date => Hour
             List<string> data = new List<string>();
-            data.Add("Channel\tUser\tIsBot\tTimestamp\tEditedTimestamp\tMessageLength\tHasRichEmbed\tHasAttachment\tReactions");
+            data.Add("MessageID\tChannel\tUser\tIsBot\tTimestamp\tUnixTimestamp\tEditedTimestamp\tUnixEditedTimestamp\tMessageLength\tEmbedType\tHasAttachment\tReactionCount");
             var channels = await context.Guild.GetTextChannelsAsync();
 
             foreach (ITextChannel channel in channels)
@@ -84,8 +84,6 @@ namespace DiscordBotNew.Commands
                 {
                     continue;
                 }
-
-                int messagesInChannel = 0;
 
                 var pages = channel.GetMessagesAsync(int.MaxValue);
                 pages.ForEach(
@@ -97,7 +95,7 @@ namespace DiscordBotNew.Commands
                         DateTimeOffset? editedTimestampPacific = null;
                         if (message.EditedTimestamp != null)
                             editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");
-                        data.Add($"{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{message.Content.Length}\t{message.Embeds.Any(x => x.Type == EmbedType.Rich)}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
+                        data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{timestampPacific.ToUnixTimeSeconds()}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{editedTimestampPacific?.ToUnixTimeSeconds().ToString() ?? ""}\t{message.Content.Length}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{(message.Attachments.Count > 0 ? "YES" : "")}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
                     }
                 });
             }
