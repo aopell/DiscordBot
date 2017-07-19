@@ -122,7 +122,7 @@ namespace DiscordBotNew.Commands
 
             if (msg == null) return new ErrorResult("Message not found");
 
-            var builder = new EmbedBuilder()
+            var builder = new EmbedBuilder
             {
                 Author = new EmbedAuthorBuilder
                 {
@@ -130,12 +130,36 @@ namespace DiscordBotNew.Commands
                     IconUrl = msg.Author.AvatarUrlOrDefaultAvatar()
                 },
                 Timestamp = msg.Timestamp,
-                Description = msg.Content,
                 Footer = new EmbedFooterBuilder
                 {
                     Text = $"#{messageChannel.Name}"
                 }
             };
+
+            switch (msg.Type)
+            {
+                case MessageType.Default:
+                    builder.Description = msg.Content;
+                    break;
+                case MessageType.RecipientAdd:
+                    builder.Description = $"{msg.Author.Username} added a user to the group";
+                    break;
+                case MessageType.RecipientRemove:
+                    builder.Description = $"{msg.Author.Username} removed a user from the group";
+                    break;
+                case MessageType.Call:
+                    builder.Description = $"{msg.Author.Username} started a call";
+                    break;
+                case MessageType.ChannelNameChange:
+                    builder.Description = $"{msg.Author.Username} changed the name of the channel";
+                    break;
+                case MessageType.ChannelIconChange:
+                    builder.Description = $"{msg.Author.Username} changed the channel icon";
+                    break;
+                case MessageType.ChannelPinnedMessage:
+                    builder.Description = $"{msg.Author.Username} pinned a message to the channel";
+                    break;
+            }
 
             if (msg.Attachments.Count > 0)
             {

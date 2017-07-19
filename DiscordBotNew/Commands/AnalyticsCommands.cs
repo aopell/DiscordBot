@@ -101,7 +101,8 @@ namespace DiscordBotNew.Commands
             }
 
             File.WriteAllLines(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt", data);
-            await context.Channel.SendFileAsync(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt");
+            using (var stream = File.OpenRead(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt"))
+                await context.Channel.SendFileAsync(stream, $"analytics-{context.Guild.Id}-{DateTimeOffset.Now.ToUnixTimeSeconds()}.txt");
             return new SuccessResult();
         }
     }
