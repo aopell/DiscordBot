@@ -380,7 +380,7 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult("http://lmgtfy.com/?q=" + Uri.EscapeDataString(query));
 
         [Command("ping"), HelpText("Displays the bot's latency")]
-        public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms");
+        public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms estimated round trip latency");
 
         [Command("coin", "flip", "coinflip", "decide"), HelpText("Flips a coin")]
         public static ICommandResult Coin(ICommandContext context, string side1 = "Heads", string side2 = "Tails") => new SuccessResult(random.Next(2) == 0 ? side1 : side2);

@@ -125,7 +125,6 @@ namespace DiscordBotNew.Commands
                 // I'm sure this isn't the right way to do this but quite honestly I was getting annoyed and this works, so ¯\_(ツ)_/¯
                 TimeSpan offset = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, "Pacific Standard Time").Offset;
                 startTime = new DateTimeOffset(new DateTimeOffset(DateTime.UtcNow.Ticks + TimeSpan.FromHours(offset.Hours).Ticks, offset).Date, offset);
-                leaderboard.TimeGenerated = startTime;
             }
             else if (type == LeaderboardType.Past24Hours)
             {
@@ -377,20 +376,21 @@ namespace DiscordBotNew.Commands
                 {
                     case LeaderboardType.Full:
                     case LeaderboardType.Delta:
-                        builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine($"\nTotal messages in server: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})\n");
                         builder.AppendLine($"Changes from {(TimeGenerated - OldLeaderboard.TimeGenerated).ToLongString()} ago");
                         break;
                     case LeaderboardType.Today:
-                        builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine($"\nTotal messages sent today: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})\n");
                         builder.AppendLine("All current values since midnight PT, delta values are comparisons from the previous day");
                         break;
                     case LeaderboardType.Custom:
                     case LeaderboardType.Past24Hours:
-                        builder.AppendLine($"\nTotal messages sent in the last {TimePeriod.ToLongString()}: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})");
+                        builder.AppendLine($"\nTotal messages sent in the last {TimePeriod.ToLongString()}: {TotalMessages} ({TotalMessages - OldLeaderboard.TotalMessages:+#;-#;+0})\n");
                         builder.AppendLine($"All current values since {TimePeriod.ToLongString()} ago, delta values are comparisons from the previous {TimePeriod.ToLongString()}");
                         break;
                 }
             }
+            builder.AppendLine($"Generated {TimeGenerated:f} UTC");
             builder.Append("```");
 
             return builder.ToString();
