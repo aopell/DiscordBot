@@ -97,7 +97,7 @@ namespace DiscordBotNew.Commands
                         DateTimeOffset? editedTimestampPacific = null;
                         if (message.EditedTimestamp != null)
                             editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");
-                        data.Add($"{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{message.Content.Length}\t{message.Embeds.Any(x => x.Type == EmbedType.Rich)}\t{message.Attachments.Count > 0}\t{((IUserMessage)message).Reactions.Count}");
+                        data.Add($"{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{message.Content.Length}\t{message.Embeds.Any(x => x.Type == EmbedType.Rich)}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
                     }
                 });
             }
