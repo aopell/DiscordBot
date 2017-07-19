@@ -130,7 +130,11 @@ namespace DiscordBotNew.Commands
                     IconUrl = msg.Author.AvatarUrlOrDefaultAvatar()
                 },
                 Timestamp = msg.Timestamp,
-                Description = msg.Content
+                Description = msg.Content,
+                Footer = new EmbedFooterBuilder
+                {
+                    Text = $"#{messageChannel.Name}"
+                }
             };
 
             if (msg.Attachments.Count > 0)
