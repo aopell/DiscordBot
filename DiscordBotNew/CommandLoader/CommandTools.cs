@@ -113,6 +113,54 @@ namespace DiscordBotNew.CommandLoader
             return response.ToString().Trim();
         }
 
+        public static TValue GetOrAddDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key)
+        {
+            if (!dictionary.ContainsKey(key))
+            {
+                if (typeof(TValue).IsValueType)
+                {
+                    dictionary.Add(key, default(TValue));
+                }
+                else
+                {
+                    try
+                    {
+                        dictionary.Add(key, Activator.CreateInstance<TValue>());
+                    }
+                    catch
+                    {
+                        dictionary.Add(key, default(TValue));
+                    }
+                }
+            }
+
+            return dictionary[key];
+        }
+
+        public static void UpdateOrAddDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue newValue)
+        {
+            if (!dictionary.ContainsKey(key))
+            {
+                if (typeof(TValue).IsValueType)
+                {
+                    dictionary.Add(key, default(TValue));
+                }
+                else
+                {
+                    try
+                    {
+                        dictionary.Add(key, Activator.CreateInstance<TValue>());
+                    }
+                    catch
+                    {
+                        dictionary.Add(key, default(TValue));
+                    }
+                }
+            }
+
+            dictionary[key] = newValue;
+        }
+
         public static string[] ParseArguments(string input)
         {
             var args = new List<string>();

@@ -154,6 +154,7 @@
     <Compile Include="CommandLoader\CommandResult\ICommandResult.cs" />
     <Compile Include="CommandLoader\CommandResult\SuccessResult.cs" />
     <Compile Include="CommandLoader\CommandTools.cs" />
+    <Compile Include="Commands\AnalyticsCommands.cs" />
     <Compile Include="Commands\DynamicMessage.cs" />
     <Compile Include="Commands\GeneralCommands.cs" />
     <Compile Include="CommandLoader\CommandAttributes.cs" />

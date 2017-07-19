@@ -208,58 +208,6 @@ namespace DiscordBotNew.Commands
             return new SuccessResult(backronym);
         }
 
-        [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text), ChannelDescriptionDelay(21600)]
-        public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Delta, [HelpText("Specifies the time frame for custom leaderboards")] double customHours = 24d)
-        {
-            IGuild guild;
-            ITextChannel messageChannel;
-            DateTimeOffset timestamp;
-            switch (context)
-            {
-                case DiscordMessageContext d:
-                    guild = d.Guild;
-                    messageChannel = (ITextChannel)d.Channel;
-                    timestamp = d.Message.Timestamp;
-                    break;
-                case DiscordChannelDescriptionContext d:
-                    guild = d.Channel.Guild;
-                    messageChannel = (ITextChannel)d.Channel;
-                    timestamp = DateTimeOffset.Now;
-                    break;
-                default:
-                    return new ErrorResult($"The `leaderboard` command is not valid in the context `{context.GetType().Name}`");
-            }
-
-            if (context is DiscordUserMessageContext)
-            {
-                await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
-            }
-
-            using (messageChannel.EnterTypingState())
-            {
-                Leaderboard leaderboard;
-                switch (type)
-                {
-                    case LeaderboardType.Full:
-                        leaderboard = await Leaderboard.GenerateFullLeaderboard(guild, context.Bot, timestamp);
-                        break;
-                    case LeaderboardType.Today:
-                    case LeaderboardType.Past24Hours:
-                        leaderboard = await Leaderboard.GenerateTimeBasedLeaderboard(guild, context.Bot, type, timestamp);
-                        break;
-                    case LeaderboardType.Delta:
-                        leaderboard = await Leaderboard.GenerateDeltaLeaderboard(guild, context.Bot, timestamp);
-                        break;
-                    case LeaderboardType.Custom:
-                        leaderboard = await Leaderboard.GenerateTimeBasedLeaderboard(guild, context.Bot, type, timestamp, customHours);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(type), type, null);
-                }
-                return new SuccessResult(await leaderboard.ToStringAsync());
-            }
-        }
-
         [Command("status"), HelpText("Gets when a user was last online")]
         public static async Task<ICommandResult> Status(ICommandContext context, [DisplayName("username | @ mention")] string user)
         {
