@@ -73,14 +73,12 @@ namespace DiscordBotNew.Commands
         {
             await context.Reply("This is going to take a while");
             // Channel Name => User Name => Date => Hour
-            var analytics = new Dictionary<string, Dictionary<string, Dictionary<DateTime, Dictionary<int, int>>>>();
-
+            List<string> data = new List<string>();
+            data.Add("Channel\tUser\tIsBot\tTimestamp\tEditedTimestamp\tMessageLength\tHasRichEmbed\tHasAttachment\tReactions");
             var channels = await context.Guild.GetTextChannelsAsync();
 
             foreach (ITextChannel channel in channels)
             {
-                analytics.Add(channel.Name, new Dictionary<string, Dictionary<DateTime, Dictionary<int, int>>>());
-
                 ChannelPermissions permissions = (await context.Guild.GetCurrentUserAsync()).GetPermissions(channel);
                 if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
                 {
@@ -96,14 +94,16 @@ namespace DiscordBotNew.Commands
                     foreach (IMessage message in page)
                     {
                         var timestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, "Pacific Standard Time");
-                        var toModify = analytics[channel.Name].GetOrAddDefault(message.Author.ToString()).GetOrAddDefault(timestampPacific.Date);
-                        toModify.UpdateOrAddDefault(timestampPacific.Hour, toModify.GetOrAddDefault(timestampPacific.Hour) + 1);
+                        DateTimeOffset? editedTimestampPacific = null;
+                        if (message.EditedTimestamp != null)
+                            editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");
+                        data.Add($"{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{message.Content.Length}\t{message.Embeds.Any(x => x.Type == EmbedType.Rich)}\t{message.Attachments.Count > 0}\t{((IUserMessage)message).Reactions.Count}");
                     }
                 });
             }
 
-            File.WriteAllText(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.json", JsonConvert.SerializeObject(analytics));
-            await context.Channel.SendFileAsync(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.json");
+            File.WriteAllLines(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt", data);
+            await context.Channel.SendFileAsync(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt");
             return new SuccessResult();
         }
     }
