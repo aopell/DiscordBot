@@ -95,7 +95,7 @@ namespace DiscordBotNew.Commands
                         DateTimeOffset? editedTimestampPacific = null;
                         if (message.EditedTimestamp != null)
                             editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");
-                        data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{timestampPacific.ToUnixTimeSeconds()}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{editedTimestampPacific?.ToUnixTimeSeconds().ToString() ?? ""}\t{message.Content.Length}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{(message.Attachments.Count > 0 ? "YES" : "")}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
+                        data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{timestampPacific.ToUnixTimeSeconds()}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{editedTimestampPacific?.ToUnixTimeSeconds().ToString() ?? ""}\t{message.Content.Length}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
                     }
                 });
             }
