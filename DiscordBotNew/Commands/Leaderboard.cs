@@ -317,7 +317,7 @@ namespace DiscordBotNew.Commands
                 oldIndex = OldLeaderboard.OrderedChannelMessages.FindIndex(x => x.Key == id);
             }
 
-            return oldIndex < 0 ? '*' : (oldIndex < index ? '▼' : (oldIndex == index ? '-' : '▲'));
+            return oldIndex < 0 ? '!' : (oldIndex < index ? '-' : (oldIndex == index ? '~' : '+'));
         }
 
         public override string ToString() => ToStringAsync().Result;
@@ -342,7 +342,7 @@ namespace DiscordBotNew.Commands
                     break;
             }
 
-            builder.AppendLine("```\nChannels");
+            builder.AppendLine("```diff\nChannels");
             foreach (var channel in OrderedChannelMessages.Where(channel => ChannelLookup.ContainsKey(channel.Key)))
             {
                 if (OldLeaderboard == null)
