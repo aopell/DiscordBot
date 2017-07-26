@@ -64,7 +64,20 @@ namespace DiscordBotNew.Commands
                     default:
                         throw new ArgumentOutOfRangeException(nameof(type), type, null);
                 }
-                return new SuccessResult(await leaderboard.ToStringAsync());
+
+                if (context is DiscordUserMessageContext)
+                {
+                    foreach (string message in await leaderboard.ToStringsAsync())
+                    {
+                        await context.Reply(message);
+                    }
+
+                    return new SuccessResult();
+                }
+                else
+                {
+                    return new SuccessResult(await leaderboard.ToStringAsync());
+                }
             }
         }
 

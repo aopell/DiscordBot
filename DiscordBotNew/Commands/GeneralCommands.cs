@@ -338,7 +338,7 @@ namespace DiscordBotNew.Commands
             return new SuccessResult();
         }
 
-        [Command("cat"), HelpText("Cat.")]
+        [Command("cat", "floof"), HelpText("Cat.")]
         public static async Task<ICommandResult> Cat(DiscordMessageContext context)
         {
             JObject obj;

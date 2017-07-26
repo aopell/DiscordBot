@@ -31,7 +31,7 @@ namespace DiscordBotNew.CommandLoader.CommandContext
         {
 #if DEBUG
             string message = ex.ToString();
-            foreach (string m in Enumerable.Range(0, message.Length / 1000).Select(i => message.Substring(i * 1000, 1000)))
+            foreach (string m in Enumerable.Range(0, message.Length / 1000 + 1).Select(i => message.Substring(i * 1000, message.Length - i * 1000 > 1000 ? 1000 : message.Length - i * 1000)))
             {
                 await ReplyError(m, ex.GetType().Name);
             }

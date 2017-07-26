@@ -320,11 +320,12 @@ namespace DiscordBotNew.Commands
             return oldIndex < 0 ? '!' : (oldIndex < index ? '-' : (oldIndex == index ? '~' : '+'));
         }
 
-        public override string ToString() => ToStringAsync().Result;
+        public override string ToString() => string.Join("\n", ToStringsAsync().Result);
 
-        public async Task<string> ToStringAsync()
+        public async Task<List<string>> ToStringsAsync(bool combine = false)
         {
             IGuild guild = bot.Client.GetGuild(GuildId);
+            List<string> messages = new List<string>();
 
             var builder = new StringBuilder($"**Messages Leaderboard**\n");
             switch (Type)
@@ -353,6 +354,13 @@ namespace DiscordBotNew.Commands
                 {
                     builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   #{2}\n", channel.Value, channel.Value / (double)TotalMessages, ChannelLookup.TryGetValue(channel.Key, out string channelName) ? channelName : "<deleted channel>", CalculateMessageDifference(channel.Key, false), CalculatePercentageDifference(channel.Key, false), GetDifferenceChar(channel.Key, false));
                 }
+            }
+            if (!combine)
+            {
+                builder.AppendLine("```");
+                messages.Add(builder.ToString());
+                builder.Clear();
+                builder.AppendLine("```diff");
             }
             builder.AppendLine("\nUsers");
             foreach (var user in OrderedUserMessages)
@@ -392,9 +400,12 @@ namespace DiscordBotNew.Commands
             }
             builder.AppendLine($"Generated {TimeGenerated:f} UTC");
             builder.Append("```");
+            messages.Add(builder.ToString());
 
-            return builder.ToString();
+            return messages;
         }
+
+        public async Task<string> ToStringAsync() => (await ToStringsAsync(combine: true)).First();
     }
 
     public enum LeaderboardType
