@@ -360,5 +360,8 @@ namespace DiscordBotNew.Commands
 
         [Command("coin", "flip", "coinflip", "decide"), HelpText("Flips a coin")]
         public static ICommandResult Coin(ICommandContext context, string side1 = "Heads", string side2 = "Tails") => new SuccessResult(random.Next(2) == 0 ? side1 : side2);
+
+        [Command("timestamp"), HelpText("Displays the timestamp of a message")]
+        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("message ID")] ulong messageId, [DisplayName("Windows TimeZone ID")] string timeZone = "Pacific Standard Time") => new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId((await context.Channel.GetMessageAsync(messageId)).Timestamp, timeZone).DateTime.ToString());
     }
 }
