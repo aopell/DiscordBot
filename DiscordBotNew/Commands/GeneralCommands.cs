@@ -177,7 +177,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
-        public static ICommandResult Countdown(ICommandContext context, string name, [JoinRemainingParameters, HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID")] string timezone = "Pacific Standard Time")
+        public static ICommandResult Countdown(ICommandContext context, string name, [HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
             var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
@@ -361,7 +361,21 @@ namespace DiscordBotNew.Commands
         [Command("coin", "flip", "coinflip", "decide"), HelpText("Flips a coin")]
         public static ICommandResult Coin(ICommandContext context, string side1 = "Heads", string side2 = "Tails") => new SuccessResult(random.Next(2) == 0 ? side1 : side2);
 
-        [Command("timestamp"), HelpText("Displays the timestamp of a message")]
-        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("message ID")] ulong messageId, [DisplayName("Windows TimeZone ID")] string timeZone = "Pacific Standard Time") => new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId((await context.Channel.GetMessageAsync(messageId)).Timestamp, timeZone).DateTime.ToString());
+        [Command("timestamp"), HelpText("Displays the timestamp of a message"), CommandScope(ChannelType.Text)]
+        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("message ID")] ulong messageId, [DisplayName("channel mention")] string channel, [DisplayName("Windows TimeZone ID")] string timeZone = "Pacific Standard Time")
+        {
+            IMessage message;
+            if (context.Message.MentionedChannelIds.Count < 1)
+            {
+                message = await context.Channel.GetMessageAsync(messageId);
+            }
+            else
+            {
+                message = await ((IMessageChannel)await context.Guild.GetChannelAsync(context.Message.MentionedChannelIds.First())).GetMessageAsync(messageId);
+            }
+
+            DateTimeOffset timestamp = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, timeZone);
+            return new SuccessResult(timestamp.ToString());
+        }
     }
 }

@@ -159,12 +159,12 @@ namespace DiscordBotNew
                 Description = $"Vote using `{CommandTools.GetCommandPrefix(context, context.Channel)}{(Anonymous ? $"anonvote {Id}" : "vote")} <option number|option text>`{(Anonymous ? $"\n**__ONLY VOTES FROM A DIRECT MESSAGE TO ME WILL BE COUNTED!__**\nThis is **anonymous poll number #{Id}.**" : "")}",
                 Footer = new EmbedFooterBuilder
                 {
-                    Text = $"The poll will end in {MinutesLeft} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(context, context.Channel)}endpoll'"
+                    Text = $"The poll will end in {TimeSpan.FromMinutes(MinutesLeft).ToLongString()} minutes unless stopped earlier with '{CommandTools.GetCommandPrefix(context, context.Channel)}endpoll'"
                 },
                 Author = new EmbedAuthorBuilder
                 {
-                    Name = context.Message.Author.NicknameOrUsername(),
-                    IconUrl = context.Message.Author.AvatarUrlOrDefaultAvatar()
+                    Name = Creator.NicknameOrUsername(),
+                    IconUrl = Creator.AvatarUrlOrDefaultAvatar()
                 }
             };
 

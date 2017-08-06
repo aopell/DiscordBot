@@ -82,40 +82,46 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("analytics"), HelpText("Generates a JSON file with analytics from the server"), CommandScope(ChannelType.Text), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context)
+        public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context, [DisplayName("Windows Timezone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
             await context.Reply("This is going to take a while");
-            // Channel Name => User Name => Date => Hour
-            List<string> data = new List<string>();
-            data.Add("MessageID\tChannel\tUser\tIsBot\tTimestamp\tUnixTimestamp\tEditedTimestamp\tUnixEditedTimestamp\tMessageLength\tEmbedType\tHasAttachment\tReactionCount");
-            var channels = await context.Guild.GetTextChannelsAsync();
-
-            foreach (ITextChannel channel in channels)
+            using (context.Channel.EnterTypingState())
             {
-                ChannelPermissions permissions = (await context.Guild.GetCurrentUserAsync()).GetPermissions(channel);
-                if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
+                // Channel Name => User Name => Date => Hour
+                List<string> data = new List<string>();
+                data.Add("MessageID\tChannel\tUser\tIsBot\tTimestamp\tUnixTimestamp\tEditedTimestamp\tUnixEditedTimestamp\tMessageLength\tEmbedType\tHasAttachment\tReactionCount");
+                var channels = await context.Guild.GetTextChannelsAsync();
+
+                foreach (ITextChannel channel in channels)
                 {
-                    continue;
+                    ChannelPermissions permissions = (await context.Guild.GetCurrentUserAsync()).GetPermissions(channel);
+                    if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
+                    {
+                        continue;
+                    }
+
+                    var pages = channel.GetMessagesAsync(int.MaxValue);
+                    pages.ForEach(
+                    page =>
+                    {
+                        foreach (IMessage message in page)
+                        {
+                            var timestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, "Pacific Standard Time");
+                            DateTimeOffset? editedTimestampPacific = null;
+                            if (message.EditedTimestamp != null)
+                                editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");
+                            data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{timestampPacific.ToUnixTimeSeconds()}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{editedTimestampPacific?.ToUnixTimeSeconds().ToString() ?? ""}\t{new System.Globalization.StringInfo(message.Content).LengthInTextElements}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
+                        }
+                    });
                 }
 
-                var pages = channel.GetMessagesAsync(int.MaxValue);
-                pages.ForEach(
-                page =>
-                {
-                    foreach (IMessage message in page)
-                    {
-                        var timestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, "Pacific Standard Time");
-                        DateTimeOffset? editedTimestampPacific = null;
-                        if (message.EditedTimestamp != null)
-                            editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");
-                        data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{timestampPacific.ToUnixTimeSeconds()}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{editedTimestampPacific?.ToUnixTimeSeconds().ToString() ?? ""}\t{message.Content.Length}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
-                    }
-                });
-            }
+                File.WriteAllLines(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt", data);
 
-            File.WriteAllLines(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt", data);
-            using (var stream = File.OpenRead(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt"))
-                await context.Channel.SendFileAsync(stream, $"analytics-{context.Guild.Id}-{DateTimeOffset.Now.ToUnixTimeSeconds()}.txt");
+                using (var stream = File.OpenRead(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt"))
+                {
+                    await context.Channel.SendFileAsync(stream, $"analytics-{context.Guild.Id}-{DateTimeOffset.Now.ToUnixTimeSeconds()}.txt");
+                }
+            }
             return new SuccessResult();
         }
     }
