@@ -81,7 +81,7 @@ namespace DiscordBotNew.Commands
             }
         }
 
-        [Command("analytics"), HelpText("Generates a JSON file with analytics from the server"), CommandScope(ChannelType.Text), Permissions(ownerOnly: true)]
+        [Command("analytics"), HelpText("Generates a tab separated text file with analytics from the server"), CommandScope(ChannelType.Text), Permissions(ownerOnly: true)]
         public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context, [DisplayName("Windows Timezone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
             await context.Reply("This is going to take a while");
