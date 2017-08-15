@@ -152,6 +152,7 @@ namespace DiscordBotNew.Settings
             try
             {
                 LoadSettings();
+
                 using (new ReadLock(rwLock))
                 {
                     values = settings.ToObject<Dictionary<string, TValue>>();

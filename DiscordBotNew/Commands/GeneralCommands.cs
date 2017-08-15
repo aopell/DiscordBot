@@ -176,27 +176,53 @@ namespace DiscordBotNew.Commands
             return new SuccessResult(embed: builder);
         }
 
-        [Command("countdown"), HelpText("Creates or views the status of a countdown timer")]
-        public static ICommandResult Countdown(ICommandContext context, string name, [HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
+        [Command("countdown"), HelpText("Creates, edits, or deletes a countdown")]
+        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
             var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
-
-            if (date != null)
+            switch (action)
             {
-                var pacificTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, timezone).Offset);
-
-                if (countdowns.ContainsKey(name))
-                {
-                    countdowns[name] = pacificTime;
-                }
-                else
-                {
-                    countdowns.Add(name, pacificTime);
-                }
-
-                context.Bot.Settings.AddSetting("countdowns", countdowns);
-                context.Bot.Settings.SaveSettings();
+                case CountdownAction.Create:
+                    if (countdowns.ContainsKey(name))
+                    {
+                        return new ErrorResult($"The countdown with the name {name} already exists");
+                    }
+                    break;
+                case CountdownAction.Edit:
+                    if (!countdowns.ContainsKey(name))
+                    {
+                        return new ErrorResult($"The countdown with the name {name} does not exist");
+                    }
+                    break;
+                case CountdownAction.Delete:
+                    if (!countdowns.ContainsKey(name)) return new ErrorResult($"The countdown with the name {name} does not exist");
+                    countdowns.Remove(name);
+                    context.Bot.Settings.AddSetting("countdowns", countdowns);
+                    context.Bot.Settings.SaveSettings();
+                    return new SuccessResult($"Successfully deleted countdown {name}");
             }
+
+            if (!date.HasValue) return new ErrorResult("Please provide a date when creating or editing a countdown");
+            var convertedTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, timezone).Offset);
+            if (countdowns.ContainsKey(name))
+            {
+                countdowns[name] = convertedTime;
+            }
+            else
+            {
+                countdowns.Add(name, convertedTime);
+            }
+            context.Bot.Settings.AddSetting("countdowns", countdowns);
+            context.Bot.Settings.SaveSettings();
+
+            TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
+            return new SuccessResult($"{difference.ToLongString()} until {name}");
+        }
+
+        [Command("countdown"), HelpText("Views the status of a countdown timer")]
+        public static ICommandResult Countdown(ICommandContext context, string name)
+        {
+            var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
             if (!countdowns.ContainsKey(name))
             {
@@ -339,7 +365,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("cat", "floof"), HelpText("Cat.")]
-        public static async Task<ICommandResult> Cat(DiscordMessageContext context)
+        public static async Task<ICommandResult> Cat(ICommandContext context)
         {
             JObject obj;
             string catUrl;
@@ -376,6 +402,13 @@ namespace DiscordBotNew.Commands
 
             DateTimeOffset timestamp = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, timeZone);
             return new SuccessResult(timestamp.ToString());
+        }
+
+        public enum CountdownAction
+        {
+            [HelpText("Creates a new countdown")] Create,
+            [HelpText("Changes the time of an existing countdown")] Edit,
+            [HelpText("Deletes an existing countdown")] Delete
         }
     }
 }
