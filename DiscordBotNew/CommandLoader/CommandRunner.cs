@@ -69,8 +69,9 @@ namespace DiscordBotNew.CommandLoader
                 var commands = GetCommands(commandName);
                 if (commands != null && commands.Any())
                 {
-                    var param = commands.First().GetParameters().FirstOrDefault();
-                    return new ErrorResult($"Please provide a value of type `{param?.ParameterType.Name ?? "unknown"}` for parameter `{param?.Name ?? "unknown"}`");
+                    string msg = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", commands.First().GetParameters().Where(param => !param.IsOptional).Select(param => param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info";
+                    await context.ReplyError(msg, "Syntax Error");
+                    return new ErrorResult(msg, "Syntax Error");
                 }
 
                 string message = $"The command `{prefix}{commandName}` does not exist";
@@ -91,7 +92,7 @@ namespace DiscordBotNew.CommandLoader
 
             if (args.Length < requiredParameters.Length - 1)
             {
-                string message = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<HelpTextAttribute>()?.Text ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info";
+                string message = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info";
                 await context.ReplyError(message, "Syntax Error");
                 return new ErrorResult(message, "Syntax Error");
             }

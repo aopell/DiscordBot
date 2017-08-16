@@ -289,7 +289,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("status"), HelpText("Gets when a user was last online")]
-        public static async Task<ICommandResult> Status(ICommandContext context, [DisplayName("username | @ mention")] string user)
+        public static async Task<ICommandResult> Status(ICommandContext context, [DisplayName("username | @ mention"), JoinRemainingParameters] string user)
         {
             IUser targetUser;
 
