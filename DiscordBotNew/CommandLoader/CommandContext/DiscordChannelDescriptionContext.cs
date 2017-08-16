@@ -8,9 +8,12 @@ using Discord.WebSocket;
 
 namespace DiscordBotNew.CommandLoader.CommandContext
 {
-    public class DiscordChannelDescriptionContext : ICommandContext
+    public class DiscordChannelDescriptionContext : IDiscordGuildChannelContext
     {
         public IGuildChannel Channel { get; }
+        public IGuild Guild => Channel.Guild;
+        IMessageChannel IDiscordCommandContext.Channel => Channel as IMessageChannel;
+
         public string FullCommand { get; }
         public DiscordBot Bot { get; }
 

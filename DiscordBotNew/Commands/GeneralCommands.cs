@@ -177,9 +177,9 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown")]
-        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
+        public static ICommandResult Countdown(IDiscordGuildChannelContext context, CountdownAction action, string name, [HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
-            var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            var countdowns = context.Bot.Settings.GetSetting(context.Channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
             switch (action)
             {
                 case CountdownAction.Create:
@@ -212,7 +212,7 @@ namespace DiscordBotNew.Commands
             {
                 countdowns.Add(name, convertedTime);
             }
-            context.Bot.Settings.AddSetting("countdowns", countdowns);
+            context.Bot.Settings.AddSetting(context.Channel.GuildId.ToString(), countdowns);
             context.Bot.Settings.SaveSettings();
 
             TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
@@ -220,9 +220,9 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Views the status of a countdown timer")]
-        public static ICommandResult Countdown(ICommandContext context, string name)
+        public static ICommandResult Countdown(IDiscordGuildChannelContext context, string name)
         {
-            var countdowns = context.Bot.Settings.GetSetting("countdowns", out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            var countdowns = context.Bot.Countdowns.GetSetting(context.Channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
             if (!countdowns.ContainsKey(name))
             {

@@ -149,6 +149,7 @@
     <Compile Include="CommandLoader\CommandContext\DiscordDynamicMessageContext.cs" />
     <Compile Include="CommandLoader\CommandContext\DiscordMessageContext.cs" />
     <Compile Include="CommandLoader\CommandContext\DiscordUserMessageContext.cs" />
+    <Compile Include="CommandLoader\CommandContext\IDiscordCommandContext.cs" />
     <Compile Include="CommandLoader\CommandResult\ErrorResult.cs" />
     <Compile Include="CommandLoader\CommandContext\ICommandContext.cs" />
     <Compile Include="CommandLoader\CommandResult\ICommandResult.cs" />

@@ -26,6 +26,7 @@ namespace DiscordBotNew
         public SettingsManager UserStatuses { get; private set; }
         public SettingsManager Leaderboards { get; private set; }
         public SettingsManager DynamicMessages { get; private set; }
+        public SettingsManager Countdowns { get; private set; }
 
         public static void Main(string[] args)
         {
@@ -49,6 +50,7 @@ namespace DiscordBotNew
             UserStatuses = new SettingsManager(SettingsManager.BasePath + "statuses.json");
             Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
             DynamicMessages = new SettingsManager(SettingsManager.BasePath + "dynamic-messages.json");
+            Countdowns = new SettingsManager(SettingsManager.BasePath + "countdowns.json");
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
 
@@ -109,6 +111,7 @@ namespace DiscordBotNew
             createFile("statuses.json");
             createFile("leaderboards.json");
             createFile("dynamic-messages.json");
+            createFile("countdowns.json");
 
             void createFile(string filename)
             {
