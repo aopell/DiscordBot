@@ -192,7 +192,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            var countdowns = context.Bot.Settings.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
             switch (action)
             {
                 case CountdownAction.Create:
@@ -210,8 +210,8 @@ namespace DiscordBotNew.Commands
                 case CountdownAction.Delete:
                     if (!countdowns.ContainsKey(name)) return new ErrorResult($"The countdown with the name {name} does not exist");
                     countdowns.Remove(name);
-                    context.Bot.Settings.AddSetting("countdowns", countdowns);
-                    context.Bot.Settings.SaveSettings();
+                    context.Bot.Countdowns.AddSetting("countdowns", countdowns);
+                    context.Bot.Countdowns.SaveSettings();
                     return new SuccessResult($"Successfully deleted countdown {name}");
             }
 
@@ -225,8 +225,8 @@ namespace DiscordBotNew.Commands
             {
                 countdowns.Add(name, convertedTime);
             }
-            context.Bot.Settings.AddSetting(channel.GuildId.ToString(), countdowns);
-            context.Bot.Settings.SaveSettings();
+            context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
+            context.Bot.Countdowns.SaveSettings();
 
             TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
             return new SuccessResult($"{difference.ToLongString()} until {name}");
@@ -356,6 +356,8 @@ namespace DiscordBotNew.Commands
                 statusEmbed.AddInlineField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString());
                 if (targetUser.Status != UserStatus.Online)
                     statusEmbed.AddInlineField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
+                else if (statusInfo.Game != null)
+                    statusEmbed.AddInlineField($"In Game {statusInfo.Game}", (DateTimeOffset.Now - statusInfo.StartedPlaying)?.ToLongString() ?? "Unknown amount of time");
 
                 return new SuccessResult(embed: statusEmbed);
             }

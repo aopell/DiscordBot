@@ -66,6 +66,13 @@ namespace DiscordBotNew.CommandLoader
 
             if (command == null)
             {
+                var commands = GetCommands(commandName);
+                if (commands != null && commands.Any())
+                {
+                    var param = commands.First().GetParameters().FirstOrDefault();
+                    return new ErrorResult($"Please provide a value of type `{param?.ParameterType.Name ?? "unknown"}` for parameter `{param?.Name ?? "unknown"}`");
+                }
+
                 string message = $"The command `{prefix}{commandName}` does not exist";
                 await context.ReplyError(message, "Command Not Found");
                 return new ErrorResult(message, "Command Not Found");

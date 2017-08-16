@@ -11,5 +11,7 @@ namespace DiscordBotNew.Commands
     {
         public DateTimeOffset LastOnline { get; set; }
         public DateTimeOffset StatusLastChanged { get; set; }
+        public string Game { get; set; }
+        public DateTimeOffset? StartedPlaying { get; set; }
     }
 }

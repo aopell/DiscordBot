@@ -27,6 +27,7 @@ namespace DiscordBotNew
         public SettingsManager Leaderboards { get; private set; }
         public SettingsManager DynamicMessages { get; private set; }
         public SettingsManager Countdowns { get; private set; }
+        public List<string> FileNames { get; private set; }
 
         public static void Main(string[] args)
         {
@@ -74,7 +75,7 @@ namespace DiscordBotNew
         {
             await Log(new LogMessage(LogSeverity.Info, "UserUpdate", $"{arg2.Username} updated"));
 
-            if (arg1.Status != arg2.Status)
+            if (arg1.Status != arg2.Status || arg1.Game?.Name != arg2.Game?.Name)
             {
                 Dictionary<ulong, UserStatusInfo> statuses;
                 statuses = UserStatuses.GetSetting("statuses", out statuses) ? statuses : new Dictionary<ulong, UserStatusInfo>();
@@ -83,10 +84,19 @@ namespace DiscordBotNew
                 if (statuses.ContainsKey(arg2.Id))
                 {
                     var previousStatus = statuses[arg2.Id];
-                    previousStatus.StatusLastChanged = currentTime;
-                    if (arg1.Status == UserStatus.Online)
+
+                    if (arg1.Status != arg2.Status)
                     {
-                        previousStatus.LastOnline = currentTime;
+                        previousStatus.StatusLastChanged = currentTime;
+                        if (arg1.Status == UserStatus.Online)
+                        {
+                            previousStatus.LastOnline = currentTime;
+                        }
+                    }
+                    if (arg1.Game?.Name != arg2.Game?.Name)
+                    {
+                        previousStatus.Game = arg2.Game?.Name;
+                        previousStatus.StartedPlaying = DateTimeOffset.Now;
                     }
                 }
                 else
@@ -94,7 +104,9 @@ namespace DiscordBotNew
                     UserStatusInfo status = new UserStatusInfo
                     {
                         StatusLastChanged = currentTime,
-                        LastOnline = arg1.Status == UserStatus.Online ? currentTime : DateTimeOffset.MinValue
+                        LastOnline = arg1.Status == UserStatus.Online ? currentTime : DateTimeOffset.MinValue,
+                        Game = null,
+                        StartedPlaying = null
                     };
                     statuses.Add(arg2.Id, status);
                 }
@@ -106,6 +118,7 @@ namespace DiscordBotNew
 
         private void CreateFiles()
         {
+            FileNames = new List<string>();
             createFile("settings.json");
             createFile("descriptions.json");
             createFile("statuses.json");
@@ -115,6 +128,7 @@ namespace DiscordBotNew
 
             void createFile(string filename)
             {
+                FileNames.Add(filename);
                 if (!File.Exists(SettingsManager.BasePath + filename))
                     File.Create(SettingsManager.BasePath + filename).Close();
             }
