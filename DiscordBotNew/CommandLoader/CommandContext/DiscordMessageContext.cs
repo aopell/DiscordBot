@@ -5,7 +5,7 @@ using Discord;
 
 namespace DiscordBotNew.CommandLoader.CommandContext
 {
-    public abstract class DiscordMessageContext : IDiscordCommandContext
+    public abstract class DiscordMessageContext : ICommandContext
     {
         public IUserMessage Message { get; }
         public ChannelType ChannelType => Message.GetChannelType();
