@@ -294,7 +294,16 @@ namespace DiscordBotNew.CommandLoader
                         text.Append("`");
 
                         text.Append(parameter.IsOptional ? "Optional " : "");
-                        text.Append(parameter.ParameterType.Name);
+                        if (parameter.ParameterType.IsGenericType)
+                        {
+                            text.Append(parameter.ParameterType.GetGenericTypeDefinition()?.Name.Split('`')[0] ?? "UnknownGenericType");
+                            text.Append(" ");
+                            text.Append(parameter.ParameterType.GetGenericArguments()[0].Name);
+                        }
+                        else
+                        {
+                            text.Append(parameter.ParameterType.Name);
+                        }
                         text.Append(" ");
                         text.Append(parameter.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? parameter.Name);
                         text.Append(parameter.IsDefined(typeof(JoinRemainingParametersAttribute)) ? "..." : "");
