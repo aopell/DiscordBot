@@ -210,7 +210,7 @@ namespace DiscordBotNew.Commands
                 case CountdownAction.Delete:
                     if (!countdowns.ContainsKey(name)) return new ErrorResult($"The countdown with the name {name} does not exist");
                     countdowns.Remove(name);
-                    context.Bot.Countdowns.AddSetting("countdowns", countdowns);
+                    context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
                     context.Bot.Countdowns.SaveSettings();
                     return new SuccessResult($"Successfully deleted countdown {name}");
             }
