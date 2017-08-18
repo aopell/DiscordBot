@@ -92,7 +92,7 @@ namespace DiscordBotNew.CommandLoader
 
             if (args.Length < requiredParameters.Length - 1)
             {
-                string message = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info";
+                string message = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", requiredParameters.Select(param => param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name).Skip(args.Length + 1))}`\nUse `{prefix}help {commandName}` for command info";
                 await context.ReplyError(message, "Syntax Error");
                 return new ErrorResult(message, "Syntax Error");
             }
@@ -130,9 +130,13 @@ namespace DiscordBotNew.CommandLoader
                 if (i == parameters.Length - 1 && parameters[i].IsDefined(typeof(JoinRemainingParametersAttribute)))
                 {
                     if (parameters[i].ParameterType == typeof(string))
-                        values.Add(string.Join(" ", commandMessage.Trim().Substring(prefix.Length).Split(' ').Skip(i)));
+                    {
+                        values.Add(string.Join(" ", args));
+                    }
                     else if (parameters[i].ParameterType == typeof(string[]))
+                    {
                         values.Add(args.Skip(i - 1).ToArray());
+                    }
                     else
                     {
                         object converted = ConvertToType(parameters[i].ParameterType, string.Join(" ", args.Skip(i - 1)));

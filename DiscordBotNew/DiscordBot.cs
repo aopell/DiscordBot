@@ -21,7 +21,7 @@ namespace DiscordBotNew
         public DiscordRestClient RestClient { get; private set; }
         public SettingsManager Settings { get; private set; }
 
-        private const string ExceptionFilePath = "exception.txt";
+        private const string ExceptionFilePath = SettingsManager.BasePath + "exception.txt";
         private SettingsManager channelDescriptions;
         public SettingsManager UserStatuses { get; private set; }
         public SettingsManager Leaderboards { get; private set; }
