@@ -216,29 +216,36 @@ namespace DiscordBotNew
                 List<DynamicMessage> toRemove = new List<DynamicMessage>();
                 foreach (var message in messages)
                 {
-                    if (minute % message.UpdateInterval != 0)
+                    try
                     {
-                        continue;
-                    }
+                        if (minute % message.UpdateInterval != 0)
+                        {
+                            continue;
+                        }
 
-                    var channel = (IMessageChannel)Client.GetGuild(message.GuildId).GetChannel(message.ChannelId);
-                    var discordMessage = (IUserMessage)await channel.GetMessageAsync(message.MessageId);
+                        var channel = (IMessageChannel)Client.GetGuild(message.GuildId).GetChannel(message.ChannelId);
+                        var discordMessage = (IUserMessage)await channel.GetMessageAsync(message.MessageId);
 
-                    if (discordMessage == null)
-                    {
-                        toRemove.Add(message);
-                        continue;
-                    }
+                        if (discordMessage == null)
+                        {
+                            toRemove.Add(message);
+                            continue;
+                        }
 
-                    var context = new DiscordDynamicMessageContext(discordMessage, this, message.CommandText);
-                    string prefix = CommandTools.GetCommandPrefix(context, channel);
-                    if (message.CommandText.StartsWith(prefix))
-                    {
-                        await CommandRunner.Run(message.CommandText, context, prefix, false);
+                        var context = new DiscordDynamicMessageContext(discordMessage, this, message.CommandText);
+                        string prefix = CommandTools.GetCommandPrefix(context, channel);
+                        if (message.CommandText.StartsWith(prefix))
+                        {
+                            await CommandRunner.Run(message.CommandText, context, prefix, false);
+                        }
+                        else
+                        {
+                            await context.ReplyError($"The string `{message.CommandText}`", "Invalid Command");
+                        }
                     }
-                    else
+                    catch
                     {
-                        await context.ReplyError($"The string `{message.CommandText}`", "Invalid Command");
+                        // Fail silently
                     }
                 }
 
@@ -252,28 +259,40 @@ namespace DiscordBotNew
 
         private async Task Client_Ready()
         {
-            if (Settings.GetSetting("botOwner", out ulong id))
+            try
             {
+                if (Settings.GetSetting("botOwner", out ulong id))
+                {
 #if !DEBUG
                 await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
 #else
-                await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+                    await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
 #endif
 
-                if (File.Exists(ExceptionFilePath))
+                    if (File.Exists(ExceptionFilePath))
+                    {
+                        string message = "ERROR:\n\n" + File.ReadAllText(ExceptionFilePath);
+                        foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500)))
+                        {
+                            await Client.GetUser(id).SendMessageAsync(m);
+                        }
+                        File.Delete(ExceptionFilePath);
+                    }
+                }
+
+                ulong tick = 0;
+                while (true)
                 {
-                    await Client.GetUser(id).SendMessageAsync(File.ReadAllText(ExceptionFilePath));
-                    File.Delete(ExceptionFilePath);
+                    if (tick % 60 == 0)
+                        MinuteTimer(tick / 60);
+                    SecondTimer(tick++);
+                    await Task.Delay(1000);
                 }
             }
-
-            ulong tick = 0;
-            while (true)
+            catch (Exception ex)
             {
-                if (tick % 60 == 0)
-                    MinuteTimer(tick / 60);
-                SecondTimer(tick++);
-                await Task.Delay(1000);
+                if (Settings.GetSetting("botOwner", out ulong id))
+                    await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] {ex}");
             }
         }
 

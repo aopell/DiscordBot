@@ -47,7 +47,7 @@ namespace DiscordBotNew.CommandLoader
                         .ToArray();
             MethodInfo command = GetCommand(commandName, args.Length);
 
-            if (tick % (command.GetCustomAttribute<ChannelDescriptionDelayAttribute>()?.DelaySeconds ?? 10) == 0)
+            if (tick % (command?.GetCustomAttribute<ChannelDescriptionDelayAttribute>()?.DelaySeconds ?? 10) == 0)
             {
                 return await Run(commandMessage, context, prefix, awaitResult);
             }
@@ -69,7 +69,7 @@ namespace DiscordBotNew.CommandLoader
                 var commands = GetCommands(commandName);
                 if (commands != null && commands.Any())
                 {
-                    string msg = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", commands.First().GetParameters().Where(param => !param.IsOptional).Select(param => param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name).Skip(args.Length + 1))}`\nUse `!help {prefix}{commandName}` for command info";
+                    string msg = $"The syntax of the command was incorrect. The following parameters are required: `{string.Join("`, `", commands.First().GetParameters().Where(param => !param.IsOptional).Select(param => param.GetCustomAttribute<DisplayNameAttribute>()?.Name ?? param.Name).Skip(args.Length + 1))}`\nUse `{prefix}help {commandName}` for command info";
                     await context.ReplyError(msg, "Syntax Error");
                     return new ErrorResult(msg, "Syntax Error");
                 }
