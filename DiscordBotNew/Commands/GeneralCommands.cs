@@ -176,7 +176,34 @@ namespace DiscordBotNew.Commands
             return new SuccessResult(embed: builder);
         }
 
-        [Command("countdown"), HelpText("Creates, edits, or deletes a countdown")]
+        [Command("countdowns"), HelpText("Lists countdowns for the current server"), CommandScope(ChannelType.Text)]
+        public static ICommandResult CountdownList(ICommandContext context)
+        {
+            IGuildChannel channel;
+            switch (context)
+            {
+                case DiscordMessageContext message:
+                    channel = (IGuildChannel)message.Channel;
+                    break;
+                case DiscordChannelDescriptionContext desc:
+                    channel = desc.Channel;
+                    break;
+                default:
+                    return new ErrorResult($"The `countdowns` command is not valid in the context `{context.GetType().Name}`");
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("All Countdowns:\n```");
+            var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            foreach (var countdown in countdowns)
+            {
+                builder.AppendLine($"{countdown.Key,-32}{(countdown.Value - DateTimeOffset.Now).ToLongString()}");
+            }
+            builder.Append("```");
+            return new SuccessResult(builder.ToString());
+        }
+
+        [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
         public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
             IGuildChannel channel;
@@ -232,7 +259,7 @@ namespace DiscordBotNew.Commands
             return new SuccessResult($"{difference.ToLongString()} until {name}");
         }
 
-        [Command("countdown"), HelpText("Views the status of a countdown timer")]
+        [Command("countdown"), HelpText("Views the status of a countdown timer"), CommandScope(ChannelType.Text)]
         public static ICommandResult Countdown(ICommandContext context, string name)
         {
             IGuildChannel channel;

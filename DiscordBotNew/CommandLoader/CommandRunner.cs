@@ -247,7 +247,7 @@ namespace DiscordBotNew.CommandLoader
         }
 
         [Command("help", "man"), HelpText("Gets help text for all commands or a specific command")]
-        public static ICommandResult Help(DiscordMessageContext context, [HelpText("Gets help for this specific command, or all commands if set to '*'")]string command = null, [HelpText("Whether or not to show parameter descriptions")] Verbosity verbosity = Verbosity.Standard)
+        public static ICommandResult Help(DiscordMessageContext context, [HelpText("Gets help for this specific command")]string command = null, [HelpText("Whether or not to show parameter descriptions")] Verbosity verbosity = Verbosity.Standard)
         {
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
 
@@ -257,7 +257,7 @@ namespace DiscordBotNew.CommandLoader
                 Color = new Color(33, 150, 243)
             };
 
-            var commands = command == null || command == "*"
+            var commands = command == null
                            ? commandMethods.Where(method => method.GetCustomAttribute<CommandScopeAttribute>()
                                                                   ?.ChannelTypes.Contains(context.ChannelType)
                                                                   ?? true)
@@ -268,7 +268,7 @@ namespace DiscordBotNew.CommandLoader
                                                 : command)
                            .ToList();
 
-            if (commands[0] == null)
+            if (commands.Count == 0 || commands[0] == null)
             {
                 return new ErrorResult($"The requested command {commandPrefix}{command} was not found");
             }
@@ -287,7 +287,7 @@ namespace DiscordBotNew.CommandLoader
                 title.Append("`");
                 var text = new StringBuilder();
                 text.AppendLine(method.GetCustomAttribute<HelpTextAttribute>()?.Text ?? "*No help text found*");
-                if (verbosity == Verbosity.Verbose)
+                if (verbosity > Verbosity.Parameters)
                 {
                     if (method.GetParameters().Length > 1)
                     {
@@ -330,19 +330,22 @@ namespace DiscordBotNew.CommandLoader
                         text.AppendLine();
                     }
 
-                    foreach (var parameter in method.GetParameters().Where(param => param.ParameterType.IsEnum))
+                    if (verbosity >= Verbosity.Verbose)
                     {
-                        text.AppendLine($"**{parameter.ParameterType.Name} Options**");
-                        var names = Enum.GetNames(parameter.ParameterType);
-                        foreach (string name in names)
+                        foreach (var parameter in method.GetParameters().Where(param => param.ParameterType.IsEnum))
                         {
-                            text.Append($"`{name}`");
-                            var helpText = parameter.ParameterType.GetMember(name).FirstOrDefault().GetCustomAttribute<HelpTextAttribute>();
-                            if (helpText != null)
+                            text.AppendLine($"**{parameter.ParameterType.Name} Options**");
+                            var names = Enum.GetNames(parameter.ParameterType);
+                            foreach (string name in names)
                             {
-                                text.Append($": {helpText.Text}");
+                                text.Append($"`{name}`");
+                                var helpText = parameter.ParameterType.GetMember(name).FirstOrDefault().GetCustomAttribute<HelpTextAttribute>();
+                                if (helpText != null)
+                                {
+                                    text.Append($": {helpText.Text}");
+                                }
+                                text.AppendLine();
                             }
-                            text.AppendLine();
                         }
                     }
                 }
@@ -356,7 +359,8 @@ namespace DiscordBotNew.CommandLoader
         public enum Verbosity
         {
             [HelpText("Shows the command, its help text, and its parameters")] Standard,
-            [HelpText("Shows help text for individual parameters")] Verbose
+            [HelpText("Additionally shows help text for individual parameters")] Parameters,
+            [HelpText("Additionally shows options for all enum types")] Verbose
         }
     }
 }
