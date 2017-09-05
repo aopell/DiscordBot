@@ -280,6 +280,11 @@ namespace DiscordBotNew
                     }
                 }
 
+                if (Settings.GetSetting("game", out string game))
+                {
+                    await Client.SetGameAsync(game);
+                }
+
                 ulong tick = 0;
                 while (true)
                 {

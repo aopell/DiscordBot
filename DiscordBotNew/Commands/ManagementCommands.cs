@@ -71,6 +71,8 @@ namespace DiscordBotNew.Commands
         public static async Task<ICommandResult> Game(DiscordUserMessageContext context, string game)
         {
             await context.Bot.Client.SetGameAsync(game);
+            context.Bot.Settings.AddSetting("game", game);
+            context.Bot.Settings.SaveSettings();
             return new SuccessResult("Game updated");
         }
 
