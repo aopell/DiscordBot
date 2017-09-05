@@ -195,7 +195,7 @@ namespace DiscordBotNew.Commands
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("All Countdowns:\n```");
             var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
-            foreach (var countdown in countdowns.OrderBy(x=>x.Value))
+            foreach (var countdown in countdowns.OrderBy(x => x.Value))
             {
                 builder.AppendLine($"{countdown.Key,-32}{(countdown.Value - DateTimeOffset.Now).ToLongString()}");
             }
@@ -419,7 +419,7 @@ namespace DiscordBotNew.Commands
             return new SuccessResult();
         }
 
-        [Command("cat", "floof"), HelpText("Cat.")]
+        [Command("cat", "floof", "squish"), HelpText("Cat.")]
         public static async Task<ICommandResult> Cat(ICommandContext context)
         {
             JObject obj;
