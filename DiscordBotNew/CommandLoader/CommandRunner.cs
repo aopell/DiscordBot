@@ -131,7 +131,7 @@ namespace DiscordBotNew.CommandLoader
                 {
                     if (parameters[i].ParameterType == typeof(string))
                     {
-                        values.Add(string.Join(" ", args));
+                        values.Add(string.Join(" ", args.Skip(i - 1)));
                     }
                     else if (parameters[i].ParameterType == typeof(string[]))
                     {

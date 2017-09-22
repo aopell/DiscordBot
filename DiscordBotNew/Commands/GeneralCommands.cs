@@ -11,7 +11,6 @@ using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.CommandLoader.CommandResult;
-using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json.Linq;
 
 namespace DiscordBotNew.Commands

@@ -68,7 +68,7 @@ namespace DiscordBotNew.Commands
         public static void Kill(DiscordUserMessageContext context) => Environment.Exit(0);
 
         [Command("game"), HelpText("Sets the current game for the bot"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> Game(DiscordUserMessageContext context, string game)
+        public static async Task<ICommandResult> Game(DiscordUserMessageContext context, [JoinRemainingParameters] string game)
         {
             await context.Bot.Client.SetGameAsync(game);
             context.Bot.Settings.AddSetting("game", game);
