@@ -382,7 +382,7 @@ namespace DiscordBotNew.Commands
                 statusEmbed.AddInlineField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString());
                 if (targetUser.Status != UserStatus.Online)
                     statusEmbed.AddInlineField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
-                else if (statusInfo.Game != null)
+                if (statusInfo.Game != null)
                     statusEmbed.AddInlineField($"In Game {statusInfo.Game}", (DateTimeOffset.Now - statusInfo.StartedPlaying)?.ToLongString() ?? "Unknown amount of time");
 
                 return new SuccessResult(embed: statusEmbed);

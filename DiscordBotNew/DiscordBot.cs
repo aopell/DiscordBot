@@ -261,17 +261,34 @@ namespace DiscordBotNew
         {
             try
             {
+                Dictionary<ulong, UserStatusInfo> statuses;
+                statuses = UserStatuses.GetSetting("statuses", out statuses) ? statuses : new Dictionary<ulong, UserStatusInfo>();
+                DateTimeOffset currentTime = DateTimeOffset.Now;
+                UserStatusInfo status = new UserStatusInfo
+                {
+                    StatusLastChanged = currentTime,
+                    LastOnline = currentTime,
+                    Game = null,
+                    StartedPlaying = null
+                };
+                statuses.Add(Client.CurrentUser.Id, status);
+                UserStatuses.AddSetting("statuses", statuses);
+                UserStatuses.SaveSettings();
+
                 if (Settings.GetSetting("botOwner", out ulong id))
                 {
+                    if (Settings.GetSetting("announceStartup", out bool announce) && announce)
+                    {
 #if !DEBUG
-                await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+                        await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
 #else
-                    await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+                        await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
 #endif
+                    }
 
                     if (File.Exists(ExceptionFilePath))
                     {
-                        string message = "ERROR:\n\n" + File.ReadAllText(ExceptionFilePath);
+                        string message = "***The bot has restarted due to an error***:\n\n" + File.ReadAllText(ExceptionFilePath);
                         foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500)))
                         {
                             await Client.GetUser(id).SendMessageAsync(m);
@@ -297,7 +314,7 @@ namespace DiscordBotNew
             catch (Exception ex)
             {
                 if (Settings.GetSetting("botOwner", out ulong id))
-                    await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] {ex}");
+                    await Client.GetUser(id).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] {ex}");
             }
         }
 
