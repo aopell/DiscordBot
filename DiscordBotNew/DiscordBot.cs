@@ -271,6 +271,7 @@ namespace DiscordBotNew
                     Game = null,
                     StartedPlaying = null
                 };
+                statuses.Remove(Client.CurrentUser.Id);
                 statuses.Add(Client.CurrentUser.Id, status);
                 UserStatuses.AddSetting("statuses", statuses);
                 UserStatuses.SaveSettings();
