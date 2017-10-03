@@ -343,8 +343,8 @@ namespace DiscordBotNew.Commands
                     break;
             }
 
-            builder.AppendLine("```diff\nChannels");
-            foreach (var channel in OrderedChannelMessages.Where(channel => ChannelLookup.ContainsKey(channel.Key)))
+            builder.AppendLine($"```diff\n{(OrderedChannelMessages.Count(channel => ChannelLookup.ContainsKey(channel.Key)) > 25 ? "Top 25 " : "")}Channels");
+            foreach (var channel in OrderedChannelMessages.Where(channel => ChannelLookup.ContainsKey(channel.Key)).Take(25))
             {
                 if (OldLeaderboard == null)
                 {
@@ -362,8 +362,8 @@ namespace DiscordBotNew.Commands
                 builder.Clear();
                 builder.AppendLine("```diff");
             }
-            builder.AppendLine("\nUsers");
-            foreach (var user in OrderedUserMessages)
+            builder.AppendLine($"\n{(OrderedUserMessages.Count > 25 ? "Top 25 " : "")}Users");
+            foreach (var user in OrderedUserMessages.Take(25))
             {
                 if (OldLeaderboard == null)
                 {

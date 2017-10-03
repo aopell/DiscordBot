@@ -31,7 +31,8 @@ namespace DiscordBotNew.CommandLoader.CommandContext
         {
 #if DEBUG
             string message = ex.ToString();
-            foreach (string m in Enumerable.Range(0, message.Length / 1000 + 1).Select(i => message.Substring(i * 1000, message.Length - i * 1000 > 1000 ? 1000 : message.Length - i * 1000)))
+            const int maxMessageLength = 1500;
+            foreach (string m in Enumerable.Range(0, message.Length / maxMessageLength + 1).Select(i => message.Substring(i * maxMessageLength, message.Length - i * maxMessageLength > maxMessageLength ? maxMessageLength : message.Length - i * maxMessageLength)))
             {
                 await ReplyError(m, ex.GetType().Name);
             }

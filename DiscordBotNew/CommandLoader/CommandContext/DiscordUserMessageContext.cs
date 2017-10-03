@@ -18,7 +18,8 @@ namespace DiscordBotNew.CommandLoader.CommandContext
 
             if (embed == null)
             {
-                foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500)))
+                const int maxMessageLength = 1800;
+                foreach (string m in Enumerable.Range(0, message.Length / maxMessageLength + 1).Select(i => message.Substring(i * maxMessageLength, message.Length - i * maxMessageLength > maxMessageLength ? maxMessageLength : message.Length - i * maxMessageLength)))
                 {
                     await Channel.SendMessageAsync(m, isTTS, null, options);
                 }
