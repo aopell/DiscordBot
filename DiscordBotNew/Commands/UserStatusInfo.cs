@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Newtonsoft.Json;
 
 namespace DiscordBotNew.Commands
 {
@@ -13,5 +14,6 @@ namespace DiscordBotNew.Commands
         public DateTimeOffset StatusLastChanged { get; set; }
         public string Game { get; set; }
         public DateTimeOffset? StartedPlaying { get; set; }
+        public DateTimeOffset LastMessageSent { get; set; }
     }
 }

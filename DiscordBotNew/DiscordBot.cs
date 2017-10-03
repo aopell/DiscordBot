@@ -23,11 +23,12 @@ namespace DiscordBotNew
 
         private const string ExceptionFilePath = SettingsManager.BasePath + "exception.txt";
         private SettingsManager channelDescriptions;
-        public SettingsManager UserStatuses { get; private set; }
+        private SettingsManager StatusSettings { get; set; }
         public SettingsManager Leaderboards { get; private set; }
         public SettingsManager DynamicMessages { get; private set; }
         public SettingsManager Countdowns { get; private set; }
         public List<string> FileNames { get; private set; }
+        public Dictionary<ulong, UserStatusInfo> CurrentUserStatuses { get; private set; }
 
         public static void Main(string[] args)
         {
@@ -40,18 +41,20 @@ namespace DiscordBotNew
             File.WriteAllText(ExceptionFilePath, e.ExceptionObject.ToString());
         }
 
-        private List<ulong> updatingChannels = new List<ulong>();
+        private readonly List<ulong> updatingChannels = new List<ulong>();
 
-        public async Task MainAsync()
+        private async Task MainAsync()
         {
             CommandRunner.LoadCommands();
             CreateFiles();
             Settings = new SettingsManager(SettingsManager.BasePath + "settings.json");
             channelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
-            UserStatuses = new SettingsManager(SettingsManager.BasePath + "statuses.json");
+            StatusSettings = new SettingsManager(SettingsManager.BasePath + "statuses.json");
             Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
             DynamicMessages = new SettingsManager(SettingsManager.BasePath + "dynamic-messages.json");
             Countdowns = new SettingsManager(SettingsManager.BasePath + "countdowns.json");
+            StatusSettings.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses);
+            CurrentUserStatuses = statuses;
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
 
@@ -77,13 +80,11 @@ namespace DiscordBotNew
 
             if (arg1.Status != arg2.Status || arg1.Game?.Name != arg2.Game?.Name)
             {
-                Dictionary<ulong, UserStatusInfo> statuses;
-                statuses = UserStatuses.GetSetting("statuses", out statuses) ? statuses : new Dictionary<ulong, UserStatusInfo>();
                 DateTimeOffset currentTime = DateTimeOffset.Now;
 
-                if (statuses.ContainsKey(arg2.Id))
+                if (CurrentUserStatuses.ContainsKey(arg2.Id))
                 {
-                    var previousStatus = statuses[arg2.Id];
+                    var previousStatus = CurrentUserStatuses[arg2.Id];
 
                     if (arg1.Status != arg2.Status)
                     {
@@ -106,13 +107,11 @@ namespace DiscordBotNew
                         StatusLastChanged = currentTime,
                         LastOnline = arg1.Status == UserStatus.Online ? currentTime : DateTimeOffset.MinValue,
                         Game = null,
-                        StartedPlaying = null
+                        StartedPlaying = null,
+                        LastMessageSent = DateTimeOffset.MinValue
                     };
-                    statuses.Add(arg2.Id, status);
+                    CurrentUserStatuses.Add(arg2.Id, status);
                 }
-
-                UserStatuses.AddSetting("statuses", statuses);
-                UserStatuses.SaveSettings();
             }
         }
 
@@ -211,6 +210,9 @@ namespace DiscordBotNew
 
         private async void MinuteTimer(ulong minute)
         {
+            StatusSettings.AddSetting("statuses", CurrentUserStatuses);
+            StatusSettings.SaveSettings();
+
             if (DynamicMessages.GetSetting("messages", out List<DynamicMessage> messages))
             {
                 List<DynamicMessage> toRemove = new List<DynamicMessage>();
@@ -261,8 +263,6 @@ namespace DiscordBotNew
         {
             try
             {
-                Dictionary<ulong, UserStatusInfo> statuses;
-                statuses = UserStatuses.GetSetting("statuses", out statuses) ? statuses : new Dictionary<ulong, UserStatusInfo>();
                 DateTimeOffset currentTime = DateTimeOffset.Now;
                 UserStatusInfo status = new UserStatusInfo
                 {
@@ -271,10 +271,8 @@ namespace DiscordBotNew
                     Game = null,
                     StartedPlaying = null
                 };
-                statuses.Remove(Client.CurrentUser.Id);
-                statuses.Add(Client.CurrentUser.Id, status);
-                UserStatuses.AddSetting("statuses", statuses);
-                UserStatuses.SaveSettings();
+                CurrentUserStatuses.Remove(Client.CurrentUser.Id);
+                CurrentUserStatuses.Add(Client.CurrentUser.Id, status);
 
                 if (Settings.GetSetting("botOwner", out ulong id))
                 {
@@ -323,7 +321,17 @@ namespace DiscordBotNew
         {
             var context = new DiscordUserMessageContext((IUserMessage)arg, this);
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
-
+            var status = CurrentUserStatuses.GetValueOrDefault(arg.Author.Id) ??
+                         new UserStatusInfo
+                         {
+                             StatusLastChanged = DateTimeOffset.MinValue,
+                             LastOnline = DateTimeOffset.MinValue,
+                             Game = null,
+                             StartedPlaying = null,
+                             LastMessageSent = DateTimeOffset.MinValue
+                         };
+            status.LastMessageSent = DateTimeOffset.Now;
+            CurrentUserStatuses[arg.Author.Id] = status;
             if (arg.Content.Trim().StartsWith(commandPrefix) && !arg.Author.IsBot)
             {
                 await CommandRunner.Run(arg.Content, context, commandPrefix, false);

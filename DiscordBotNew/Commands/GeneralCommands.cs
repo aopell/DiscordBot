@@ -341,14 +341,14 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `status` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            if (targetUser == null || !context.Bot.UserStatuses.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses))
+            if (targetUser == null || context.Bot.CurrentUserStatuses == null)
             {
                 return new ErrorResult("No status history data found");
             }
 
-            if (statuses.ContainsKey(targetUser.Id))
+            if (context.Bot.CurrentUserStatuses.ContainsKey(targetUser.Id))
             {
-                var statusInfo = statuses[targetUser.Id];
+                var statusInfo = context.Bot.CurrentUserStatuses[targetUser.Id];
 
                 Color? color;
                 switch (targetUser.Status)
@@ -381,9 +381,14 @@ namespace DiscordBotNew.Commands
 
                 statusEmbed.AddInlineField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString());
                 if (targetUser.Status != UserStatus.Online)
-                    statusEmbed.AddInlineField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
+                    statusEmbed.AddField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
                 if (statusInfo.Game != null)
-                    statusEmbed.AddInlineField($"In Game {statusInfo.Game}", (DateTimeOffset.Now - statusInfo.StartedPlaying)?.ToLongString() ?? "Unknown amount of time");
+                    statusEmbed.AddField($"In Game {statusInfo.Game}", (DateTimeOffset.Now - statusInfo.StartedPlaying)?.ToLongString() ?? "Unknown amount of time");
+                if (statusInfo.LastMessageSent != DateTimeOffset.MinValue)
+                {
+                    string text = (DateTimeOffset.Now - statusInfo.LastMessageSent).ToLongString();
+                    statusEmbed.AddField("Last Message Sent", text.Length > 0 ? $"{text} ago" : "Just now");
+                }
 
                 return new SuccessResult(embed: statusEmbed);
             }
