@@ -222,19 +222,19 @@ namespace DiscordBotNew.Commands
             switch (action)
             {
                 case CountdownAction.Create:
-                    if (countdowns.ContainsKey(name))
+                    if (countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
                     {
                         return new ErrorResult($"The countdown with the name {name} already exists");
                     }
                     break;
                 case CountdownAction.Edit:
-                    if (!countdowns.ContainsKey(name))
+                    if (!countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
                     {
                         return new ErrorResult($"The countdown with the name {name} does not exist");
                     }
                     break;
                 case CountdownAction.Delete:
-                    if (!countdowns.ContainsKey(name)) return new ErrorResult($"The countdown with the name {name} does not exist");
+                    if (!countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower())) return new ErrorResult($"The countdown with the name {name} does not exist");
                     countdowns.Remove(name);
                     context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
                     context.Bot.Countdowns.SaveSettings();
@@ -243,7 +243,7 @@ namespace DiscordBotNew.Commands
 
             if (!date.HasValue) return new ErrorResult("Please provide a date when creating or editing a countdown");
             var convertedTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, timezone).Offset);
-            if (countdowns.ContainsKey(name))
+            if (countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
             {
                 countdowns[name] = convertedTime;
             }
@@ -276,12 +276,12 @@ namespace DiscordBotNew.Commands
 
             var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
-            if (!countdowns.ContainsKey(name))
+            if (countdowns.All(x => x.Key.ToLower() != name.ToLower()))
             {
                 return new ErrorResult($"No countdown with the name {name} was found. Try creating it.");
             }
 
-            TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
+            TimeSpan difference = countdowns.First(x => x.Key.ToLower() == name.ToLower()).Value - DateTimeOffset.Now;
 
             return new SuccessResult($"{difference.ToLongString()} until {name}");
         }
