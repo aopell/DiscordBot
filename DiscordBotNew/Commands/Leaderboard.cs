@@ -371,7 +371,7 @@ namespace DiscordBotNew.Commands
                 }
                 else
                 {
-                    builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   {2}\n", user.Value, user.Value / (double)TotalMessages, UserLookup.TryGetValue(user.Key, out string username) ? username.Replace("```", "   ") : (await guild.GetUserAsync(user.Key))?.NicknameOrUsername().Replace("```", "   ") ?? (await bot.RestClient.GetUserAsync(user.Key))?.Username.Replace("```", "   ") ?? "<unknown user>", CalculateMessageDifference(user.Key, true), CalculatePercentageDifference(user.Key, true), GetDifferenceChar(user.Key, true));
+                    builder.AppendFormat("{5}  {0,-7} ({3:+;-}{3,4:###0;###0}) {1,8:0.0%} ({4,6:+00.0%;-00.0%})   {2}\n", user.Value, user.Value / (double)TotalMessages, UserLookup.TryGetValue(user.Key, out string username) ? username.Replace("```", "`​`​`​") : (await guild.GetUserAsync(user.Key))?.NicknameOrUsername().Replace("```", "`​`​`​") ?? (await bot.RestClient.GetUserAsync(user.Key))?.Username.Replace("```", "`​`​`​") ?? "<unknown user>", CalculateMessageDifference(user.Key, true), CalculatePercentageDifference(user.Key, true), GetDifferenceChar(user.Key, true));
                 }
             }
             if (OldLeaderboard == null)
