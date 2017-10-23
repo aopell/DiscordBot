@@ -158,6 +158,9 @@ namespace DiscordBotNew.Commands
                 case MessageType.ChannelPinnedMessage:
                     builder.Description = $"{msg.Author.Username} pinned a message to the channel";
                     break;
+                case (Discord.MessageType)7:
+                    builder.Description = $"{msg.Author.Username} joined the server";
+                    break;
             }
 
             if (msg.Attachments.Count > 0)
