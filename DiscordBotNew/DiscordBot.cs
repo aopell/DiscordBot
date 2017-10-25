@@ -12,6 +12,7 @@ using DiscordBotNew.CommandLoader;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.Commands;
 using DiscordBotNew.Settings;
+using Newtonsoft.Json;
 
 namespace DiscordBotNew
 {
@@ -30,6 +31,10 @@ namespace DiscordBotNew
         public List<string> FileNames { get; private set; }
         public Dictionary<ulong, UserStatusInfo> CurrentUserStatuses { get; private set; }
 
+        private readonly List<ulong> updatingChannels = new List<ulong>();
+        private SettingsManager remindersManager;
+        private List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)> reminders;
+
         public static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -41,8 +46,6 @@ namespace DiscordBotNew
             File.WriteAllText(ExceptionFilePath, e.ExceptionObject.ToString());
         }
 
-        private readonly List<ulong> updatingChannels = new List<ulong>();
-
         private async Task MainAsync()
         {
             CommandRunner.LoadCommands();
@@ -53,6 +56,7 @@ namespace DiscordBotNew
             Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
             DynamicMessages = new SettingsManager(SettingsManager.BasePath + "dynamic-messages.json");
             Countdowns = new SettingsManager(SettingsManager.BasePath + "countdowns.json");
+            remindersManager = new SettingsManager(SettingsManager.BasePath + "reminders.json");
             StatusSettings.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses);
             CurrentUserStatuses = statuses;
             Client = new DiscordSocketClient();
@@ -124,6 +128,7 @@ namespace DiscordBotNew
             createFile("leaderboards.json");
             createFile("dynamic-messages.json");
             createFile("countdowns.json");
+            createFile("reminders.json");
 
             void createFile(string filename)
             {
@@ -213,6 +218,15 @@ namespace DiscordBotNew
             StatusSettings.AddSetting("statuses", CurrentUserStatuses);
             StatusSettings.SaveSettings();
 
+            foreach (var reminder in reminders.Where(reminder => reminder.timestamp < DateTimeOffset.Now))
+            {
+                await Client.GetUser(reminder.receiverId).SendMessageAsync($"{Client.GetUser(reminder.senderId).Username} sent you a reminder:\n{reminder.message}");
+            }
+
+            reminders.RemoveAll(x => x.timestamp < DateTimeOffset.Now);
+            remindersManager.AddSetting("reminders", reminders);
+            remindersManager.SaveSettings();
+
             if (DynamicMessages.GetSetting("messages", out List<DynamicMessage> messages))
             {
                 List<DynamicMessage> toRemove = new List<DynamicMessage>();
@@ -301,6 +315,8 @@ namespace DiscordBotNew
                     await Client.SetGameAsync(game);
                 }
 
+                reminders = remindersManager.GetSetting("reminders", out List<(ulong senderId, ulong receiverId, DateTimeOffset time, string message)> loadedReminders) ? loadedReminders : new List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)>();
+
                 ulong tick = 0;
                 while (true)
                 {
@@ -343,5 +359,14 @@ namespace DiscordBotNew
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
+
+        public void AddReminder((ulong, ulong, DateTimeOffset, string) reminder)
+        {
+            reminders.Add(reminder);
+            remindersManager.AddSetting("reminders", reminders);
+            remindersManager.SaveSettings();
+        }
+
+        public IEnumerable<(ulong sender, ulong receiver, DateTimeOffset time, string message)> GetReminders(ulong receiver) => reminders.Where(x => x.receiverId == receiver);
     }
 }

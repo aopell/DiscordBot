@@ -43,7 +43,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("delete"), HelpText("Deletes a specified number of messages (up to 99)"), Permissions(channelPermissions: new[] { ChannelPermission.ManageMessages })]
-        public static async Task<ICommandResult> Delete(DiscordUserMessageContext context, [HelpText("The number of message to delete (up to 99)")] byte number)
+        public static async Task<ICommandResult> Delete(DiscordUserMessageContext context, [HelpText("The number of message to delete (up to 99)"), JoinRemainingParameters] byte number)
         {
             if (number >= 100)
             {

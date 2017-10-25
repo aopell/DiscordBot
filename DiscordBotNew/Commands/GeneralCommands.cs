@@ -466,6 +466,49 @@ namespace DiscordBotNew.Commands
             return new SuccessResult(timestamp.ToString());
         }
 
+        [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or mention"), HelpText("The user to remind")] string user, [HelpText("Number of hours from now to send the reminder")] double hours, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        {
+            IUser targetUser;
+
+            if (context.Message.MentionedUserIds.Count > 0)
+            {
+                targetUser = await context.Channel.GetUserAsync(context.Message.MentionedUserIds.First());
+            }
+            else if (context.Message.Tags.Count > 0 && context.Message.Tags.First().Type == TagType.UserMention && (targetUser = context.Bot.Client.GetUser(context.Message.Tags.First().Key)) != null)
+            {
+            }
+            else
+            {
+                targetUser = (SocketUser)await CommandTools.GetUserByUsername(user, context.Channel);
+            }
+
+            if (targetUser == null)
+            {
+                return new ErrorResult("User not found");
+            }
+
+            context.Bot.AddReminder((context.Message.Author.Id, targetUser.Id, DateTimeOffset.Now + TimeSpan.FromHours(hours), message));
+
+            return new SuccessResult("Reminder saved!");
+        }
+
+        [Command("reminders"), HelpText("List upcoming reminders for you")]
+        public static ICommandResult Reminders(DiscordUserMessageContext context)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("```");
+            builder.AppendLine($"{"Date",-25}{"Sender",-20}Message");
+            var reminders = context.Bot.GetReminders(context.Message.Author.Id);
+            if (!reminders.Any()) return new SuccessResult("No reminders!");
+            foreach (var reminder in reminders.OrderBy(x => x.time))
+            {
+                builder.AppendLine($"{(reminder.time - DateTimeOffset.Now).ToLongString(),-25}{context.Bot.Client.GetUser(reminder.sender).Username,-20}{reminder.message}");
+            }
+            builder.AppendLine("```");
+            return new SuccessResult(builder.ToString());
+        }
+
         public enum CountdownAction
         {
             [HelpText("Creates a new countdown")] Create,
