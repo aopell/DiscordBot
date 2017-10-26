@@ -28,6 +28,7 @@ namespace DiscordBotNew
         public SettingsManager Leaderboards { get; private set; }
         public SettingsManager DynamicMessages { get; private set; }
         public SettingsManager Countdowns { get; private set; }
+        public GrammarPolice Grammar { get; private set; }
         public List<string> FileNames { get; private set; }
         public Dictionary<ulong, UserStatusInfo> CurrentUserStatuses { get; private set; }
 
@@ -61,6 +62,7 @@ namespace DiscordBotNew
             CurrentUserStatuses = statuses;
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
+            Grammar = new GrammarPolice(this);
 
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
