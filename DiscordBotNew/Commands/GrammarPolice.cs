@@ -65,7 +65,7 @@ namespace DiscordBotNew.Commands
                     if (bypassMistakes.Contains(match["rule"]["id"].Value<string>())) continue;
                     message.AppendLine($"{match["message"].Value<string>()}: `{words[match["offset"].Value<int>()]}`");
                 }
-                if (message.Length > 0) return;
+                if (message.Length == 0) return;
                 await arg.Channel.SendMessageAsync(message.ToString());
             }
             catch
