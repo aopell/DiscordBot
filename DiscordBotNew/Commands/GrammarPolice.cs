@@ -7,6 +7,7 @@ using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace DiscordBotNew.Commands
 {
@@ -48,6 +49,11 @@ namespace DiscordBotNew.Commands
             var client = new HttpClient();
             try
             {
+                string[] bypassMistakes =
+                {
+                    "UPPERCASE_SENTENCE_START"
+                };
+
                 var response = await client.PostAsync("https://languagetool.org/api/v2/check", new StringContent($"text={System.Web.HttpUtility.UrlEncode(arg.Content)}&language=en-US", Encoding.UTF8, "application/x-www-form-urlencoded"));
                 string content = await response.Content.ReadAsStringAsync();
                 JObject result = JObject.Parse(content);
@@ -56,8 +62,10 @@ namespace DiscordBotNew.Commands
                 StringBuilder message = new StringBuilder();
                 foreach (var match in matches)
                 {
+                    if (bypassMistakes.Contains(match["rule"]["id"].Value<string>())) continue;
                     message.AppendLine($"{match["message"].Value<string>()}: `{words[match["offset"].Value<int>()]}`");
                 }
+                if (message.Length > 0) return;
                 await arg.Channel.SendMessageAsync(message.ToString());
             }
             catch
