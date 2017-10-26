@@ -15,10 +15,6 @@ namespace DiscordBotNew.Commands
         private DiscordBot parent;
         public DiscordSocketClient Client { get; private set; }
         public DiscordRestClient RestClient { get; private set; }
-        public List<string> FileNames { get; private set; }
-
-        private readonly List<ulong> updatingChannels = new List<ulong>();
-        private List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)> reminders;
 
         public GrammarPolice(DiscordBot parent)
         {
