@@ -42,6 +42,9 @@ namespace DiscordBotNew.Commands
 
         private async Task Client_MessageReceived(SocketMessage arg)
         {
+            if (arg.Author.IsBot)
+                return;
+
             var client = new HttpClient();
             try
             {
@@ -49,10 +52,11 @@ namespace DiscordBotNew.Commands
                 string content = await response.Content.ReadAsStringAsync();
                 JObject result = JObject.Parse(content);
                 var matches = result["matches"];
+                var words = arg.Content.Split(' ');
                 StringBuilder message = new StringBuilder();
                 foreach (var match in matches)
                 {
-                    message.AppendLine($"{match["message"].Value<string>()}: {match["rule"]["description"].Value<string>()}");
+                    message.AppendLine($"{match["message"].Value<string>()}: `{words[match["offset"].Value<int>()]}`");
                 }
                 await arg.Channel.SendMessageAsync(message.ToString());
             }
