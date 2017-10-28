@@ -113,6 +113,26 @@ namespace DiscordBotNew.CommandLoader
             return response.ToString().Trim();
         }
 
+        public static string ToShortString(this TimeSpan difference, bool showSeconds = true, bool showZeroValues = false)
+        {
+            var response = new StringBuilder();
+            if (showZeroValues)
+            {
+                response.Append(difference.Days != 0 ? $"{difference.Days}d " : "");
+                response.Append(difference.TotalHours >= 1 ? $"{difference.Hours}h " : "");
+                response.Append(difference.TotalMinutes >= 1 ? $"{difference.Minutes}m " : "");
+                response.Append(showSeconds ? $"{difference.Seconds}s" : "");
+            }
+            else
+            {
+                response.Append(difference.Days != 0 ? $"{difference.Days}d " : "");
+                response.Append(difference.Hours != 0 ? $"{difference.Hours}h " : "");
+                response.Append(difference.Minutes != 0 ? $"{difference.Minutes}m " : "");
+                response.Append(showSeconds && difference.Seconds != 0 ? $"{difference.Seconds}s" : "");
+            }
+            return response.ToString().Trim();
+        }
+
         public static TValue GetOrAddDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key)
         {
             if (!dictionary.ContainsKey(key))

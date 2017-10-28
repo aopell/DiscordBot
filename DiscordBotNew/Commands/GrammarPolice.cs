@@ -51,7 +51,9 @@ namespace DiscordBotNew.Commands
             {
                 string[] bypassMistakes =
                 {
-                    "UPPERCASE_SENTENCE_START"
+                    "UPPERCASE_SENTENCE_START",
+                    "EN_QUOTES",
+                    "PROFANITY"
                 };
 
                 var response = await client.PostAsync("https://languagetool.org/api/v2/check", new StringContent($"text={System.Web.HttpUtility.UrlEncode(arg.Content)}&language=en-US", Encoding.UTF8, "application/x-www-form-urlencoded"));
@@ -63,14 +65,14 @@ namespace DiscordBotNew.Commands
                 foreach (var match in matches)
                 {
                     if (bypassMistakes.Contains(match["rule"]["id"].Value<string>())) continue;
-                    message.AppendLine($"{match["message"].Value<string>()}: `{words[match["offset"].Value<int>()]}`");
+                    message.AppendLine($"{match["message"].Value<string>()}: `{arg.Content.Substring(match["offset"].Value<int>(), match["length"].Value<int>())}`");
                 }
                 if (message.Length == 0) return;
                 await arg.Channel.SendMessageAsync(message.ToString());
             }
-            catch
+            catch (Exception ex)
             {
-
+                await Log(new LogMessage(LogSeverity.Error, "API", ex.Message, ex));
             }
         }
 

@@ -503,7 +503,7 @@ namespace DiscordBotNew.Commands
             if (!reminders.Any()) return new SuccessResult("No reminders!");
             foreach (var reminder in reminders.OrderBy(x => x.time))
             {
-                builder.AppendLine($"{(reminder.time - DateTimeOffset.Now).ToLongString(),-25}{context.Bot.Client.GetUser(reminder.sender).Username,-20}{reminder.message}");
+                builder.AppendLine($"{(reminder.time - DateTimeOffset.Now).ToShortString(),-25}{context.Bot.Client.GetUser(reminder.sender).Username,-20}{reminder.message}");
             }
             builder.AppendLine("```");
             return new SuccessResult(builder.ToString());
