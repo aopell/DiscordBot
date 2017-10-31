@@ -33,8 +33,14 @@ namespace DiscordBotNew.Commands
         {
             try
             {
-                await context.Bot.Client.CurrentUser.ModifyAsync(async bot => bot.Avatar = new Image(await new HttpClient().GetStreamAsync(url)));
-                return new SuccessResult("Avatar changed successfully!");
+                using (var fileStream = System.IO.File.Create("avatar.png"))
+                {
+                    var stream = await new HttpClient().GetStreamAsync(url);
+                    stream.CopyTo(fileStream);
+                }
+                await context.Bot.Client.CurrentUser.ModifyAsync(async bot => bot.Avatar = new Image("avatar.png"));
+                await context.Message.Channel.SendFileAsync("avatar.png", "Updated avatar successfully");
+                return new SuccessResult();
             }
             catch (Exception ex)
             {
