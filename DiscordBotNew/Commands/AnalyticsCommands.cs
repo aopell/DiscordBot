@@ -38,9 +38,11 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `leaderboard` command is not valid in the context `{context.GetType().Name}`");
             }
 
+            IUserMessage leaderboardMessage = null;
+
             if (context is DiscordUserMessageContext)
             {
-                await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
+                leaderboardMessage = await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
             }
 
             using (messageChannel.EnterTypingState())
@@ -71,6 +73,9 @@ namespace DiscordBotNew.Commands
                     {
                         await context.Reply(message);
                     }
+
+                    if (leaderboardMessage != null)
+                        await leaderboardMessage.DeleteAsync();
 
                     return new SuccessResult();
                 }

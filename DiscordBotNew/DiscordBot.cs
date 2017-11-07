@@ -222,7 +222,19 @@ namespace DiscordBotNew
 
             foreach (var reminder in reminders.Where(reminder => reminder.timestamp < DateTimeOffset.Now))
             {
-                await Client.GetUser(reminder.receiverId).SendMessageAsync($"{Client.GetUser(reminder.senderId).Username} sent you a reminder:\n{reminder.message}");
+                EmbedBuilder embed = new EmbedBuilder
+                {
+                    Author = new EmbedAuthorBuilder
+                    {
+                        Name = $"{Client.GetUser(reminder.senderId)?.Username ?? "Someone"} sent you a reminder",
+                        IconUrl = Client.GetUser(reminder.senderId)?.AvatarUrlOrDefaultAvatar()
+                    },
+                    Description = reminder.message,
+                    Timestamp = reminder.timestamp,
+                    ThumbnailUrl = "http://icons.iconarchive.com/icons/webalys/kameleon.pics/512/Bell-icon.png"
+                };
+
+                await Client.GetUser(reminder.receiverId).SendMessageAsync("", embed: embed);
             }
 
             reminders.RemoveAll(x => x.timestamp < DateTimeOffset.Now);
