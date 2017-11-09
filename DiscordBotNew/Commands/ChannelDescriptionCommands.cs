@@ -22,6 +22,11 @@ namespace DiscordBotNew.Commands
 
             switch (action)
             {
+                case ChannelDescriptionAction.Get:
+                    if (channelDescriptions.ContainsKey(textChannel.Id))
+                        return new SuccessResult($"```{channelDescriptions[textChannel.Id].Replace("```", "`​`​`​")}```");
+                    else
+                        return new ErrorResult("This channel does not have a dynamic description");
                 case ChannelDescriptionAction.Set:
                     await textChannel.ModifyAsync(x => x.Topic = "Loading dynamic description...");
                     if (channelDescriptions.ContainsKey(textChannel.Id))
@@ -55,6 +60,7 @@ namespace DiscordBotNew.Commands
 
         public enum ChannelDescriptionAction
         {
+            [HelpText("Gets the current dynamic description text")] Get,
             [HelpText("Sets the dynamic text of the channel description")] Set,
             [HelpText("Prevents the channel description from updating dynamically")] Remove,
             [HelpText("Alias for remove")] Delete = Remove
