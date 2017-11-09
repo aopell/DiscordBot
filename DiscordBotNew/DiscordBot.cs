@@ -23,7 +23,7 @@ namespace DiscordBotNew
         public SettingsManager Settings { get; private set; }
 
         private const string ExceptionFilePath = SettingsManager.BasePath + "exception.txt";
-        private SettingsManager channelDescriptions;
+        public SettingsManager ChannelDescriptions { get; set; }
         private SettingsManager StatusSettings { get; set; }
         public SettingsManager Leaderboards { get; private set; }
         public SettingsManager DynamicMessages { get; private set; }
@@ -32,7 +32,6 @@ namespace DiscordBotNew
         public List<string> FileNames { get; private set; }
         public Dictionary<ulong, UserStatusInfo> CurrentUserStatuses { get; private set; }
 
-        private readonly List<ulong> updatingChannels = new List<ulong>();
         private SettingsManager remindersManager;
         private List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)> reminders;
 
@@ -52,7 +51,7 @@ namespace DiscordBotNew
             CommandRunner.LoadCommands();
             CreateFiles();
             Settings = new SettingsManager(SettingsManager.BasePath + "settings.json");
-            channelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
+            ChannelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
             StatusSettings = new SettingsManager(SettingsManager.BasePath + "statuses.json");
             Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
             DynamicMessages = new SettingsManager(SettingsManager.BasePath + "dynamic-messages.json");
@@ -67,7 +66,6 @@ namespace DiscordBotNew
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
             Client.Ready += Client_Ready;
-            Client.ChannelUpdated += Client_ChannelUpdated;
             Client.GuildMemberUpdated += Client_GuildMemberUpdated;
 
             if (!Settings.GetSetting("token", out string token)) throw new KeyNotFoundException("Token not found in settings file");
@@ -140,48 +138,11 @@ namespace DiscordBotNew
             }
         }
 
-        private async Task Client_ChannelUpdated(SocketChannel arg1, SocketChannel arg2)
-        {
-            await Log(new LogMessage(LogSeverity.Info, "Ch Update", $"Channel updated: {(arg2 as IGuildChannel)?.Guild.Name ?? ""}#{((IChannel)arg2).Name}"));
-
-            if (!updatingChannels.Contains(arg2.Id) && arg2 is ITextChannel textChannel && textChannel.Topic != ((ITextChannel)arg1).Topic)
-            {
-                var channelDescriptions = this.channelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions)
-                                              ? descriptions
-                                              : new Dictionary<ulong, string>();
-                Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
-                if (descriptionCommandRegex.IsMatch(textChannel.Topic))
-                {
-                    if (channelDescriptions.ContainsKey(textChannel.Id))
-                    {
-                        channelDescriptions[textChannel.Id] = textChannel.Topic;
-                    }
-                    else
-                    {
-                        channelDescriptions.Add(textChannel.Id, textChannel.Topic);
-                    }
-                }
-                else
-                {
-                    if (channelDescriptions.ContainsKey(textChannel.Id))
-                    {
-                        channelDescriptions.Remove(textChannel.Id);
-                    }
-                }
-
-                this.channelDescriptions.AddSetting("descriptions", channelDescriptions);
-                this.channelDescriptions.SaveSettings();
-            }
-
-            updatingChannels.Remove(arg2.Id);
-        }
-
         private async void SecondTimer(ulong tick)
         {
-#if !DEBUG
             bool abort = false;
             Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
-            if (channelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions))
+            if (ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions))
             {
                 foreach (var item in descriptions)
                 {
@@ -201,18 +162,16 @@ namespace DiscordBotNew
                         continue;
                     }
 
-                    updatingChannels.Add(channel.Id);
                     try
                     {
                         await channel.ModifyAsync(ch => ch.Topic = newDesc);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        updatingChannels.Remove(channel.Id);
+                        // Fail silently
                     }
                 }
             }
-#endif
         }
 
         private async void MinuteTimer(ulong minute)
