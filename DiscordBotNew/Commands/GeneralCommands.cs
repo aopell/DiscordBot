@@ -289,6 +289,28 @@ namespace DiscordBotNew.Commands
             return new SuccessResult($"{difference.ToLongString()} until {name}");
         }
 
+        [Command("nextcountdown"), HelpText("Views the status of the next upcoming countdown timer"), CommandScope(ChannelType.Text)]
+        public static ICommandResult NextCountdown(ICommandContext context)
+        {
+            IGuildChannel channel;
+            switch (context)
+            {
+                case DiscordMessageContext message:
+                    channel = (IGuildChannel)message.Channel;
+                    break;
+                case DiscordChannelDescriptionContext desc:
+                    channel = desc.Channel;
+                    break;
+                default:
+                    return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
+            }
+
+            var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            if (!countdowns.Where(x => x.Value > DateTimeOffset.Now).Any(x => x.Value > DateTimeOffset.Now)) return new ErrorResult("No countdowns");
+            var next = countdowns.OrderBy(x => x.Value).First();
+            return new SuccessResult($"{(next.Value - DateTimeOffset.Now).ToLongString()} until {next.Key}");
+        }
+
         [Command("back"), HelpText("Creates a backronym from the given text")]
         public static ICommandResult Back(ICommandContext context, string acronym, [HelpText("The number of backronyms to generate (up to 10)")]byte count = 1, [HelpText("Whether or not to use the larger English dictionary")] bool useComplexWords = false)
         {

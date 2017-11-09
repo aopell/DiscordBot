@@ -231,7 +231,8 @@ namespace DiscordBotNew
                     },
                     Description = reminder.message,
                     Timestamp = reminder.timestamp,
-                    ThumbnailUrl = "http://icons.iconarchive.com/icons/webalys/kameleon.pics/512/Bell-icon.png"
+                    ThumbnailUrl = "http://icons.iconarchive.com/icons/webalys/kameleon.pics/512/Bell-icon.png",
+                    Color = new Color(224, 79, 95)
                 };
 
                 await Client.GetUser(reminder.receiverId).SendMessageAsync("", embed: embed);
