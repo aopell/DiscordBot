@@ -54,7 +54,7 @@ namespace DiscordBotNew.CommandLoader.CommandContext
                 Title = title,
                 Description = description,
                 Color = new Color(244, 67, 54),
-                ImageUrl = "https://images-ext-2.discordapp.net/external/vdhk1oNVxVSy7fONtZIGDb6GjZdWO2mbrmcmBTgnsd0/https/images.discordapp.net/attachments/239605336481333248/336350347956191232/errorcat.png",
+                ThumbnailUrl = "https://images-ext-2.discordapp.net/external/vdhk1oNVxVSy7fONtZIGDb6GjZdWO2mbrmcmBTgnsd0/https/images.discordapp.net/attachments/239605336481333248/336350347956191232/errorcat.png",
                 Footer = new EmbedFooterBuilder
                 {
                     Text = "If you believe this should not have happened, please submit a bug report"
