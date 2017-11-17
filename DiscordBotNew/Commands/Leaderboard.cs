@@ -65,7 +65,7 @@ namespace DiscordBotNew.Commands
             Pattern = pattern;
         }
 
-        public static async Task<Leaderboard> GenerateFullLeaderboard(IGuild guild, DiscordBot bot, DateTimeOffset creationTime, string pattern = null, bool matchFull = false)
+        public static async Task<Leaderboard> GenerateFullLeaderboard(IGuild guild, DiscordBot bot, DateTimeOffset creationTime, string pattern = null)
         {
             var leaderboard = new Leaderboard(guild.Id, LeaderboardType.Full, bot, creationTime, pattern: pattern);
 
@@ -98,7 +98,7 @@ namespace DiscordBotNew.Commands
                             leaderboard.UserLookup.Add(message.Author.Id, message.Author.NicknameOrUsername());
                         }
 
-                        if (pattern == null || !matchFull && message.Content.Contains(pattern) || matchFull && message.Content == pattern)
+                        if (pattern == null || message.Content.Contains(pattern))
                         {
                             leaderboard.UserMessages[message.Author.Id]++;
                             messagesInChannel++;
