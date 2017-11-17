@@ -86,6 +86,23 @@ namespace DiscordBotNew.Commands
             }
         }
 
+        [Command("frequency"), HelpText("Counts messages containing a specific string"), CommandScope(ChannelType.Text)]
+        public static async Task<ICommandResult> Frequency(DiscordUserMessageContext context, string text)
+        {
+            Leaderboard leaderboard;
+            using (context.Channel.EnterTypingState())
+            {
+                leaderboard = await Leaderboard.GenerateFullLeaderboard(context.Guild, context.Bot, DateTimeOffset.Now, text);
+            }
+
+            foreach (string message in await leaderboard.ToStringsAsync())
+            {
+                await context.Reply(message);
+            }
+
+            return new SuccessResult();
+        }
+
         [Command("analytics"), HelpText("Generates a tab separated text file with analytics from the server"), CommandScope(ChannelType.Text), Permissions(ownerOnly: true)]
         public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context, [DisplayName("Windows Timezone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
