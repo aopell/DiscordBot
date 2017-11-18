@@ -534,6 +534,7 @@ namespace DiscordBotNew.Commands
         public enum CountdownAction
         {
             [HelpText("Creates a new countdown")] Create,
+            [HelpText("Alias for create")] Add,
             [HelpText("Changes the time of an existing countdown")] Edit,
             [HelpText("Deletes an existing countdown")] Delete
         }
