@@ -305,9 +305,9 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
-            if (!countdowns.Where(x => x.Value > DateTimeOffset.Now).Any(x => x.Value > DateTimeOffset.Now)) return new ErrorResult("No countdowns");
-            var next = countdowns.OrderBy(x => x.Value).First();
+            var countdowns = (context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>()).Where(x => x.Value > DateTimeOffset.Now).OrderBy(x => x.Value);
+            if (!countdowns.Any()) return new ErrorResult("No countdowns");
+            var next = countdowns.First();
             return new SuccessResult($"{(next.Value - DateTimeOffset.Now).ToLongString()} until {next.Key}");
         }
 
