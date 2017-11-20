@@ -462,6 +462,15 @@ namespace DiscordBotNew.Commands
             return new SuccessResult(catUrl);
         }
 
+        [Command("dog"), HelpText("Dog.")]
+        public static async Task<ICommandResult> Dog(ICommandContext context)
+        {
+            var client = new HttpClient();
+            string json = await client.GetStringAsync("https://dog.ceo/api/breeds/image/random");
+            JObject obj = JObject.Parse(json);
+            return new SuccessResult(obj["message"].Value<string>());
+        }
+
         [Command("lmgtfy"), HelpText("For when people forget how to use a search engine")]
         public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult("http://lmgtfy.com/?q=" + Uri.EscapeDataString(query));
 
