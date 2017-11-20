@@ -247,8 +247,9 @@ namespace DiscordBotNew.CommandLoader
         }
 
         [Command("help", "man"), HelpText("Gets help text for all commands or a specific command")]
-        public static ICommandResult Help(DiscordMessageContext context, [HelpText("Gets help for this specific command")]string command = null, [HelpText("Whether or not to show parameter descriptions")] Verbosity verbosity = Verbosity.Standard)
+        public static ICommandResult Help(DiscordMessageContext context, [DisplayName("page | command"), HelpText("Specifies page number or gets help for this specific command")]string command = null, [HelpText("Whether or not to show parameter descriptions")] Verbosity verbosity = Verbosity.Default)
         {
+            const int pageSize = 5;
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
 
             var builder = new EmbedBuilder
@@ -256,6 +257,22 @@ namespace DiscordBotNew.CommandLoader
                 Title = "Help",
                 Color = new Color(33, 150, 243)
             };
+
+            bool paginate;
+            if (paginate = int.TryParse(command, out int page))
+            {
+                command = null;
+            }
+            else if (command == null)
+            {
+                page = 1;
+                paginate = true;
+            }
+
+            if (verbosity == Verbosity.Default)
+            {
+                verbosity = command != null ? Verbosity.Verbose : Verbosity.Standard;
+            }
 
             var commands = command == null
                            ? commandMethods.Where(method => method.GetCustomAttribute<CommandScopeAttribute>()
@@ -273,7 +290,7 @@ namespace DiscordBotNew.CommandLoader
                 return new ErrorResult($"The requested command {commandPrefix}{command} was not found");
             }
 
-            foreach (MethodInfo method in commands)
+            foreach (MethodInfo method in paginate ? commands.Skip(pageSize * page - pageSize).Take(pageSize) : commands)
             {
                 var title = new StringBuilder();
                 title.Append("`");
@@ -352,12 +369,19 @@ namespace DiscordBotNew.CommandLoader
                 builder.AddField(title.ToString(), text.ToString());
             }
 
-
+            if (paginate)
+            {
+                builder.Footer = new EmbedFooterBuilder
+                {
+                    Text = $"Page {page} of {Math.Floor(Math.Ceiling(commands.Count / (double)pageSize))}"
+                };
+            }
             return new SuccessResult(embed: builder);
         }
 
         public enum Verbosity
         {
+            [HelpText("Uses 'Standard' for multiple commands and 'Verbose' for one command")] Default,
             [HelpText("Shows the command, its help text, and its parameters")] Standard,
             [HelpText("Additionally shows help text for individual parameters")] Parameters,
             [HelpText("Additionally shows options for all enum types")] Verbose
