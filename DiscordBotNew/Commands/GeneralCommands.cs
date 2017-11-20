@@ -463,12 +463,24 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("dog"), HelpText("Dog.")]
-        public static async Task<ICommandResult> Dog(ICommandContext context)
+        public static async Task<ICommandResult> Dog(ICommandContext context, string subBreed = null, string mainBreed = null)
         {
             var client = new HttpClient();
-            string json = await client.GetStringAsync("https://dog.ceo/api/breeds/image/random");
+            string json;
+            if (subBreed != null)
+            {
+                json = await client.GetStringAsync(mainBreed == null ? $"https://dog.ceo/api/breed/{subBreed}/images/random" : $"https://dog.ceo/api/breed/{mainBreed}/{subBreed}/images/random");
+            }
+            else
+            {
+                json = await client.GetStringAsync("https://dog.ceo/api/breeds/image/random");
+            }
             JObject obj = JObject.Parse(json);
-            return new SuccessResult(obj["message"].Value<string>());
+            if (obj["status"].Value<string>() == "success")
+            {
+                return new SuccessResult(obj["message"].Value<string>());
+            }
+            return new ErrorResult("Breed not found. For a list of supported breeds, visit https://dog.ceo/dog-api/#breeds-list");
         }
 
         [Command("lmgtfy"), HelpText("For when people forget how to use a search engine")]
