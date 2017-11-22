@@ -490,7 +490,7 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms estimated round trip latency");
 
         [Command("decide"), HelpText("Picks a random option")]
-        public static ICommandResult Decide(ICommandContext context, string option1 = "Yes", string option2 = "No", string[] otherOptions = null) => new SuccessResult((otherOptions ?? new string[0]).Append(option1).Append(option2).OrderBy(x=>random.Next()).First());
+        public static ICommandResult Decide(ICommandContext context, string option1 = "Yes", string option2 = "No", [JoinRemainingParameters, HelpText("Additional space-separated options")] string[] otherOptions = null) => new SuccessResult((otherOptions ?? new string[0]).Append(option1).Append(option2).OrderBy(x=>random.Next()).First());
 
         [Command("timestamp"), HelpText("Displays the timestamp of a message"), CommandScope(ChannelType.Text)]
         public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("message ID")] ulong messageId, [DisplayName("channel mention")] string channel, [DisplayName("Windows TimeZone ID")] string timeZone = "Pacific Standard Time")
