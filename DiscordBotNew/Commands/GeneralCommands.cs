@@ -225,6 +225,7 @@ namespace DiscordBotNew.Commands
             switch (action)
             {
                 case CountdownAction.Create:
+                case CountdownAction.Add:
                     if (countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
                     {
                         return new ErrorResult($"The countdown with the name {name} already exists");
