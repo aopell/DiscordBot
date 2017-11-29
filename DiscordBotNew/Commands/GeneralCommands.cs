@@ -534,7 +534,7 @@ namespace DiscordBotNew.Commands
 
             context.Bot.AddReminder((context.Message.Author.Id, targetUser.Id, DateTimeOffset.Now + TimeSpan.FromHours(hours), message));
 
-            return new SuccessResult("Reminder saved!");
+            return new SuccessResult($"Reminder set for {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now + TimeSpan.FromHours(hours), "Pacific Standard Time"):f}");
         }
 
         [Command("reminders"), HelpText("List upcoming reminders for you")]
