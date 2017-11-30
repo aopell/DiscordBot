@@ -163,11 +163,23 @@ namespace DiscordBotNew.Commands
                     break;
             }
 
-            if (msg.Attachments.Count > 0)
+            if (msg.Attachments.Count == 1)
             {
                 builder.ImageUrl = msg.Attachments.First().Url;
                 builder.Title = msg.Attachments.First().Filename;
                 builder.Url = builder.ImageUrl;
+            }
+            else if (msg.Attachments.Count > 1)
+            {
+                foreach (Attachment attachment in msg.Attachments)
+                {
+                    await context.Channel.SendMessageAsync("", embed: new EmbedBuilder
+                    {
+                        ImageUrl = attachment.Url,
+                        Title = attachment.Filename,
+                        Url = attachment.Url
+                    });
+                }
             }
 
             foreach (Embed embed in msg.Embeds.Where(x => x.Type == EmbedType.Rich))
