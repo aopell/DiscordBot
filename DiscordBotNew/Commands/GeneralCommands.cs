@@ -550,19 +550,38 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("reminders"), HelpText("List upcoming reminders for you")]
-        public static ICommandResult Reminders(DiscordUserMessageContext context)
+        public static ICommandResult Reminders(DiscordUserMessageContext context, ReminderAction action = ReminderAction.List, int id = 0)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine("```");
-            builder.AppendLine($"{"Date",-25}{"Sender",-20}Message");
-            var reminders = context.Bot.GetReminders(context.Message.Author.Id);
-            if (!reminders.Any()) return new SuccessResult("No reminders!");
-            foreach (var reminder in reminders.OrderBy(x => x.time))
+            var reminders = context.Bot.GetReminders(context.Message.Author.Id).OrderBy(x => x.time);
+            switch (action)
             {
-                builder.AppendLine($"{(reminder.time - DateTimeOffset.Now).ToShortString(),-25}{context.Bot.Client.GetUser(reminder.sender).Username,-20}{reminder.message}");
+                case ReminderAction.List:
+                    StringBuilder builder = new StringBuilder();
+                    builder.AppendLine("```");
+                    builder.AppendLine($"{"ID",-4}{"Date",-25}{"Sender",-20}Message");
+                    if (!reminders.Any()) return new SuccessResult("No reminders!");
+                    int counter = 1;
+                    foreach (var reminder in reminders)
+                    {
+                        builder.AppendLine($"{counter++,-4}{(reminder.time - DateTimeOffset.Now).ToShortString(),-25}{context.Bot.Client.GetUser(reminder.sender).Username,-20}{reminder.message}");
+                    }
+                    builder.AppendLine("```");
+                    return new SuccessResult(builder.ToString());
+                case ReminderAction.Delete:
+                    if (id == 0) return new ErrorResult("Please enter a reminder ID");
+                    if (id < 1 || !reminders.Any()) return new ErrorResult("That reminder does not exist");
+                    var r = reminders.ToList()[id - 1];
+                    context.Bot.DeleteReminder(r);
+                    return new SuccessResult($"Reminder '{r.message}' deleted");
+                default:
+                    return new ErrorResult(new NotImplementedException("This feature doesn't exist"));
             }
-            builder.AppendLine("```");
-            return new SuccessResult(builder.ToString());
+        }
+
+        public enum ReminderAction
+        {
+            [HelpText("Lists your upcoming reminders")] List,
+            [HelpText("Deletes an upcoming reminder")] Delete
         }
 
         public enum CountdownAction

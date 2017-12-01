@@ -341,6 +341,13 @@ namespace DiscordBotNew
             remindersManager.SaveSettings();
         }
 
+        public void DeleteReminder((ulong, ulong, DateTimeOffset, string) reminder)
+        {
+            reminders.Remove(reminder);
+            remindersManager.AddSetting("reminders", reminders);
+            remindersManager.SaveSettings();
+        }
+
         public IEnumerable<(ulong sender, ulong receiver, DateTimeOffset time, string message)> GetReminders(ulong receiver) => reminders.Where(x => x.receiverId == receiver);
     }
 }
