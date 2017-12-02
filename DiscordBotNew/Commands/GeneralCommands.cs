@@ -103,16 +103,16 @@ namespace DiscordBotNew.Commands
             return new SuccessResult($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}");
         }
 
-        [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number"), CommandScope(ChannelType.Text)]
+        [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number")]
         public static async Task<ICommandResult> Quote(DiscordMessageContext context, [DisplayName("message ID"), HelpText("The message to quote")] ulong id, [DisplayName("channel mention"), HelpText("The channel to search")] string channel = null)
         {
             IMessageChannel messageChannel = context.Channel;
-            if (context.Message.MentionedChannelIds.Count != 0)
+            if (channel != null && context.Message.MentionedChannelIds.Count != 0)
             {
                 messageChannel = (IMessageChannel)context.Bot.Client.GetChannel(context.Message.MentionedChannelIds.First());
             }
 
-            if (!((IGuildUser)context.MessageAuthor).GetPermissions((IGuildChannel)messageChannel).ReadMessageHistory)
+            if (channel != null && !((IGuildUser)context.MessageAuthor).GetPermissions((IGuildChannel)messageChannel).ReadMessageHistory)
             {
                 return new ErrorResult("You do not have permission to read messages in that channel", "Permissions Error");
             }
