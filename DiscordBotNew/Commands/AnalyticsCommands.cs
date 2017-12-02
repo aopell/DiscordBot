@@ -111,7 +111,7 @@ namespace DiscordBotNew.Commands
                     {
                         foreach (IMessage message in page)
                         {
-                            var timestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, "Pacific Standard Time");
+                            var timestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, timezone);
                             DateTimeOffset? editedTimestampPacific = null;
                             if (message.EditedTimestamp != null)
                                 editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");

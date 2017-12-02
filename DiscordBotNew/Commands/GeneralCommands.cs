@@ -218,7 +218,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [HelpText("The time to count down to")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
+        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [DisplayName("event date/time"), HelpText("ex. \"1/1/17 1:11 PM\"")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
         {
             IGuildChannel channel;
             switch (context)
@@ -257,8 +257,16 @@ namespace DiscordBotNew.Commands
                     return new SuccessResult($"Successfully deleted countdown {name}");
             }
 
-            if (!date.HasValue) return new ErrorResult("Please provide a date when creating or editing a countdown");
-            var convertedTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, timezone).Offset);
+            if (!date.HasValue) return new ErrorResult("Please provide a date and time when creating or editing a countdown");
+            DateTimeOffset convertedTime;
+            try
+            {
+                convertedTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, timezone).Offset);
+            }
+            catch (Exception ex) when (ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException)
+            {
+                return new ErrorResult($"The time zone `{timezone}` is invalid", "Time Zone Error");
+            }
             if (countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
             {
                 countdowns[name] = convertedTime;
@@ -518,8 +526,14 @@ namespace DiscordBotNew.Commands
                 message = await ((IMessageChannel)await context.Guild.GetChannelAsync(context.Message.MentionedChannelIds.First())).GetMessageAsync(messageId);
             }
 
-            DateTimeOffset timestamp = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, timeZone);
-            return new SuccessResult(timestamp.ToString());
+            try
+            {
+                return new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, timeZone).ToString());
+            }
+            catch (Exception ex) when (ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException)
+            {
+                return new ErrorResult($"The time zone `{timeZone}` is invalid", "Time Zone Error");
+            }
         }
 
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
