@@ -147,6 +147,16 @@ namespace DiscordBotNew
                 foreach (var item in descriptions)
                 {
                     var channel = (ITextChannel)Client.GetChannel(item.Key);
+                    if (channel == null)
+                    {
+                        var channelDescriptions = ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> d)
+                            ? descriptions
+                            : new Dictionary<ulong, string>();
+                        d.Remove(item.Key);
+                        ChannelDescriptions.AddSetting("descriptions", d);
+                        ChannelDescriptions.SaveSettings();
+                        continue;
+                    }
                     string topic = item.Value;
                     string newDesc = await descriptionCommandRegex.ReplaceAsync(
                                      topic,
