@@ -536,9 +536,104 @@ namespace DiscordBotNew.Commands
             }
         }
 
+        private static readonly Regex TomorrowRegex = new Regex("^Tomorrow(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
+        
+        private static readonly Regex DayOfWeekRegex = new Regex("^(?<dow>(?:Mon|Tues|Wednes|Thurs|Fri)day)(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
+
+        private static readonly Regex DeltaTimeRegex = new Regex("^((?<days>[0-9]+)d(ays?)? ?)?((?<hours>[0-9]+)h(((ou)?rs)?)? ?)?((?<minutes>[0-9]+)m(ins?)? ?)?((?<seconds>[0-9]+)s(ec)? ?)?$", RegexOptions.IgnoreCase);
+        
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
-        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or mention"), HelpText("The user to remind")] string user, [HelpText("Number of hours from now to send the reminder")] double hours, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or mention"), HelpText("The user to remind")] string user, [HelpText("A time string, in Pacific Time")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
+            DateTimeOffset targetTime;
+            Match regexMatch = null;
+            DayOfWeek dayOfReminder = 0;
+            string trimmedTimestamp = timestamp.Trim().ToLower();
+            if (double.TryParse(timestamp, out double hoursTillTime))
+            {
+                // legacy
+                targetTime = DateTimeOffset.UtcNow + TimeSpan.FromHours(hoursTillTime);
+            }
+            else if ((regexMatch = DeltaTimeRegex.Match(timestamp)).Success)
+            {
+                // delta time from regex
+                int days = 0;
+                int hours = 0;
+                int minutes = 0;
+                int seconds = 0;
+                if (regexMatch.Groups["days"].Success)
+                {
+                    days = int.Parse(regexMatch.Groups["days"].Value);
+                }
+                if (regexMatch.Groups["hours"].Success)
+                {
+                    hours = int.Parse(regexMatch.Groups["hours"].Value);
+                }
+                if (regexMatch.Groups["minutes"].Success)
+                {
+                    minutes = int.Parse(regexMatch.Groups["minutes"].Value);
+                }
+                if (regexMatch.Groups["seconds"].Success)
+                {
+                    seconds = int.Parse(regexMatch.Groups["seconds"].Value);
+                }
+
+                targetTime = DateTimeOffset.UtcNow + new TimeSpan(days, hours, minutes, seconds);
+                
+                // so we don't trip up the later use of regexMatch for absolute times
+                regexMatch = null;
+            }
+            else if (DateTimeOffset.TryParse(timestamp, out targetTime))
+            {
+                // we're already fine
+            }
+            else if ((regexMatch = TomorrowRegex.Match(timestamp)).Success)
+            {
+                // tomorrow, local time
+                dayOfReminder = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time").AddDays(1).DayOfWeek;
+            }
+            else if ((regexMatch = DayOfWeekRegex.Match(timestamp)).Success)
+            {
+                // absolute time from day of week, local time
+                dayOfReminder = Enum.Parse<DayOfWeek>(regexMatch.Groups["dow"].Value, true);
+            }
+            else
+            {
+                return new ErrorResult("Could not parse that time string");
+            }
+
+            if (regexMatch != null)
+            {
+                DateTimeOffset todayLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time");
+                targetTime = todayLocal;
+                // a minimum of 1 day, so "remind me tuesday" on a tuesday will go for next week
+                do
+                {
+                    targetTime = targetTime.AddDays(1);
+                } while (targetTime.DayOfWeek != dayOfReminder);
+
+                // defaults to 8AM
+                int targetHour = 8;
+                int targetMinute = 0;
+                if (regexMatch.Groups["time"].Success)
+                {
+                    string[] timeComponents = regexMatch.Groups["time"].Value.Split(new char[] {':'}, 2);
+                    targetHour = int.Parse(timeComponents[0]);
+                    if (timeComponents.Length >= 2)
+                    {
+                        targetMinute = int.Parse(timeComponents[1]);
+                    }
+                }
+
+                if (regexMatch.Groups["ampm"].Success && regexMatch.Groups["ampm"].Value.ToLower().Trim() == "pm")
+                {
+                    // afternoon time, add 12 to hour
+                    targetHour += 12;
+                }
+                
+                targetTime = new DateTimeOffset(targetTime.Year, targetTime.Month, targetTime.Day, targetHour, targetMinute, 0, targetTime.Offset);
+            }
+
             IUser targetUser;
 
             if (context.Message.MentionedUserIds.Count > 0)
@@ -558,9 +653,9 @@ namespace DiscordBotNew.Commands
                 return new ErrorResult("User not found");
             }
 
-            context.Bot.AddReminder((context.Message.Author.Id, targetUser.Id, DateTimeOffset.Now + TimeSpan.FromHours(hours), message));
+            context.Bot.AddReminder((context.Message.Author.Id, targetUser.Id, targetTime, message));
 
-            return new SuccessResult($"Reminder set for {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now + TimeSpan.FromHours(hours), "Pacific Standard Time"):f}");
+            return new SuccessResult($"Reminder set for {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(targetTime, "Pacific Standard Time"):f}");
         }
 
         [Command("reminders"), HelpText("List upcoming reminders for you")]
