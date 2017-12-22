@@ -58,7 +58,7 @@ namespace DiscordBotNew
             Countdowns = new SettingsManager(SettingsManager.BasePath + "countdowns.json");
             remindersManager = new SettingsManager(SettingsManager.BasePath + "reminders.json");
             StatusSettings.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses);
-            CurrentUserStatuses = statuses;
+            CurrentUserStatuses = statuses ?? new Dictionary<ulong, UserStatusInfo>();
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
             Grammar = new GrammarPolice(this);
