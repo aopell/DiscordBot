@@ -64,7 +64,7 @@ namespace DiscordBotNew
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
             Grammar = new GrammarPolice(this);
-            DefaultTimeZone = Settings.GetSetting("timeZone", out string tz) ? tz : "UTC";
+            DefaultTimeZone = Settings.GetSetting("timezone", out string tz) ? tz : "UTC";
 
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
@@ -280,9 +280,9 @@ namespace DiscordBotNew
                     if (Settings.GetSetting("announceStartup", out bool announce) && announce)
                     {
 #if !DEBUG
-                        await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+                        await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
 #else
-                        await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] Now online!");
+                        await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
 #endif
                     }
 
@@ -316,7 +316,7 @@ namespace DiscordBotNew
             catch (Exception ex)
             {
                 if (Settings.GetSetting("botOwner", out ulong id))
-                    await Client.GetUser(id).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time")}] {ex}");
+                    await Client.GetUser(id).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] {ex}");
             }
         }
 

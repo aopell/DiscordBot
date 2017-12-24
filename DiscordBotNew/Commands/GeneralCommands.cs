@@ -218,7 +218,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [DisplayName("event date/time"), HelpText("ex. \"1/1/17 1:11 PM\"")] DateTime? date = null, [DisplayName("Windows TimeZone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
+        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [JoinRemainingParameters, DisplayName("event date/time"), HelpText("ex. \"1/1/17 1:11 PM\"")] DateTime? date = null)
         {
             IGuildChannel channel;
             switch (context)
@@ -261,11 +261,11 @@ namespace DiscordBotNew.Commands
             DateTimeOffset convertedTime;
             try
             {
-                convertedTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, timezone).Offset);
+                convertedTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone).Offset);
             }
             catch (Exception ex) when (ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException)
             {
-                return new ErrorResult($"The time zone `{timezone}` is invalid", "Time Zone Error");
+                return new ErrorResult($"The time zone `{context.Bot.DefaultTimeZone}` is invalid", "Time Zone Error");
             }
             if (countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
             {
@@ -514,7 +514,7 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Decide(ICommandContext context, [JoinRemainingParameters] string[] options = null) => new SuccessResult(options?[random.Next(options.Length)] ?? (random.Next(2) == 0 ? "Yes" : "No"));
 
         [Command("timestamp"), HelpText("Displays the timestamp of a message"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("message ID")] ulong messageId, [DisplayName("channel mention")] string channel, [DisplayName("Windows TimeZone ID")] string timeZone = "Pacific Standard Time")
+        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("message ID")] ulong messageId, [DisplayName("channel mention")] string channel)
         {
             IMessage message;
             if (context.Message.MentionedChannelIds.Count < 1)
@@ -528,11 +528,11 @@ namespace DiscordBotNew.Commands
 
             try
             {
-                return new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, timeZone).ToString());
+                return new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, context.Bot.DefaultTimeZone).ToString());
             }
             catch (Exception ex) when (ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException)
             {
-                return new ErrorResult($"The time zone `{timeZone}` is invalid", "Time Zone Error");
+                return new ErrorResult($"The time zone `{context.Bot.DefaultTimeZone}` is invalid", "Time Zone Error");
             }
         }
 
@@ -543,7 +543,7 @@ namespace DiscordBotNew.Commands
         private static readonly Regex DeltaTimeRegex = new Regex("^((?<days>[0-9]+)d(ays?)? ?)?((?<hours>[0-9]+)h(((ou)?rs)?)? ?)?((?<minutes>[0-9]+)m(ins?)? ?)?((?<seconds>[0-9]+)s(ec)? ?)?$", RegexOptions.IgnoreCase);
 
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
-        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The number of hours from now or the time at which you will be reminded in Pacific Time")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The number of hours from now or the time at which you will be reminded")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
             DateTimeOffset targetTime;
             Match regexMatch = null;
@@ -590,7 +590,7 @@ namespace DiscordBotNew.Commands
             else if ((regexMatch = TomorrowRegex.Match(timestamp)).Success)
             {
                 // tomorrow, local time
-                dayOfReminder = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time").AddDays(1).DayOfWeek;
+                dayOfReminder = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone).AddDays(1).DayOfWeek;
             }
             else if ((regexMatch = DayOfWeekRegex.Match(timestamp)).Success)
             {
@@ -604,7 +604,7 @@ namespace DiscordBotNew.Commands
 
             if (regexMatch != null)
             {
-                DateTimeOffset todayLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, "Pacific Standard Time");
+                DateTimeOffset todayLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone);
                 targetTime = todayLocal;
                 // a minimum of 1 day, so "remind me tuesday" on a tuesday will go for next week
                 do
@@ -655,7 +655,7 @@ namespace DiscordBotNew.Commands
 
             context.Bot.AddReminder((context.Message.Author.Id, targetUser.Id, targetTime, message));
 
-            return new SuccessResult($"Reminder set for {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(targetTime, "Pacific Standard Time"):f}");
+            return new SuccessResult($"Reminder set for {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(targetTime, context.Bot.DefaultTimeZone):f}");
         }
 
         [Command("reminders"), HelpText("List upcoming reminders for you")]

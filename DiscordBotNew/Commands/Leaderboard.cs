@@ -123,7 +123,7 @@ namespace DiscordBotNew.Commands
             if (type == LeaderboardType.Today)
             {
                 // I'm sure this isn't the right way to do this but quite honestly I was getting annoyed and this works, so ¯\_(ツ)_/¯
-                TimeSpan offset = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, "Pacific Standard Time").Offset;
+                TimeSpan offset = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, bot.DefaultTimeZone).Offset;
                 startTime = new DateTimeOffset(new DateTimeOffset(DateTime.UtcNow.Ticks + TimeSpan.FromHours(offset.Hours).Ticks, offset).Date, offset);
             }
             else if (type == LeaderboardType.Past24Hours)

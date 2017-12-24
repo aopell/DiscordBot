@@ -87,7 +87,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("analytics"), HelpText("Generates a tab separated text file with analytics from the server"), CommandScope(ChannelType.Text), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context, [DisplayName("Windows Timezone ID"), JoinRemainingParameters] string timezone = "Pacific Standard Time")
+        public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context)
         {
             await context.Reply("This is going to take a while");
             using (context.Channel.EnterTypingState())
@@ -111,11 +111,11 @@ namespace DiscordBotNew.Commands
                     {
                         foreach (IMessage message in page)
                         {
-                            var timestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, timezone);
-                            DateTimeOffset? editedTimestampPacific = null;
+                            var timestampLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, context.Bot.DefaultTimeZone);
+                            DateTimeOffset? editedTimestampLocal = null;
                             if (message.EditedTimestamp != null)
-                                editedTimestampPacific = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, "Pacific Standard Time");
-                            data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampPacific.DateTime:G}\t{timestampPacific.ToUnixTimeSeconds()}\t{editedTimestampPacific?.ToString("G") ?? ""}\t{editedTimestampPacific?.ToUnixTimeSeconds().ToString() ?? ""}\t{new System.Globalization.StringInfo(message.Content).LengthInTextElements}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
+                                editedTimestampLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, context.Bot.DefaultTimeZone);
+                            data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampLocal.DateTime:G}\t{timestampLocal.ToUnixTimeSeconds()}\t{editedTimestampLocal?.ToString("G") ?? ""}\t{editedTimestampLocal?.ToUnixTimeSeconds().ToString() ?? ""}\t{new System.Globalization.StringInfo(message.Content).LengthInTextElements}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
                         }
                     });
                 }
