@@ -537,18 +537,18 @@ namespace DiscordBotNew.Commands
         }
 
         private static readonly Regex TomorrowRegex = new Regex("^Tomorrow(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
-        
+
         private static readonly Regex DayOfWeekRegex = new Regex("^(?<dow>(?:Mon|Tues|Wednes|Thurs|Fri)day)(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
 
         private static readonly Regex DeltaTimeRegex = new Regex("^((?<days>[0-9]+)d(ays?)? ?)?((?<hours>[0-9]+)h(((ou)?rs)?)? ?)?((?<minutes>[0-9]+)m(ins?)? ?)?((?<seconds>[0-9]+)s(ec)? ?)?$", RegexOptions.IgnoreCase);
-        
+
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
-        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or mention"), HelpText("The user to remind")] string user, [HelpText("A time string, in Pacific Time")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The number of hours from now or the time at which you will be reminded in Pacific Time")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
             DateTimeOffset targetTime;
             Match regexMatch = null;
             DayOfWeek dayOfReminder = 0;
-            string trimmedTimestamp = timestamp.Trim().ToLower();
+            timestamp = timestamp.Trim().ToLower();
             if (double.TryParse(timestamp, out double hoursTillTime))
             {
                 // legacy
@@ -579,7 +579,7 @@ namespace DiscordBotNew.Commands
                 }
 
                 targetTime = DateTimeOffset.UtcNow + new TimeSpan(days, hours, minutes, seconds);
-                
+
                 // so we don't trip up the later use of regexMatch for absolute times
                 regexMatch = null;
             }
@@ -599,7 +599,7 @@ namespace DiscordBotNew.Commands
             }
             else
             {
-                return new ErrorResult("Could not parse that time string");
+                return new ErrorResult("Invalid reminder time. Valid options include: 'tomorrow', a day of the week, a full date and time string, or a number of hours in the future.");
             }
 
             if (regexMatch != null)
@@ -617,7 +617,7 @@ namespace DiscordBotNew.Commands
                 int targetMinute = 0;
                 if (regexMatch.Groups["time"].Success)
                 {
-                    string[] timeComponents = regexMatch.Groups["time"].Value.Split(new char[] {':'}, 2);
+                    string[] timeComponents = regexMatch.Groups["time"].Value.Split(new char[] { ':' }, 2);
                     targetHour = int.Parse(timeComponents[0]);
                     if (timeComponents.Length >= 2)
                     {
@@ -630,7 +630,7 @@ namespace DiscordBotNew.Commands
                     // afternoon time, add 12 to hour
                     targetHour += 12;
                 }
-                
+
                 targetTime = new DateTimeOffset(targetTime.Year, targetTime.Month, targetTime.Day, targetHour, targetMinute, 0, targetTime.Offset);
             }
 

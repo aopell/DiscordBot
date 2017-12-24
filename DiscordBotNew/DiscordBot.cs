@@ -35,6 +35,8 @@ namespace DiscordBotNew
         private SettingsManager remindersManager;
         private List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)> reminders;
 
+        public string DefaultTimeZone { get; private set; }
+
         public static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -62,6 +64,7 @@ namespace DiscordBotNew
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
             Grammar = new GrammarPolice(this);
+            DefaultTimeZone = Settings.GetSetting("timeZone", out string tz) ? tz : "UTC";
 
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
