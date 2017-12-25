@@ -283,7 +283,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Views the status of a countdown timer"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Countdown(ICommandContext context, string name)
+        public static ICommandResult Countdown(ICommandContext context, [JoinRemainingParameters] string name)
         {
             IGuildChannel channel;
             switch (context)
@@ -542,6 +542,13 @@ namespace DiscordBotNew.Commands
 
         private static readonly Regex DeltaTimeRegex = new Regex("^((?<days>[0-9]+)d(ays?)? ?)?((?<hours>[0-9]+)h(((ou)?rs)?)? ?)?((?<minutes>[0-9]+)m(ins?)? ?)?((?<seconds>[0-9]+)s(ec)? ?)?$", RegexOptions.IgnoreCase);
 
+        [Command("remind", OverloadPriority = int.MaxValue), HelpText("Reminds a certain person to do something in some number of hours from now")]
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, double hours, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        {
+            DateTimeOffset targetTime = DateTimeOffset.UtcNow + TimeSpan.FromHours(hours);
+            return await CreateReminder(context, user, message, targetTime);
+        }
+
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
         public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The number of hours from now or the time at which you will be reminded")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
@@ -549,12 +556,7 @@ namespace DiscordBotNew.Commands
             Match regexMatch = null;
             DayOfWeek dayOfReminder = 0;
             timestamp = timestamp.Trim().ToLower();
-            if (double.TryParse(timestamp, out double hoursTillTime))
-            {
-                // legacy
-                targetTime = DateTimeOffset.UtcNow + TimeSpan.FromHours(hoursTillTime);
-            }
-            else if ((regexMatch = DeltaTimeRegex.Match(timestamp)).Success)
+            if ((regexMatch = DeltaTimeRegex.Match(timestamp)).Success)
             {
                 // delta time from regex
                 int days = 0;
@@ -634,6 +636,11 @@ namespace DiscordBotNew.Commands
                 targetTime = new DateTimeOffset(targetTime.Year, targetTime.Month, targetTime.Day, targetHour, targetMinute, 0, targetTime.Offset);
             }
 
+            return await CreateReminder(context, user, message, targetTime);
+        }
+
+        private static async Task<ICommandResult> CreateReminder(DiscordUserMessageContext context, string user, string message, DateTimeOffset targetTime)
+        {
             IUser targetUser;
 
             if (context.Message.MentionedUserIds.Count > 0)

@@ -12,6 +12,7 @@ namespace DiscordBotNew.CommandLoader
     public class CommandAttribute : Attribute
     {
         public string[] Names { get; }
+        public int OverloadPriority = int.MinValue;
 
         public CommandAttribute(params string[] names)
         {
