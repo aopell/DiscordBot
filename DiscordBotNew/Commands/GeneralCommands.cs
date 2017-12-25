@@ -218,7 +218,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [JoinRemainingParameters, DisplayName("event date/time"), HelpText("ex. \"1/1/17 1:11 PM\"")] DateTime? date = null)
+        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [JoinRemainingParameters, DisplayName("event date/time"), HelpText("ex. \"1/1/11 1:11 PM\"")] DateTime? date = null)
         {
             IGuildChannel channel;
             switch (context)
@@ -543,14 +543,14 @@ namespace DiscordBotNew.Commands
         private static readonly Regex DeltaTimeRegex = new Regex("^((?<days>[0-9]+)d(ays?)? ?)?((?<hours>[0-9]+)h(((ou)?rs)?)? ?)?((?<minutes>[0-9]+)m(ins?)? ?)?((?<seconds>[0-9]+)s(ec)? ?)?$", RegexOptions.IgnoreCase);
 
         [Command("remind", OverloadPriority = int.MaxValue), HelpText("Reminds a certain person to do something in some number of hours from now")]
-        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, double hours, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [HelpText("The number of hours from now to send the reminder")] double hours, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
             DateTimeOffset targetTime = DateTimeOffset.UtcNow + TimeSpan.FromHours(hours);
             return await CreateReminder(context, user, message, targetTime);
         }
 
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
-        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The number of hours from now or the time at which you will be reminded")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The the time at which to send the reminder")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
             DateTimeOffset targetTime;
             Match regexMatch = null;

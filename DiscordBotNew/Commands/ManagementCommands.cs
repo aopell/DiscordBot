@@ -110,14 +110,14 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("grammar"), HelpText("Enables or disables grammar bot"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> Grammar(DiscordUserMessageContext context, string command)
+        public static async Task<ICommandResult> Grammar(DiscordUserMessageContext context, GrammarAction command)
         {
             switch (command)
             {
-                case "enable":
+                case GrammarAction.Enable:
                     await context.Bot.Grammar.Start();
                     break;
-                case "disable":
+                case GrammarAction.Disable:
                     await context.Bot.Grammar.Stop();
                     break;
                 default:
@@ -132,6 +132,12 @@ namespace DiscordBotNew.Commands
             [HelpText("Gets the file with the provided name")] Get,
             [HelpText("Replaces the file with the provided name with the provided file")] Put,
             [HelpText("Lists all files that can be accessed")] List
+        }
+
+        public enum GrammarAction
+        {
+            [HelpText("Enables the grammar police bot")] Enable,
+            [HelpText("Disables the grammar police bot")] Disable
         }
     }
 }
