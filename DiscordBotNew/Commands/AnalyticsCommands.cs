@@ -87,14 +87,14 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("analytics"), HelpText("Generates a tab separated text file with analytics from the server"), CommandScope(ChannelType.Text), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context)
+        public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context, bool includeMessageText = false)
         {
             await context.Reply("This is going to take a while");
             using (context.Channel.EnterTypingState())
             {
                 // Channel Name => User Name => Date => Hour
                 List<string> data = new List<string>();
-                data.Add("MessageID\tChannel\tUser\tIsBot\tTimestamp\tUnixTimestamp\tEditedTimestamp\tUnixEditedTimestamp\tMessageLength\tEmbedType\tHasAttachment\tReactionCount");
+                data.Add($"MessageID\tChannel\tUser\tIsBot\tTimestamp\tUnixTimestamp\tEditedTimestamp\tUnixEditedTimestamp\tMessageLength\tEmbedType\tHasAttachment\tReactionCount{(includeMessageText ? "\tMessage Text" : "")}");
                 var channels = await context.Guild.GetTextChannelsAsync();
 
                 foreach (ITextChannel channel in channels)
@@ -115,16 +115,23 @@ namespace DiscordBotNew.Commands
                             DateTimeOffset? editedTimestampLocal = null;
                             if (message.EditedTimestamp != null)
                                 editedTimestampLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, context.Bot.DefaultTimeZone);
-                            data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampLocal.DateTime:G}\t{timestampLocal.ToUnixTimeSeconds()}\t{editedTimestampLocal?.ToString("G") ?? ""}\t{editedTimestampLocal?.ToUnixTimeSeconds().ToString() ?? ""}\t{new System.Globalization.StringInfo(message.Content).LengthInTextElements}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}");
+                            data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampLocal.DateTime:G}\t{timestampLocal.ToUnixTimeSeconds()}\t{editedTimestampLocal?.ToString("G") ?? ""}\t{editedTimestampLocal?.ToUnixTimeSeconds().ToString() ?? ""}\t{new System.Globalization.StringInfo(message.Content).LengthInTextElements}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}{(includeMessageText ? $"\t{message.Content}" : "")}");
                         }
                     });
                 }
 
                 File.WriteAllLines(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt", data);
 
-                using (var stream = File.OpenRead(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt"))
+                if (!includeMessageText)
                 {
-                    await context.Channel.SendFileAsync(stream, $"analytics-{context.Guild.Id}-{DateTimeOffset.Now.ToUnixTimeSeconds()}.txt");
+                    using (var stream = File.OpenRead(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt"))
+                    {
+                        await context.Channel.SendFileAsync(stream, $"analytics-{context.Guild.Id}-{DateTimeOffset.Now.ToUnixTimeSeconds()}.txt");
+                    }
+                }
+                else
+                {
+                    await context.Reply($"Finished creating analytics file. Saved as `analytics-{context.Guild.Id}.txt` ({Math.Round(new FileInfo(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt").Length / 1048576d, 2)} MB)");
                 }
             }
             return new SuccessResult();
