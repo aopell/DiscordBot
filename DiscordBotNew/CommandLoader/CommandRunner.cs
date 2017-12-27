@@ -138,7 +138,7 @@ namespace DiscordBotNew.CommandLoader
                         }
                         else
                         {
-                            object converted = ConvertToType(parameters[i].ParameterType, string.Join(" ", args.Skip(i - 1)));
+                            object converted = ConvertToType(parameters[i].ParameterType, string.Join(" ", args.Skip(i - 1)), context);
                             if (converted == null)
                             {
                                 error = error ?? await ThrowTypeError(context, string.Join(" ", args.Skip(i - 1)), parameters[i]);
@@ -150,7 +150,7 @@ namespace DiscordBotNew.CommandLoader
                         break;
                     }
 
-                    var result = ConvertToType(parameters[i].ParameterType, args[i - 1]);
+                    var result = ConvertToType(parameters[i].ParameterType, args[i - 1], context);
                     if (result == null)
                     {
                         error = error ?? await ThrowTypeError(context, args[i - 1], parameters[i]);
