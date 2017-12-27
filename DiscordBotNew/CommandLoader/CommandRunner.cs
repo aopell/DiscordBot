@@ -237,7 +237,7 @@ namespace DiscordBotNew.CommandLoader
             }
         }
 
-        private static object ConvertToType(Type type, string text)
+        private static object ConvertToType(Type type, string text, ICommandContext context)
         {
             try
             {
@@ -245,6 +245,8 @@ namespace DiscordBotNew.CommandLoader
                     return Enum.Parse(type, text, true);
                 if (type == typeof(string))
                     return text;
+                if (type == typeof(DateTime) || type == typeof(DateTimeOffset))
+                    return TimeZoneInfo.FindSystemTimeZoneById(context.Bot.DefaultTimeZone).ParseDate(text);
                 Type underlyingType;
                 if ((underlyingType = Nullable.GetUnderlyingType(type)) != null)
                 {

@@ -19,6 +19,14 @@ namespace DiscordBotNew.CommandLoader
 
         public static async Task ReplyError(this SocketMessage m, Exception error) => await m.ReplyError(error.Message, $"Error - {error.GetType().Name}");
 
+        public static DateTimeOffset ParseDate(this TimeZoneInfo timezone, string dateTime)
+        {
+            var parsedDateLocal = DateTimeOffset.Parse(dateTime);
+            var tzOffset = timezone.GetUtcOffset(parsedDateLocal.DateTime);
+            var parsedDateTimeZone = new DateTimeOffset(parsedDateLocal.DateTime, tzOffset);
+            return parsedDateTimeZone;
+        }
+
         public static ChannelType GetChannelType(this IMessage m)
         {
             switch (m.Channel)

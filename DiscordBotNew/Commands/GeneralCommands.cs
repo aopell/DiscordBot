@@ -258,22 +258,13 @@ namespace DiscordBotNew.Commands
             }
 
             if (!date.HasValue) return new ErrorResult("Please provide a date and time when creating or editing a countdown");
-            DateTimeOffset convertedTime;
-            try
-            {
-                convertedTime = new DateTimeOffset(date.Value, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone).Offset);
-            }
-            catch (Exception ex) when (ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException)
-            {
-                return new ErrorResult($"The time zone `{context.Bot.DefaultTimeZone}` is invalid", "Time Zone Error");
-            }
             if (countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
             {
-                countdowns[name] = convertedTime;
+                countdowns[name] = date.Value;
             }
             else
             {
-                countdowns.Add(name, convertedTime);
+                countdowns.Add(name, date.Value);
             }
             context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
             context.Bot.Countdowns.SaveSettings();
@@ -549,6 +540,12 @@ namespace DiscordBotNew.Commands
             return await CreateReminder(context, user, message, targetTime);
         }
 
+        [Command("remind", OverloadPriority = 0), HelpText("Reminds a certain person to do something at a specified date and/or time")]
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [HelpText("The date and/or time to send the reminder")] DateTime date, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        {
+            return await CreateReminder(context, user, message, date);
+        }
+
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
         public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The the time at which to send the reminder")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
@@ -584,10 +581,6 @@ namespace DiscordBotNew.Commands
 
                 // so we don't trip up the later use of regexMatch for absolute times
                 regexMatch = null;
-            }
-            else if (DateTimeOffset.TryParse(timestamp, out targetTime))
-            {
-                // we're already fine
             }
             else if ((regexMatch = TomorrowRegex.Match(timestamp)).Success)
             {
@@ -665,7 +658,7 @@ namespace DiscordBotNew.Commands
             return new SuccessResult($"Reminder set for {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(targetTime, context.Bot.DefaultTimeZone):f}");
         }
 
-        [Command("reminders"), HelpText("List upcoming reminders for you")]
+        [Command("reminders"), HelpText("Lists and manages your upcoming reminders")]
         public static ICommandResult Reminders(DiscordUserMessageContext context, ReminderAction action = ReminderAction.List, int id = 0)
         {
             var reminders = context.Bot.GetReminders(context.Message.Author.Id).OrderBy(x => x.time);
