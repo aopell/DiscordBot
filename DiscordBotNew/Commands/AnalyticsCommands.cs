@@ -115,7 +115,7 @@ namespace DiscordBotNew.Commands
                             DateTimeOffset? editedTimestampLocal = null;
                             if (message.EditedTimestamp != null)
                                 editedTimestampLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.EditedTimestamp.Value, context.Bot.DefaultTimeZone);
-                            data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampLocal.DateTime:G}\t{timestampLocal.ToUnixTimeSeconds()}\t{editedTimestampLocal?.ToString("G") ?? ""}\t{editedTimestampLocal?.ToUnixTimeSeconds().ToString() ?? ""}\t{new System.Globalization.StringInfo(message.Content).LengthInTextElements}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}{(includeMessageText ? $"\t{message.Content.Replace("\n", "␊")}" : "")}");
+                            data.Add($"{message.Id}\t{message.Channel.Name}\t{message.Author}\t{message.Author.IsBot}\t{timestampLocal.DateTime:G}\t{timestampLocal.ToUnixTimeSeconds()}\t{editedTimestampLocal?.ToString("G") ?? ""}\t{editedTimestampLocal?.ToUnixTimeSeconds().ToString() ?? ""}\t{new System.Globalization.StringInfo(message.Content).LengthInTextElements}\t{message.Embeds.FirstOrDefault()?.Type.ToString() ?? ""}\t{message.Attachments.Count > 0}\t{(message as IUserMessage)?.Reactions.Count ?? 0}{(includeMessageText ? $"\t{message.Content.Replace("\n", "␊").Replace("\r", "")}" : "")}");
                         }
                     });
                 }
