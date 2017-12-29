@@ -463,6 +463,10 @@ namespace DiscordBotNew.Commands
         [Command("cat", "floof", "squish"), HelpText("Cat.")]
         public static async Task<ICommandResult> Cat(ICommandContext context)
         {
+            if (context is DiscordUserMessageContext c)
+            {
+                await c.Message.AddReactionAsync(CommandTools.LoadingEmote);
+            }
             JObject obj;
             string catUrl;
             var client = new HttpClient();
@@ -471,12 +475,21 @@ namespace DiscordBotNew.Commands
                 string json = await client.GetStringAsync("http://random.cat/meow");
                 obj = JObject.Parse(json);
             } while ((catUrl = obj["file"].Value<string>()).EndsWith(".gif"));
+            if (context is DiscordUserMessageContext cx)
+            {
+                await cx.Message.RemoveReactionAsync(CommandTools.LoadingEmote, context.Bot.Client.CurrentUser);
+            }
             return new SuccessResult(catUrl);
         }
 
         [Command("dog"), HelpText("Dog.")]
         public static async Task<ICommandResult> Dog(ICommandContext context, string subBreed = null, string mainBreed = null)
         {
+            if (context is DiscordUserMessageContext c)
+            {
+                await c.Message.AddReactionAsync(CommandTools.LoadingEmote);
+            }
+
             var client = new HttpClient();
             string json;
             if (subBreed != null)
@@ -488,6 +501,12 @@ namespace DiscordBotNew.Commands
                 json = await client.GetStringAsync("https://dog.ceo/api/breeds/image/random");
             }
             JObject obj = JObject.Parse(json);
+
+            if (context is DiscordUserMessageContext cx)
+            {
+                await cx.Message.RemoveReactionAsync(CommandTools.LoadingEmote, context.Bot.Client.CurrentUser);
+            }
+
             if (obj["status"].Value<string>() == "success")
             {
                 return new SuccessResult(obj["message"].Value<string>());

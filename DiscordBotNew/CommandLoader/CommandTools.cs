@@ -12,12 +12,7 @@ namespace DiscordBotNew.CommandLoader
 {
     public static class CommandTools
     {
-        public static async Task ReplyError(this SocketMessage m, string description, string title = "Error")
-        {
-
-        }
-
-        public static async Task ReplyError(this SocketMessage m, Exception error) => await m.ReplyError(error.Message, $"Error - {error.GetType().Name}");
+        public static Emote LoadingEmote => Emote.Parse("<:dualring:395760275992739862>");
 
         public static DateTimeOffset ParseDate(this TimeZoneInfo timezone, string dateTime)
         {

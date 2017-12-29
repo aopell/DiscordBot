@@ -43,6 +43,7 @@ namespace DiscordBotNew.Commands
             if (context is DiscordUserMessageContext)
             {
                 leaderboardMessage = await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
+                await leaderboardMessage.AddReactionAsync(CommandTools.LoadingEmote);
             }
 
             using (messageChannel.EnterTypingState())
@@ -89,7 +90,8 @@ namespace DiscordBotNew.Commands
         [Command("analytics"), HelpText("Generates a tab separated text file with analytics from the server"), CommandScope(ChannelType.Text), Permissions(ownerOnly: true)]
         public static async Task<ICommandResult> Analytics(DiscordUserMessageContext context, bool includeMessageText = false)
         {
-            await context.Reply("This is going to take a while");
+            await (await context.Channel.SendMessageAsync("This is going to take a while")).AddReactionAsync(CommandTools.LoadingEmote);
+
             using (context.Channel.EnterTypingState())
             {
                 // Channel Name => User Name => Date => Hour
