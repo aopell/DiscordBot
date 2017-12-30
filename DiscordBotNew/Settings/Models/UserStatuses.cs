@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Discord;
-using Newtonsoft.Json;
 
-namespace DiscordBotNew.Commands
+namespace DiscordBotNew.Settings.Models
 {
+    class UserStatuses : ConfigModel
+    {
+        public Dictionary<ulong, UserStatusInfo> Statuses { get; set; }
+    }
+
     public class UserStatusInfo
     {
         public DateTimeOffset LastOnline { get; set; }

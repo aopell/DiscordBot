@@ -12,6 +12,7 @@ using DiscordBotNew.CommandLoader;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.Commands;
 using DiscordBotNew.Settings;
+using DiscordBotNew.Settings.Models;
 using Newtonsoft.Json;
 
 namespace DiscordBotNew
@@ -52,6 +53,11 @@ namespace DiscordBotNew
         {
             CommandRunner.LoadCommands();
             CreateFiles();
+
+            //BotSettings settings = ConfigModel.LoadSettings<BotSettings>("settings.json");
+            //ChannelDescriptions descriptions = ConfigModel.LoadSettings<ChannelDescriptions>("descriptions.json");
+            //UserStatuses s = ConfigModel.LoadSettings<UserStatuses>("statuses.json");
+
             Settings = new SettingsManager(SettingsManager.BasePath + "settings.json");
             ChannelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
             StatusSettings = new SettingsManager(SettingsManager.BasePath + "statuses.json");
