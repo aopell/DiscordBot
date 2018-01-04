@@ -15,11 +15,11 @@ namespace DiscordBotNew
     {
         public byte Id { get; private set; }
         public List<PollOption> Options { get; }
-        public DateTime StartTime { get; }
+        public DateTimeOffset StartTime { get; }
         public double Length { get; }
         public bool Active { get; private set; }
         public bool Anonymous { get; }
-        public double MinutesLeft => Math.Round((TimeSpan.FromMinutes(Length) - (DateTime.Now - StartTime)).TotalMinutes, 1);
+        public double MinutesLeft => Math.Round((TimeSpan.FromMinutes(Length) - (DateTimeOffset.UtcNow - StartTime)).TotalMinutes, 1);
         public IMessageChannel Channel { get; }
         public IUser Creator { get; }
         public int TotalVotes => Voters.Count;
@@ -30,7 +30,7 @@ namespace DiscordBotNew
 
         public Poll(IMessageChannel channel, IUser creator, double length, bool anonymous, IMessage message = null)
         {
-            StartTime = DateTime.Now;
+            StartTime = DateTimeOffset.UtcNow;
             Active = true;
             Channel = channel;
             Options = new List<PollOption>();
