@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace DiscordBotNew.Settings
 {
-    public abstract class ConfigModel
+    public abstract class Config
     {
         [JsonIgnore]
         public const string BasePath = "D:\\home\\data\\jobs\\continuous\\NetcatBot\\";
@@ -15,12 +15,12 @@ namespace DiscordBotNew.Settings
         protected string FilePath { get; private set; }
         private ReaderWriterLockSlim rwLock { get; }
 
-        public ConfigModel()
+        public Config()
         {
             rwLock = new ReaderWriterLockSlim();
         }
 
-        public void SaveSettings()
+        public void SaveConfig()
         {
             using (new WriteLock(rwLock))
             {
@@ -28,7 +28,7 @@ namespace DiscordBotNew.Settings
             }
         }
 
-        public static T LoadSettings<T>(string path) where T : ConfigModel
+        public static T LoadConfig<T>(string path) where T : Config
         {
             try
             {

@@ -398,7 +398,7 @@ namespace DiscordBotNew.Commands
                         break;
                 }
             }
-            builder.AppendLine($"Generated {TimeGenerated:f} UTC");
+            builder.AppendLine($"Generated {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(TimeGenerated, bot.DefaultTimeZone):f}");
             builder.Append("```");
             messages.Add(builder.ToString());
 

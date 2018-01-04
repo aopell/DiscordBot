@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DiscordBotNew.Settings.Models
 {
-    class UserStatuses : ConfigModel
+    class UserStatuses : Config
     {
         public Dictionary<ulong, UserStatusInfo> Statuses { get; set; }
     }

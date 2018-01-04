@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DiscordBotNew.Settings.Models
 {
-    public class BotSettings : ConfigModel
+    public class BotSettings : Config
     {
         public string Token { get; set; }
         public string GrammarToken { get; set; }

@@ -218,7 +218,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [JoinRemainingParameters, DisplayName("event date/time"), HelpText("ex. \"1/1/11 1:11 PM\"")] DateTime? date = null)
+        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [JoinRemainingParameters, DisplayName("event date/time"), HelpText("ex. \"1/1/11 1:11 PM\"")] DateTimeOffset? date = null)
         {
             IGuildChannel channel;
             switch (context)
