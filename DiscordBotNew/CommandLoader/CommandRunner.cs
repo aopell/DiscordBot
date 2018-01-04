@@ -246,7 +246,16 @@ namespace DiscordBotNew.CommandLoader
                 if (type == typeof(string))
                     return text;
                 if (type == typeof(DateTime) || type == typeof(DateTimeOffset))
-                    return TimeZoneInfo.FindSystemTimeZoneById(context.Bot.DefaultTimeZone).ParseDate(text);
+                {
+                    DateTimeOffset dto = TimeZoneInfo.FindSystemTimeZoneById(context.Bot.DefaultTimeZone).ParseDate(text);
+                    if (type == typeof(DateTime))
+                    {
+                        return dto.DateTime;
+                    }
+
+                    return dto;
+                }
+
                 Type underlyingType;
                 if ((underlyingType = Nullable.GetUnderlyingType(type)) != null)
                 {

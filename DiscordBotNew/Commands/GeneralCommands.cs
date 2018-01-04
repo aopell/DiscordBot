@@ -218,7 +218,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [JoinRemainingParameters, DisplayName("event date/time"), HelpText("ex. \"1/1/11 1:11 PM\"")] DateTime? date = null)
+        public static ICommandResult Countdown(ICommandContext context, CountdownAction action, string name, [JoinRemainingParameters, DisplayName("event date/time"), HelpText("ex. \"1/1/11 1:11 PM\"")] DateTimeOffset? date = null)
         {
             IGuildChannel channel;
             switch (context)
@@ -546,7 +546,7 @@ namespace DiscordBotNew.Commands
             }
         }
 
-        private static readonly Regex TomorrowRegex = new Regex("^Tomorrow(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
+        private static readonly Regex TomorrowRegex = new Regex("^To(?<dayspec>night|morrow)(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
 
         private static readonly Regex DayOfWeekRegex = new Regex("^(?<dow>(?:Mon|Tues|Wednes|Thurs|Fri)day)(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
 
@@ -560,7 +560,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("remind", OverloadPriority = 0), HelpText("Reminds a certain person to do something at a specified date and/or time")]
-        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [HelpText("The date and/or time to send the reminder")] DateTime date, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
+        public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [HelpText("The date and/or time to send the reminder")] DateTimeOffset date, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
             return await CreateReminder(context, user, message, date);
         }
@@ -572,6 +572,11 @@ namespace DiscordBotNew.Commands
             Match regexMatch = null;
             DayOfWeek dayOfReminder = 0;
             timestamp = timestamp.Trim().ToLower();
+
+            // tacked on to support today/tonight/tomorrow in same regex
+            bool reminderIsToday = false;
+            bool reminderIsTonight = false;
+
             if ((regexMatch = DeltaTimeRegex.Match(timestamp)).Success)
             {
                 // delta time from regex
@@ -603,8 +608,18 @@ namespace DiscordBotNew.Commands
             }
             else if ((regexMatch = TomorrowRegex.Match(timestamp)).Success)
             {
-                // tomorrow, local time
-                dayOfReminder = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone).AddDays(1).DayOfWeek;
+                switch (regexMatch.Groups["dayspec"].Value.ToLowerInvariant())
+                {
+                    case "morrow":
+                        // tomorrow, local time
+                        dayOfReminder = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone).AddDays(1).DayOfWeek;
+                        break;
+                    case "night":
+                        reminderIsTonight = true;
+                        reminderIsToday = true;
+                        dayOfReminder = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone).DayOfWeek;
+                        break;
+                }
             }
             else if ((regexMatch = DayOfWeekRegex.Match(timestamp)).Success)
             {
@@ -620,13 +635,18 @@ namespace DiscordBotNew.Commands
             {
                 DateTimeOffset todayLocal = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, context.Bot.DefaultTimeZone);
                 targetTime = todayLocal;
-                // a minimum of 1 day, so "remind me tuesday" on a tuesday will go for next week
-                do
+
+                if (!reminderIsToday)
                 {
-                    targetTime = targetTime.AddDays(1);
-                } while (targetTime.DayOfWeek != dayOfReminder);
+                    // a minimum of 1 day, so "remind me tuesday" on a tuesday will go for next week
+                    do
+                    {
+                        targetTime = targetTime.AddDays(1);
+                    } while (targetTime.DayOfWeek != dayOfReminder);
+                }
 
                 // defaults to 8AM
+                // the "tonight" default for 8PM will be accounted for later
                 int targetHour = 8;
                 int targetMinute = 0;
                 if (regexMatch.Groups["time"].Success)
@@ -639,9 +659,10 @@ namespace DiscordBotNew.Commands
                     }
                 }
 
-                if (regexMatch.Groups["ampm"].Success && regexMatch.Groups["ampm"].Value.ToLower().Trim() == "pm")
+                if ((!regexMatch.Groups["ampm"].Success && reminderIsTonight) || (regexMatch.Groups["ampm"].Success && regexMatch.Groups["ampm"].Value.ToLower().Trim() == "pm"))
                 {
                     // afternoon time, add 12 to hour
+                    // either "PM" or "tonight" (without an explicit specification) = use afternoon times
                     targetHour += 12;
                 }
 
