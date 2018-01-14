@@ -245,12 +245,12 @@ namespace DiscordBotNew.CommandLoader
                     return Enum.Parse(type, text, true);
                 if (type == typeof(string))
                     return text;
-                if (type == typeof(DateTime) || type == typeof(DateTimeOffset))
+                if (type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateTime?) || type == typeof(DateTimeOffset?))
                 {
-                    DateTimeOffset dto = TimeZoneInfo.FindSystemTimeZoneById(context.Bot.DefaultTimeZone).ParseDate(text);
+                    DateTimeOffset? dto = TimeZoneInfo.FindSystemTimeZoneById(context.Bot.DefaultTimeZone).ParseDate(text);
                     if (type == typeof(DateTime))
                     {
-                        return dto.DateTime;
+                        return dto?.DateTime;
                     }
 
                     return dto;

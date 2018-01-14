@@ -14,13 +14,17 @@ namespace DiscordBotNew.CommandLoader
     {
         public static Emote LoadingEmote => Emote.Parse("<:dualring:395760275992739862>");
 
-        public static DateTimeOffset ParseDate(this TimeZoneInfo timezone, string dateTime)
+        public static DateTimeOffset? ParseDate(this TimeZoneInfo timezone, string dateTime)
         {
-            var parsedDateLocal = DateTimeOffset.Parse(dateTime);
-            // must use .DateTime, otherwise timezone does not infer that the passed date is given in its own TZ
-            var tzOffset = timezone.GetUtcOffset(parsedDateLocal.DateTime);
-            var parsedDateTimeZone = new DateTimeOffset(parsedDateLocal.DateTime, tzOffset);
-            return parsedDateTimeZone;
+            if (DateTimeOffset.TryParse(dateTime, out DateTimeOffset parsedDateLocal))
+            {
+                // must use .DateTime, otherwise timezone does not infer that the passed date is given in its own TZ
+                var tzOffset = timezone.GetUtcOffset(parsedDateLocal.DateTime);
+                var parsedDateTimeZone = new DateTimeOffset(parsedDateLocal.DateTime, tzOffset);
+                return parsedDateTimeZone;
+            }
+
+            return null;
         }
 
         public static ChannelType GetChannelType(this IMessage m)
