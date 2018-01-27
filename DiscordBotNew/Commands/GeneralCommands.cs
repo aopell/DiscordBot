@@ -548,7 +548,7 @@ namespace DiscordBotNew.Commands
 
         private static readonly Regex TomorrowRegex = new Regex("^To(?<dayspec>night|morrow)(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
 
-        private static readonly Regex DayOfWeekRegex = new Regex("^(?<dow>(?:Mon|Tues|Wednes|Thurs|Fri)day)(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
+        private static readonly Regex DayOfWeekRegex = new Regex("^(?<dow>(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day)(?: ((?<time>([1-9]|1[0-2])(:[0-5][0-9])?) ?(?<ampm>[AP]M)))?$", RegexOptions.IgnoreCase);
 
         private static readonly Regex DeltaTimeRegex = new Regex("^((?<days>[0-9]+)d(ays?)? ?)?((?<hours>[0-9]+)h(((ou)?rs)?)? ?)?((?<minutes>[0-9]+)m(ins?)? ?)?((?<seconds>[0-9]+)s(ec)? ?)?$", RegexOptions.IgnoreCase);
 
