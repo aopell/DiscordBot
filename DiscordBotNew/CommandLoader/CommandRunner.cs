@@ -141,7 +141,7 @@ namespace DiscordBotNew.CommandLoader
                             object converted = ConvertToType(parameters[i].ParameterType, string.Join(" ", args.Skip(i - 1)), context);
                             if (converted == null)
                             {
-                                error = error ?? await ThrowTypeError(context, string.Join(" ", args.Skip(i - 1)), parameters[i]);
+                                error = error ?? ThrowTypeError(context, string.Join(" ", args.Skip(i - 1)), parameters[i]);
                                 err = true;
                                 break;
                             }
@@ -153,7 +153,7 @@ namespace DiscordBotNew.CommandLoader
                     var result = ConvertToType(parameters[i].ParameterType, args[i - 1], context);
                     if (result == null)
                     {
-                        error = error ?? await ThrowTypeError(context, args[i - 1], parameters[i]);
+                        error = error ?? ThrowTypeError(context, args[i - 1], parameters[i]);
                         err = true;
                         break;
                     }
@@ -165,6 +165,20 @@ namespace DiscordBotNew.CommandLoader
                 error = null;
                 commandToRun = command;
                 break;
+            }
+
+            if (args.Length > 0 && context is DiscordMessageContext d && args[0] == "help")
+            {
+                var embed = new EmbedBuilder()
+                            .WithDescription($"Did you mean `{prefix}help {commandName}`?")
+                            .WithColor(new Color(0x2AC2E9))
+                            .WithAuthor(author =>
+                            {
+                                author
+                                    .WithName("Help")
+                                    .WithIconUrl("https://www.shareicon.net/data/128x128/2016/08/18/809295_info_512x512.png");
+                            });
+                await d.Reply("", embed: embed);
             }
 
             if (error != null)
@@ -181,7 +195,7 @@ namespace DiscordBotNew.CommandLoader
             }
         }
 
-        private static async Task<ICommandResult> ThrowTypeError(ICommandContext context, string value, ParameterInfo parameter)
+        private static ICommandResult ThrowTypeError(ICommandContext context, string value, ParameterInfo parameter)
         {
             string message = $"The value `{value}` of parameter `{parameter.Name}` should be type `{Nullable.GetUnderlyingType(parameter.ParameterType)?.Name ?? parameter.ParameterType.Name}`";
             string title = "Argument Type Error";
