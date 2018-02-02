@@ -191,7 +191,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdowns"), HelpText("Lists countdowns for the current server"), CommandScope(ChannelType.Text)]
-        public static ICommandResult CountdownList(ICommandContext context)
+        public static ICommandResult CountdownList(ICommandContext context, int page = 1)
         {
             IGuildChannel channel;
             switch (context)
@@ -207,9 +207,9 @@ namespace DiscordBotNew.Commands
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("All Countdowns:\n```");
             var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
-            foreach (var countdown in countdowns.OrderBy(x => x.Value))
+            builder.AppendLine($"Countdowns {(page-1)*20+1}-{page*20} (Page {page} of {Math.Ceiling(countdowns.Count/20f)}):\n```");
+            foreach (var countdown in countdowns.OrderBy(x => x.Value).Skip((page-1)*20).Take(20))
             {
                 builder.AppendLine($"{countdown.Key,-32}{(countdown.Value - DateTimeOffset.Now).ToLongString()}");
             }
