@@ -208,8 +208,8 @@ namespace DiscordBotNew.Commands
 
             StringBuilder builder = new StringBuilder();
             var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
-            builder.AppendLine($"Countdowns {(page-1)*20+1}-{page*20} (Page {page} of {Math.Ceiling(countdowns.Count/20f)}):\n```");
-            foreach (var countdown in countdowns.OrderBy(x => x.Value).Skip((page-1)*20).Take(20))
+            builder.AppendLine($"Countdowns {(page - 1) * 20 + 1}-{page * 20} (Page {page} of {Math.Ceiling(countdowns.Count / 20f)}):\n```");
+            foreach (var countdown in countdowns.OrderBy(x => x.Value).Skip((page - 1) * 20).Take(20))
             {
                 builder.AppendLine($"{countdown.Key,-32}{(countdown.Value - DateTimeOffset.Now).ToLongString()}");
             }
@@ -302,7 +302,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("nextcountdown"), HelpText("Views the status of the next upcoming countdown timer"), CommandScope(ChannelType.Text)]
-        public static ICommandResult NextCountdown(ICommandContext context)
+        public static ICommandResult NextCountdown(ICommandContext context, int countdownNumber = 1)
         {
             IGuildChannel channel;
             switch (context)
@@ -317,10 +317,15 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            var countdowns = (context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>()).Where(x => x.Value > DateTimeOffset.Now).OrderBy(x => x.Value);
+            var countdowns = (context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>()).Where(x => x.Value > DateTimeOffset.Now).OrderBy(x => x.Value).ToArray();
             if (!countdowns.Any()) return new ErrorResult("No countdowns");
-            var next = countdowns.First();
-            return new SuccessResult($"{(next.Value - DateTimeOffset.Now).ToLongString()} until {next.Key}");
+            if (countdownNumber > 0 && countdowns.Length >= countdownNumber)
+            {
+                var next = countdowns[countdownNumber - 1];
+                return new SuccessResult($"{(next.Value - DateTimeOffset.Now).ToLongString()} until {next.Key}");
+            }
+
+            return new ErrorResult("Invalid countdown number");
         }
 
         [Command("back"), HelpText("Creates a backronym from the given text")]
