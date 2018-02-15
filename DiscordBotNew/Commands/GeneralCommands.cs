@@ -275,14 +275,17 @@ namespace DiscordBotNew.Commands
 
         private static SuccessResult GenerateCountdownResult(ICommandContext context, string name, DateTimeOffset date)
         {
-            TimeSpan difference = date - DateTimeOffset.Now;
+            var now = DateTimeOffset.Now;
+            TimeSpan difference = date.ToUniversalTime() - now;
+            var then = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(now + difference, context.Bot.DefaultTimeZone);
             if (context is DiscordMessageContext)
             {
                 return new SuccessResult(
                 embed: new EmbedBuilder().WithDescription($"in {difference.ToLongString()}")
                                          .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
-                                         .AddInlineField("📅", date.DateTime.ToShortDateString())
-                                         .AddInlineField("🕒", date.DateTime.ToShortTimeString()));
+                                         .WithColor(0x7689d8)
+                                         .AddInlineField("📅", then.ToString("d"))
+                                         .AddInlineField("🕒", then.ToString("t")));
             }
 
             return new SuccessResult($"{difference.ToLongString()} until {name}");
