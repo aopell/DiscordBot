@@ -208,7 +208,7 @@ namespace DiscordBotNew.Commands
 
             StringBuilder builder = new StringBuilder();
             var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
-            builder.AppendLine($"Countdowns {(page - 1) * 20 + 1}-{page * 20} (Page {page} of {Math.Ceiling(countdowns.Count / 20f)}):\n```");
+            builder.AppendLine($"Countdowns {(page - 1) * 20 + 1}-{Math.Min(page * 20, countdowns.Count)} of {countdowns.Count} (Page {page} of {Math.Ceiling(countdowns.Count / 20f)}):\n```");
             foreach (var countdown in countdowns.OrderBy(x => x.Value).Skip((page - 1) * 20).Take(20))
             {
                 builder.AppendLine($"{countdown.Key,-32}{(countdown.Value - DateTimeOffset.Now).ToLongString()}");
@@ -258,9 +258,10 @@ namespace DiscordBotNew.Commands
             }
 
             if (!date.HasValue) return new ErrorResult("Please provide a date and time when creating or editing a countdown");
-            if (countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower()))
+            var existingCountdown = countdowns.Select(x => x.Key).FirstOrDefault(x => x.ToLower() == name.ToLower());
+            if (existingCountdown != null)
             {
-                countdowns[name] = date.Value;
+                countdowns[existingCountdown] = date.Value;
             }
             else
             {
@@ -269,7 +270,21 @@ namespace DiscordBotNew.Commands
             context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
             context.Bot.Countdowns.SaveSettings();
 
-            TimeSpan difference = countdowns[name] - DateTimeOffset.Now;
+            return GenerateCountdownResult(context, name, countdowns[name]);
+        }
+
+        private static SuccessResult GenerateCountdownResult(ICommandContext context, string name, DateTimeOffset date)
+        {
+            TimeSpan difference = date - DateTimeOffset.Now;
+            if (context is DiscordMessageContext)
+            {
+                return new SuccessResult(
+                embed: new EmbedBuilder().WithDescription($"in {difference.ToLongString()}")
+                                         .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
+                                         .AddInlineField("📅", date.DateTime.ToShortDateString())
+                                         .AddInlineField("🕒", date.DateTime.ToShortTimeString()));
+            }
+
             return new SuccessResult($"{difference.ToLongString()} until {name}");
         }
 
@@ -296,9 +311,7 @@ namespace DiscordBotNew.Commands
                 return new ErrorResult($"No countdown with the name {name} was found. Try creating it.");
             }
 
-            TimeSpan difference = countdowns.First(x => x.Key.ToLower() == name.ToLower()).Value - DateTimeOffset.Now;
-
-            return new SuccessResult($"{difference.ToLongString()} until {name}");
+            return GenerateCountdownResult(context, name, countdowns.First(x => x.Key.ToLower() == name.ToLower()).Value);
         }
 
         [Command("nextcountdown"), HelpText("Views the status of the next upcoming countdown timer"), CommandScope(ChannelType.Text)]
@@ -322,7 +335,7 @@ namespace DiscordBotNew.Commands
             if (countdownNumber > 0 && countdowns.Length >= countdownNumber)
             {
                 var next = countdowns[countdownNumber - 1];
-                return new SuccessResult($"{(next.Value - DateTimeOffset.Now).ToLongString()} until {next.Key}");
+                return GenerateCountdownResult(context, next.Key, next.Value);
             }
 
             return new ErrorResult("Invalid countdown number");
