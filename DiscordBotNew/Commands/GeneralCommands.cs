@@ -251,7 +251,7 @@ namespace DiscordBotNew.Commands
                     break;
                 case CountdownAction.Delete:
                     if (!countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower())) return new ErrorResult($"The countdown with the name {name} does not exist");
-                    countdowns.Remove(name);
+                    countdowns = countdowns.Where(x => x.Key.ToLower() != name.ToLower()).ToDictionary(x => x.Key, x => x.Value);
                     context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
                     context.Bot.Countdowns.SaveSettings();
                     return new SuccessResult($"Successfully deleted countdown {name}");
@@ -285,10 +285,16 @@ namespace DiscordBotNew.Commands
                                          .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
                                          .WithColor(0x7689d8)
                                          .AddInlineField("📅", then.ToString("d"))
-                                         .AddInlineField("🕒", then.ToString("t")));
+                                         .AddInlineField(getClockEmoji(date), then.ToString("t")));
             }
 
             return new SuccessResult($"{difference.ToLongString()} until {name}");
+
+            string getClockEmoji(DateTimeOffset time)
+            {
+                string[] clocks = { "🕛", "🕧", "🕐", "🕜", "🕑", "🕝", "🕒", "🕞", "🕓", "🕟", "🕔", "🕠", "🕕", "🕡", "🕖", "🕢", "🕗", "🕣", "🕘", "🕤", "🕙", "🕥", "🕚", "🕦" };
+                return clocks[time.Hour % 12 * 2 + (time.Minute < 30 ? 0 : 1)];
+            }
         }
 
         [Command("countdown"), HelpText("Views the status of a countdown timer"), CommandScope(ChannelType.Text)]
