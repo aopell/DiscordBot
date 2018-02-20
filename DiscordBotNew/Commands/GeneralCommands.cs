@@ -285,7 +285,7 @@ namespace DiscordBotNew.Commands
                                          .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
                                          .WithColor(0x7689d8)
                                          .AddInlineField("📅", then.ToString("d"))
-                                         .AddInlineField(getClockEmoji(date), then.ToString("t")));
+                                         .AddInlineField(getClockEmoji(then), then.ToString("t")));
             }
 
             return new SuccessResult($"{difference.ToLongString()} until {name}");
@@ -506,6 +506,14 @@ namespace DiscordBotNew.Commands
             {
                 await cx.Message.RemoveReactionAsync(CommandTools.LoadingEmote, context.Bot.Client.CurrentUser);
             }
+
+            if (context is DiscordUserMessageContext m)
+            {
+                var msg = await m.Channel.SendMessageAsync(catUrl);
+                await msg.AddReactionAsync(new Emoji("🐱"));
+                return new SuccessResult();
+            }
+
             return new SuccessResult(catUrl);
         }
 
@@ -536,6 +544,12 @@ namespace DiscordBotNew.Commands
 
             if (obj["status"].Value<string>() == "success")
             {
+                if (context is DiscordUserMessageContext m)
+                {
+                    var msg = await m.Channel.SendMessageAsync(obj["message"].Value<string>());
+                    await msg.AddReactionAsync(new Emoji("🐶"));
+                    return new SuccessResult();
+                }
                 return new SuccessResult(obj["message"].Value<string>());
             }
             return new ErrorResult("Breed not found. For a list of supported breeds, visit https://dog.ceo/dog-api/#breeds-list");
