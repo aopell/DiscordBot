@@ -193,6 +193,8 @@ namespace DiscordBotNew.Commands
         [Command("countdowns"), HelpText("Lists countdowns for the current server"), CommandScope(ChannelType.Text)]
         public static ICommandResult CountdownList(ICommandContext context, int page = 1)
         {
+            const int pageSize = 10;
+
             IGuildChannel channel;
             switch (context)
             {
@@ -206,15 +208,21 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdowns` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            StringBuilder builder = new StringBuilder();
             var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
-            builder.AppendLine($"Countdowns {(page - 1) * 20 + 1}-{Math.Min(page * 20, countdowns.Count)} of {countdowns.Count} (Page {page} of {Math.Ceiling(countdowns.Count / 20f)}):\n```");
-            foreach (var countdown in countdowns.OrderBy(x => x.Value).Skip((page - 1) * 20).Take(20))
+
+
+            EmbedBuilder reminderEmbed = new EmbedBuilder()
+                                         .WithTitle("Countdowns")
+                                         .WithColor(0x7689d8)
+                                         .WithThumbnailUrl("https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
+                                         .WithFooter($"{(page - 1) * pageSize + 1}-{Math.Min(page * pageSize, countdowns.Count)} of {countdowns.Count} | Page {page} of {Math.Ceiling(countdowns.Count / (float)pageSize)}");
+
+            foreach (var countdown in countdowns.OrderBy(x => x.Value).Skip((page - 1) * pageSize).Take(pageSize))
             {
-                builder.AppendLine($"{countdown.Key,-32}{(countdown.Value - DateTimeOffset.Now).ToLongString()}");
+                reminderEmbed.AddField(countdown.Key, (countdown.Value - DateTimeOffset.Now).ToLongString());
             }
-            builder.Append("```");
-            return new SuccessResult(builder.ToString());
+
+            return new SuccessResult(embed: reminderEmbed);
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
@@ -751,6 +759,7 @@ namespace DiscordBotNew.Commands
                     builder.AppendLine($"{"ID",-4}{"Date",-25}{"Sender",-20}Message");
                     if (!reminders.Any()) return new SuccessResult("No reminders!");
                     int counter = 1;
+
                     foreach (var reminder in reminders)
                     {
                         builder.AppendLine($"{counter++,-4}{(reminder.time - DateTimeOffset.Now).ToShortString(),-25}{context.Bot.Client.GetUser(reminder.sender).Username,-20}{reminder.message}");
