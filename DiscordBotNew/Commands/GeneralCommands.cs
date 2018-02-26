@@ -193,7 +193,7 @@ namespace DiscordBotNew.Commands
         [Command("countdowns"), HelpText("Lists countdowns for the current server"), CommandScope(ChannelType.Text)]
         public static ICommandResult CountdownList(ICommandContext context, int page = 1)
         {
-            const int pageSize = 10;
+            const int pageSize = 20;
 
             IGuildChannel channel;
             switch (context)
@@ -210,6 +210,10 @@ namespace DiscordBotNew.Commands
 
             var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
 
+            if (page <= 0 || page > countdowns.Count / pageSize + 1)
+            {
+                return new ErrorResult($"Please use a valid page number (1-{countdowns.Count / pageSize + 1})");
+            }
 
             EmbedBuilder reminderEmbed = new EmbedBuilder()
                                          .WithTitle("Countdowns")
