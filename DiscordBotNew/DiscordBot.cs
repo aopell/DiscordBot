@@ -76,6 +76,7 @@ namespace DiscordBotNew
             Client.MessageReceived += Client_MessageReceived;
             Client.Ready += Client_Ready;
             Client.GuildMemberUpdated += Client_GuildMemberUpdated;
+            Client.ReactionAdded += Client_ReactionAdded;
 
             if (!Settings.GetSetting("token", out string token)) throw new KeyNotFoundException("Token not found in settings file");
             await Client.LoginAsync(TokenType.Bot, token);
@@ -85,6 +86,20 @@ namespace DiscordBotNew
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
+        }
+
+        private async Task Client_ReactionAdded(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
+        {
+            if (arg3.UserId != Client.CurrentUser.Id)
+            {
+                var msg = await arg1.GetOrDownloadAsync();
+                if (msg.Embeds.Count == 1 && PaginatedCommand.FooterRegex.IsMatch(msg.Embeds.First().Footer?.Text ?? ""))
+                {
+                    var context = new DiscordPaginatedMessageContext(arg3.Emote, msg, this);
+                    string prefix = CommandTools.GetCommandPrefix(context, arg2);
+                    await CommandRunner.Run($"{prefix}{context.Command} {context.UpdatedPageNumber}", context, prefix, false);
+                }
+            }
         }
 
         private async Task Client_GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)

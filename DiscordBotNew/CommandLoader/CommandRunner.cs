@@ -287,7 +287,7 @@ namespace DiscordBotNew.CommandLoader
         }
 
         [Command("help", "man"), HelpText("Gets help text for all commands or a specific command")]
-        public static ICommandResult Help(DiscordMessageContext context, [DisplayName("page | command"), HelpText("Specifies page number or gets help for this specific command")]string command = null, [HelpText("Whether or not to show parameter descriptions")] Verbosity verbosity = Verbosity.Default)
+        public static async Task<ICommandResult> Help(DiscordMessageContext context, [DisplayName("page | command"), HelpText("Specifies page number or gets help for this specific command")]string command = null, [HelpText("Whether or not to show parameter descriptions")] Verbosity verbosity = Verbosity.Default)
         {
             const int pageSize = 5;
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
@@ -330,7 +330,7 @@ namespace DiscordBotNew.CommandLoader
                 return new ErrorResult($"The requested command {commandPrefix}{command} was not found");
             }
 
-            foreach (MethodInfo method in paginate ? commands.Skip(pageSize * page - pageSize).Take(pageSize) : commands)
+            foreach (MethodInfo method in commands)
             {
                 var title = new StringBuilder();
                 title.Append("`");
@@ -409,14 +409,15 @@ namespace DiscordBotNew.CommandLoader
                 builder.AddField(title.ToString(), text.ToString());
             }
 
-            if (paginate)
+            if (!paginate) return new SuccessResult(embed: builder);
+
+            await PaginatedCommand.SendPaginatedMessage(context, "help", builder.Fields.Select(x => new KeyValuePair<string, string>(x.Name, x.Value.ToString())).ToList(), page, pageSize, new EmbedBuilder().WithTitle("Help").WithColor(new Color(33, 150, 243)));
+
+            builder.Footer = new EmbedFooterBuilder
             {
-                builder.Footer = new EmbedFooterBuilder
-                {
-                    Text = $"Page {page} of {Math.Floor(Math.Ceiling(commands.Count / (double)pageSize))}"
-                };
-            }
-            return new SuccessResult(embed: builder);
+                Text = $"Page {page} of {Math.Floor(Math.Ceiling(commands.Count / (double)pageSize))}"
+            };
+            return new SuccessResult();
         }
 
         public enum Verbosity

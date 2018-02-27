@@ -191,9 +191,9 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("countdowns"), HelpText("Lists countdowns for the current server"), CommandScope(ChannelType.Text)]
-        public static ICommandResult CountdownList(ICommandContext context, int page = 1)
+        public static async Task<ICommandResult> CountdownList(ICommandContext context, int page = 1)
         {
-            const int pageSize = 20;
+            const int pageSize = 10;
 
             IGuildChannel channel;
             switch (context)
@@ -215,18 +215,23 @@ namespace DiscordBotNew.Commands
                 return new ErrorResult($"Please use a valid page number (1-{countdowns.Count / pageSize + 1})");
             }
 
-            EmbedBuilder reminderEmbed = new EmbedBuilder()
+            EmbedBuilder countdownEmbed = new EmbedBuilder()
                                          .WithTitle("Countdowns")
                                          .WithColor(0x7689d8)
-                                         .WithThumbnailUrl("https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
-                                         .WithFooter($"{(page - 1) * pageSize + 1}-{Math.Min(page * pageSize, countdowns.Count)} of {countdowns.Count} | Page {page} of {Math.Ceiling(countdowns.Count / (float)pageSize)}");
+                                         .WithThumbnailUrl("https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png");
+
+            if (context is DiscordMessageContext m)
+            {
+                await PaginatedCommand.SendPaginatedMessage(m, "countdowns", countdowns.OrderBy(x => x.Value).Select(countdown => new KeyValuePair<string, string>(countdown.Key, (countdown.Value - DateTimeOffset.Now).ToLongString())).ToList(), page, pageSize, countdownEmbed);
+                return new SuccessResult();
+            }
 
             foreach (var countdown in countdowns.OrderBy(x => x.Value).Skip((page - 1) * pageSize).Take(pageSize))
             {
-                reminderEmbed.AddField(countdown.Key, (countdown.Value - DateTimeOffset.Now).ToLongString());
+                countdownEmbed.AddField(countdown.Key, (countdown.Value - DateTimeOffset.Now).ToLongString());
             }
 
-            return new SuccessResult(embed: reminderEmbed);
+            return new SuccessResult(embed: countdownEmbed);
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
@@ -577,21 +582,13 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Decide(ICommandContext context, [JoinRemainingParameters] string[] options = null) => new SuccessResult(options?[random.Next(options.Length)] ?? (random.Next(2) == 0 ? "Yes" : "No"));
 
         [Command("timestamp"), HelpText("Displays the timestamp of a message"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("message ID")] ulong messageId, [DisplayName("channel mention")] string channel)
+        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("discord id")] ulong discordId)
         {
-            IMessage message;
-            if (context.Message.MentionedChannelIds.Count < 1)
-            {
-                message = await context.Channel.GetMessageAsync(messageId);
-            }
-            else
-            {
-                message = await ((IMessageChannel)await context.Guild.GetChannelAsync(context.Message.MentionedChannelIds.First())).GetMessageAsync(messageId);
-            }
+            long unixTime = (long)(((discordId >> 22) + 1420070400000) / 1000);
 
             try
             {
-                return new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(message.Timestamp, context.Bot.DefaultTimeZone).ToString());
+                return new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.FromUnixTimeSeconds(unixTime), context.Bot.DefaultTimeZone).ToString());
             }
             catch (Exception ex) when (ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException)
             {
