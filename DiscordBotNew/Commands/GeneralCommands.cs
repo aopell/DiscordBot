@@ -581,8 +581,8 @@ namespace DiscordBotNew.Commands
         [Command("decide"), HelpText("Picks a random option")]
         public static ICommandResult Decide(ICommandContext context, [JoinRemainingParameters] string[] options = null) => new SuccessResult(options?[random.Next(options.Length)] ?? (random.Next(2) == 0 ? "Yes" : "No"));
 
-        [Command("timestamp"), HelpText("Displays the timestamp of a message"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> Timestamp(DiscordMessageContext context, [DisplayName("discord id")] ulong discordId)
+        [Command("timestamp"), HelpText("Displays the creation timestamp of a message, channel, server, or user"), CommandScope(ChannelType.Text)]
+        public static ICommandResult Timestamp(DiscordMessageContext context, [DisplayName("discord id")] ulong discordId)
         {
             long unixTime = (long)(((discordId >> 22) + 1420070400000) / 1000);
 

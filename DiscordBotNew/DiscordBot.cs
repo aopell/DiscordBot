@@ -228,7 +228,7 @@ namespace DiscordBotNew
                     Color = new Color(224, 79, 95)
                 };
 
-                await Client.GetUser(reminder.receiverId).SendMessageAsync("", embed: embed);
+                var message = await Client.GetUser(reminder.receiverId).SendMessageAsync("", embed: embed);
             }
 
             reminders.RemoveAll(x => x.timestamp < DateTimeOffset.Now);
