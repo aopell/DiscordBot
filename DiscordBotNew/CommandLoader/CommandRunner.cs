@@ -413,10 +413,6 @@ namespace DiscordBotNew.CommandLoader
 
             await PaginatedCommand.SendPaginatedMessage(context, "help", builder.Fields.Select(x => new KeyValuePair<string, string>(x.Name, x.Value.ToString())).ToList(), page, pageSize, new EmbedBuilder().WithTitle("Help").WithColor(new Color(33, 150, 243)));
 
-            builder.Footer = new EmbedFooterBuilder
-            {
-                Text = $"Page {page} of {Math.Floor(Math.Ceiling(commands.Count / (double)pageSize))}"
-            };
             return new SuccessResult();
         }
 

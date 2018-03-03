@@ -35,6 +35,7 @@ namespace DiscordBotNew
 
         private SettingsManager remindersManager;
         private List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)> reminders;
+        private HashSet<ulong> currentlyEditing = new HashSet<ulong>();
 
         public string DefaultTimeZone { get; private set; }
 
@@ -93,11 +94,13 @@ namespace DiscordBotNew
             if (arg3.UserId != Client.CurrentUser.Id)
             {
                 var msg = await arg1.GetOrDownloadAsync();
-                if (msg.Embeds.Count == 1 && PaginatedCommand.FooterRegex.IsMatch(msg.Embeds.First().Footer?.Text ?? ""))
+                if (msg.Embeds.Count == 1 && !currentlyEditing.Contains(msg.Id) && PaginatedCommand.FooterRegex.IsMatch(msg.Embeds.First().Footer?.Text ?? ""))
                 {
+                    currentlyEditing.Add(msg.Id);
                     var context = new DiscordPaginatedMessageContext(arg3.Emote, msg, this);
                     string prefix = CommandTools.GetCommandPrefix(context, arg2);
-                    await CommandRunner.Run($"{prefix}{context.Command} {context.UpdatedPageNumber}", context, prefix, false);
+                    await CommandRunner.Run($"{prefix}{context.Command} {context.UpdatedPageNumber}", context, prefix, true);
+                    currentlyEditing.Remove(msg.Id);
                 }
             }
         }

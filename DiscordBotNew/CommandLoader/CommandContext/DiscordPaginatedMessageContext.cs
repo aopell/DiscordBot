@@ -24,9 +24,9 @@ namespace DiscordBotNew.CommandLoader.CommandContext
                     case ScrollDirection.SkipToBeginning:
                         return 1;
                     case ScrollDirection.Backwards:
-                        return CurrentPageNumber - 1;
+                        return Math.Max(1, CurrentPageNumber - 1);
                     case ScrollDirection.Forwards:
-                        return CurrentPageNumber + 1;
+                        return Math.Min(CurrentPageNumber + 1, LastPage);
                     case ScrollDirection.SkipToEnd:
                         return LastPage;
                     default:
