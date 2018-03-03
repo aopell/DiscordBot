@@ -67,10 +67,7 @@ namespace DiscordBotNew.Commands
         {
             var leaderboard = new Leaderboard(guild.Id, LeaderboardType.Full, bot, creationTime);
 
-            if (bot.Leaderboards.GetSetting(guild.Id.ToString(), out Leaderboard oldLeaderboard))
-            {
-                leaderboard.OldLeaderboard = oldLeaderboard;
-            }
+            leaderboard.OldLeaderboard = bot.Leaderboards.Leaderboards.GetValueOrDefault(guild.Id);
 
             var channels = await guild.GetTextChannelsAsync();
 
@@ -106,8 +103,8 @@ namespace DiscordBotNew.Commands
                 leaderboard.ChannelLookup.Add(channel.Id, channel.Name);
             }
 
-            bot.Leaderboards.AddSetting(guild.Id.ToString(), leaderboard);
-            bot.Leaderboards.SaveSettings();
+            bot.Leaderboards.Leaderboards[guild.Id] = leaderboard;
+            bot.Leaderboards.SaveConfig();
 
             return leaderboard;
         }
@@ -201,9 +198,9 @@ namespace DiscordBotNew.Commands
         {
             var leaderboard = new Leaderboard(guild.Id, LeaderboardType.Delta, bot, creationTime);
 
-            if (bot.Leaderboards.GetSetting(guild.Id.ToString(), out Leaderboard oldLeaderboard))
+            if (bot.Leaderboards.Leaderboards.ContainsKey(guild.Id))
             {
-                leaderboard.OldLeaderboard = oldLeaderboard;
+                leaderboard.OldLeaderboard = bot.Leaderboards.Leaderboards[guild.Id];
             }
             else
             {
@@ -268,8 +265,8 @@ namespace DiscordBotNew.Commands
                 }
             }
 
-            bot.Leaderboards.AddSetting(guild.Id.ToString(), leaderboard);
-            bot.Leaderboards.SaveSettings();
+            bot.Leaderboards.Leaderboards[guild.Id] = leaderboard;
+            bot.Leaderboards.SaveConfig();
 
             return leaderboard;
         }

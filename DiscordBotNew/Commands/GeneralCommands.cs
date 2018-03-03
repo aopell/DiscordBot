@@ -11,6 +11,7 @@ using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.CommandLoader.CommandResult;
+using DiscordBotNew.Settings.Models;
 using Newtonsoft.Json.Linq;
 
 namespace DiscordBotNew.Commands
@@ -77,28 +78,26 @@ namespace DiscordBotNew.Commands
                 id = context.Channel.Id;
             }
 
-            if (context.Bot.Settings.GetSetting("customPrefixes", out Dictionary<ulong, string> prefixes))
+            if (context.Bot.Settings.CustomPrefixes != null)
             {
-                if (prefixes.ContainsKey(id))
+                if (context.Bot.Settings.CustomPrefixes.ContainsKey(id))
                 {
-                    prefixes[id] = prefix;
+                    context.Bot.Settings.CustomPrefixes[id] = prefix;
                 }
                 else
                 {
-                    prefixes.Add(id, prefix);
+                    context.Bot.Settings.CustomPrefixes.Add(id, prefix);
                 }
-
-                context.Bot.Settings.AddSetting("customPrefixes", prefixes);
             }
             else
             {
-                context.Bot.Settings.AddSetting("customPrefixes", new Dictionary<ulong, string>
+                context.Bot.Settings.CustomPrefixes = new Dictionary<ulong, string>
                 {
-                    { id, prefix }
-                });
+                    [id] = prefix
+                };
             }
 
-            context.Bot.Settings.SaveSettings();
+            context.Bot.Settings.SaveConfig();
 
             return new SuccessResult($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}");
         }
@@ -208,7 +207,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdowns` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            var countdowns = context.Bot.Countdowns.Countdowns.GetValueOrDefault(channel.GuildId) ?? new Dictionary<string, DateTimeOffset>();
 
             if (page <= 0 || page > countdowns.Count / pageSize + 1)
             {
@@ -250,7 +249,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            var countdowns = context.Bot.Countdowns.Countdowns.GetValueOrDefault(channel.GuildId) ?? new Dictionary<string, DateTimeOffset>();
             switch (action)
             {
                 case CountdownAction.Create:
@@ -269,8 +268,8 @@ namespace DiscordBotNew.Commands
                 case CountdownAction.Delete:
                     if (!countdowns.Select(x => x.Key.ToLower()).Contains(name.ToLower())) return new ErrorResult($"The countdown with the name {name} does not exist");
                     countdowns = countdowns.Where(x => x.Key.ToLower() != name.ToLower()).ToDictionary(x => x.Key, x => x.Value);
-                    context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
-                    context.Bot.Countdowns.SaveSettings();
+                    context.Bot.Countdowns.Countdowns[channel.GuildId] = countdowns;
+                    context.Bot.Countdowns.SaveConfig();
                     return new SuccessResult($"Successfully deleted countdown {name}");
             }
 
@@ -284,8 +283,8 @@ namespace DiscordBotNew.Commands
             {
                 countdowns.Add(name, date.Value);
             }
-            context.Bot.Countdowns.AddSetting(channel.GuildId.ToString(), countdowns);
-            context.Bot.Countdowns.SaveSettings();
+            context.Bot.Countdowns.Countdowns[channel.GuildId] = countdowns;
+            context.Bot.Countdowns.SaveConfig();
 
             return GenerateCountdownResult(context, name, countdowns[name]);
         }
@@ -330,7 +329,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            var countdowns = context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>();
+            var countdowns = context.Bot.Countdowns.Countdowns.GetValueOrDefault(channel.GuildId) ?? new Dictionary<string, DateTimeOffset>();
 
             if (countdowns.All(x => x.Key.ToLower() != name.ToLower()))
             {
@@ -356,7 +355,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            var countdowns = (context.Bot.Countdowns.GetSetting(channel.GuildId.ToString(), out Dictionary<string, DateTimeOffset> cd) ? cd : new Dictionary<string, DateTimeOffset>()).Where(x => x.Value > DateTimeOffset.Now).OrderBy(x => x.Value).ToArray();
+            var countdowns = (context.Bot.Countdowns.Countdowns.GetValueOrDefault(channel.GuildId) ?? new Dictionary<string, DateTimeOffset>()).Where(x => x.Value > DateTimeOffset.Now).OrderBy(x => x.Value).ToArray();
             if (!countdowns.Any()) return new ErrorResult("No countdowns");
             if (countdownNumber > 0 && countdowns.Length >= countdownNumber)
             {
@@ -422,14 +421,14 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `status` command is not valid in the context `{context.GetType().Name}`");
             }
 
-            if (targetUser == null || context.Bot.CurrentUserStatuses == null)
+            if (targetUser == null || context.Bot.Statuses.Statuses == null)
             {
                 return new ErrorResult("No status history data found");
             }
 
-            if (context.Bot.CurrentUserStatuses.ContainsKey(targetUser.Id))
+            if (context.Bot.Statuses.Statuses.ContainsKey(targetUser.Id))
             {
-                var statusInfo = context.Bot.CurrentUserStatuses[targetUser.Id];
+                var statusInfo = context.Bot.Statuses.Statuses[targetUser.Id];
 
                 Color? color;
                 switch (targetUser.Status)
@@ -484,8 +483,8 @@ namespace DiscordBotNew.Commands
 
             var message = await context.Channel.SendMessageAsync($"Loading dynamic message with command '{command}'");
 
-            List<DynamicMessage> dynamicMessages = context.Bot.DynamicMessages.GetSetting("messages", out dynamicMessages) ? dynamicMessages : new List<DynamicMessage>();
-            dynamicMessages.Add(new DynamicMessage
+            List<DynamicMessageInfo> dynamicMessages = context.Bot.DynamicMessages.Messages ?? new List<DynamicMessageInfo>();
+            dynamicMessages.Add(new DynamicMessageInfo
             {
                 GuildId = context.Guild.Id,
                 ChannelId = message.Channel.Id,
@@ -493,8 +492,8 @@ namespace DiscordBotNew.Commands
                 UpdateInterval = interval,
                 CommandText = command
             });
-            context.Bot.DynamicMessages.AddSetting("messages", dynamicMessages);
-            context.Bot.DynamicMessages.SaveSettings();
+            context.Bot.DynamicMessages.Messages = dynamicMessages;
+            context.Bot.DynamicMessages.SaveConfig();
 
             await message.ModifyAsync(msg => msg.Content = "Loading complete, this message will be updated with dynamic content Soon:tm:");
 
@@ -743,7 +742,16 @@ namespace DiscordBotNew.Commands
                 return new ErrorResult("User not found");
             }
 
-            context.Bot.AddReminder((context.Message.Author.Id, targetUser.Id, targetTime, message));
+            context.Bot.Reminders.Reminders.Add(
+            new ReminderInfo
+            {
+                Message = message,
+                ReceiverId = targetUser.Id,
+                SenderId = context.Message.Author.Id,
+                Timestamp = targetTime
+            });
+
+            context.Bot.Reminders.SaveConfig();
 
             return new SuccessResult($"Reminder set for {TimeZoneInfo.ConvertTimeBySystemTimeZoneId(targetTime, context.Bot.DefaultTimeZone):f}");
         }
@@ -751,7 +759,7 @@ namespace DiscordBotNew.Commands
         [Command("reminders"), HelpText("Lists and manages your upcoming reminders")]
         public static ICommandResult Reminders(DiscordUserMessageContext context, ReminderAction action = ReminderAction.List, int id = 0)
         {
-            var reminders = context.Bot.GetReminders(context.Message.Author.Id).OrderBy(x => x.time);
+            var reminders = context.Bot.Reminders.Reminders.Where(x => x.ReceiverId == context.Message.Author.Id).OrderBy(x => x.Timestamp);
             switch (action)
             {
                 case ReminderAction.List:
@@ -763,7 +771,7 @@ namespace DiscordBotNew.Commands
 
                     foreach (var reminder in reminders)
                     {
-                        builder.AppendLine($"{counter++,-4}{(reminder.time - DateTimeOffset.Now).ToShortString(),-25}{context.Bot.Client.GetUser(reminder.sender).Username,-20}{reminder.message}");
+                        builder.AppendLine($"{counter++,-4}{(reminder.Timestamp - DateTimeOffset.Now).ToShortString(),-25}{context.Bot.Client.GetUser(reminder.SenderId).Username,-20}{reminder.Message}");
                     }
                     builder.AppendLine("```");
                     return new SuccessResult(builder.ToString());
@@ -771,8 +779,9 @@ namespace DiscordBotNew.Commands
                     if (id == 0) return new ErrorResult("Please enter a reminder ID");
                     if (id < 1 || !reminders.Any()) return new ErrorResult("That reminder does not exist");
                     var r = reminders.ToList()[id - 1];
-                    context.Bot.DeleteReminder(r);
-                    return new SuccessResult($"Reminder '{r.message}' deleted");
+                    context.Bot.Reminders.Reminders.Remove(r);
+                    context.Bot.Reminders.SaveConfig();
+                    return new SuccessResult($"Reminder '{r.Message}' deleted");
                 default:
                     return new ErrorResult(new NotImplementedException("This feature doesn't exist"));
             }

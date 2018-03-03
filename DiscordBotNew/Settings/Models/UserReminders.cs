@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace DiscordBotNew.Settings.Models
 {
@@ -18,18 +19,22 @@ namespace DiscordBotNew.Settings.Models
         public string Message { get; set; }
 
         // Backwards compatibility with ValueTuple reminder format
+        [JsonProperty("Item1")]
         private ulong item1
         {
             set => SenderId = value;
         }
+        [JsonProperty("Item2")]
         private ulong item2
         {
             set => ReceiverId = value;
         }
+        [JsonProperty("Item3")]
         private DateTimeOffset item3
         {
             set => Timestamp = value;
         }
+        [JsonProperty("Item4")]
         private string item4
         {
             set => Message = value;

@@ -72,17 +72,16 @@ namespace DiscordBotNew.CommandLoader
 
         public static string GetCommandPrefix(ICommandContext context, IMessageChannel channel)
         {
-            context.Bot.Settings.GetSetting("commandPrefix", out string commandPrefix);
-            commandPrefix = commandPrefix ?? "!";
+            string commandPrefix = context.Bot.Settings.CommandPrefix ?? "!";
 
-            if (context.Bot.Settings.GetSetting("customPrefixes", out Dictionary<ulong, string> prefixes))
+            if (context.Bot.Settings.CustomPrefixes != null)
             {
                 if (channel.GetChannelType() == ChannelType.Text)
                 {
                     var guildChannel = channel as IGuildChannel;
-                    return guildChannel == null || !prefixes.ContainsKey(guildChannel.Guild.Id) ? commandPrefix : prefixes[guildChannel.Guild.Id];
+                    return guildChannel == null || !context.Bot.Settings.CustomPrefixes.ContainsKey(guildChannel.Guild.Id) ? commandPrefix : context.Bot.Settings.CustomPrefixes[guildChannel.Guild.Id];
                 }
-                return prefixes.ContainsKey(channel.Id) ? prefixes[channel.Id] : commandPrefix;
+                return context.Bot.Settings.CustomPrefixes.ContainsKey(channel.Id) ? context.Bot.Settings.CustomPrefixes[channel.Id] : commandPrefix;
             }
 
             return commandPrefix;

@@ -21,20 +21,18 @@ namespace DiscordBotNew
     {
         public DiscordSocketClient Client { get; private set; }
         public DiscordRestClient RestClient { get; private set; }
-        public SettingsManager Settings { get; private set; }
+        public BotSettings Settings { get; private set; }
+        public ChannelDescriptions ChannelDescriptions { get; private set; }
+        public UserStatuses Statuses { get; private set; }
+        public GuildLeaderboards Leaderboards { get; private set; }
+        public DynamicMessages DynamicMessages { get; private set; }
+        public GuildCountdowns Countdowns { get; private set; }
+        public UserReminders Reminders { get; private set; }
 
-        private const string ExceptionFilePath = SettingsManager.BasePath + "exception.txt";
-        public SettingsManager ChannelDescriptions { get; set; }
-        private SettingsManager StatusSettings { get; set; }
-        public SettingsManager Leaderboards { get; private set; }
-        public SettingsManager DynamicMessages { get; private set; }
-        public SettingsManager Countdowns { get; private set; }
+        private const string ExceptionFilePath = Config.BasePath + "exception.txt";
         public GrammarPolice Grammar { get; private set; }
         public List<string> FileNames { get; private set; }
-        public Dictionary<ulong, UserStatusInfo> CurrentUserStatuses { get; private set; }
 
-        private SettingsManager remindersManager;
-        private List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)> reminders;
         private HashSet<ulong> currentlyEditing = new HashSet<ulong>();
 
         public string DefaultTimeZone { get; private set; }
@@ -59,19 +57,13 @@ namespace DiscordBotNew
             //ChannelDescriptions descriptions = Config.LoadConfig<ChannelDescriptions>("descriptions.json");
             //UserStatuses s = Config.LoadConfig<UserStatuses>("statuses.json");
 
-            Settings = new SettingsManager(SettingsManager.BasePath + "settings.json");
-            ChannelDescriptions = new SettingsManager(SettingsManager.BasePath + "descriptions.json");
-            StatusSettings = new SettingsManager(SettingsManager.BasePath + "statuses.json");
-            Leaderboards = new SettingsManager(SettingsManager.BasePath + "leaderboards.json");
-            DynamicMessages = new SettingsManager(SettingsManager.BasePath + "dynamic-messages.json");
-            Countdowns = new SettingsManager(SettingsManager.BasePath + "countdowns.json");
-            remindersManager = new SettingsManager(SettingsManager.BasePath + "reminders.json");
-            StatusSettings.GetSetting("statuses", out Dictionary<ulong, UserStatusInfo> statuses);
-            CurrentUserStatuses = statuses ?? new Dictionary<ulong, UserStatusInfo>();
             Client = new DiscordSocketClient();
             RestClient = new DiscordRestClient();
             Grammar = new GrammarPolice(this);
-            DefaultTimeZone = Settings.GetSetting("timezone", out string tz) ? tz : "UTC";
+
+            ConfigFileManager.LoadConfigFiles(this);
+
+            DefaultTimeZone = Settings.Timezone ?? "UTC";
 
             Client.Log += Log;
             Client.MessageReceived += Client_MessageReceived;
@@ -79,11 +71,11 @@ namespace DiscordBotNew
             Client.GuildMemberUpdated += Client_GuildMemberUpdated;
             Client.ReactionAdded += Client_ReactionAdded;
 
-            if (!Settings.GetSetting("token", out string token)) throw new KeyNotFoundException("Token not found in settings file");
-            await Client.LoginAsync(TokenType.Bot, token);
+            if (Settings.Token == null) throw new KeyNotFoundException("Token not found in settings file");
+            await Client.LoginAsync(TokenType.Bot, Settings.Token);
             await Client.StartAsync();
 
-            await RestClient.LoginAsync(TokenType.Bot, token);
+            await RestClient.LoginAsync(TokenType.Bot, Settings.Token);
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
@@ -113,9 +105,9 @@ namespace DiscordBotNew
             {
                 DateTimeOffset currentTime = DateTimeOffset.Now;
 
-                if (CurrentUserStatuses.ContainsKey(arg2.Id))
+                if (Statuses.Statuses.ContainsKey(arg2.Id))
                 {
-                    var previousStatus = CurrentUserStatuses[arg2.Id];
+                    var previousStatus = Statuses.Statuses[arg2.Id];
 
                     if (arg1.Status != arg2.Status)
                     {
@@ -141,7 +133,7 @@ namespace DiscordBotNew
                         StartedPlaying = null,
                         LastMessageSent = DateTimeOffset.MinValue
                     };
-                    CurrentUserStatuses.Add(arg2.Id, status);
+                    Statuses.Statuses.Add(arg2.Id, status);
                 }
             }
         }
@@ -160,8 +152,8 @@ namespace DiscordBotNew
             void createFile(string filename)
             {
                 FileNames.Add(filename);
-                if (!File.Exists(SettingsManager.BasePath + filename))
-                    File.Create(SettingsManager.BasePath + filename).Close();
+                if (!File.Exists(Config.BasePath + filename))
+                    File.Create(Config.BasePath + filename).Close();
             }
         }
 
@@ -169,19 +161,15 @@ namespace DiscordBotNew
         {
             bool abort = false;
             Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
-            if (ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions))
+            if (ChannelDescriptions.Descriptions != null)
             {
-                foreach (var item in descriptions)
+                foreach (var item in ChannelDescriptions.Descriptions)
                 {
                     var channel = (ITextChannel)Client.GetChannel(item.Key);
                     if (channel == null)
                     {
-                        var channelDescriptions = ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> d)
-                            ? descriptions
-                            : new Dictionary<ulong, string>();
-                        d.Remove(item.Key);
-                        ChannelDescriptions.AddSetting("descriptions", d);
-                        ChannelDescriptions.SaveSettings();
+                        ChannelDescriptions.Descriptions.Remove(item.Key);
+                        ChannelDescriptions.SaveConfig();
                         continue;
                     }
                     string topic = item.Value;
@@ -213,35 +201,32 @@ namespace DiscordBotNew
 
         private async void MinuteTimer(ulong minute)
         {
-            StatusSettings.AddSetting("statuses", CurrentUserStatuses);
-            StatusSettings.SaveSettings();
+            Statuses.SaveConfig();
 
-            foreach (var reminder in reminders.Where(reminder => reminder.timestamp < DateTimeOffset.Now))
+            foreach (var reminder in Reminders.Reminders.Where(reminder => reminder.Timestamp < DateTimeOffset.Now))
             {
                 EmbedBuilder embed = new EmbedBuilder
                 {
                     Author = new EmbedAuthorBuilder
                     {
-                        Name = $"{Client.GetUser(reminder.senderId)?.Username ?? "Someone"} sent you a reminder",
-                        IconUrl = Client.GetUser(reminder.senderId)?.AvatarUrlOrDefaultAvatar()
+                        Name = $"{Client.GetUser(reminder.SenderId)?.Username ?? "Someone"} sent you a reminder",
+                        IconUrl = Client.GetUser(reminder.SenderId)?.AvatarUrlOrDefaultAvatar()
                     },
-                    Description = reminder.message,
-                    Timestamp = reminder.timestamp,
+                    Description = reminder.Message,
+                    Timestamp = reminder.Timestamp,
                     ThumbnailUrl = "http://icons.iconarchive.com/icons/webalys/kameleon.pics/512/Bell-icon.png",
                     Color = new Color(224, 79, 95)
                 };
 
-                var message = await Client.GetUser(reminder.receiverId).SendMessageAsync("", embed: embed);
+                var message = await Client.GetUser(reminder.ReceiverId).SendMessageAsync("", embed: embed);
             }
 
-            reminders.RemoveAll(x => x.timestamp < DateTimeOffset.Now);
-            remindersManager.AddSetting("reminders", reminders);
-            remindersManager.SaveSettings();
+            Reminders.Reminders.RemoveAll(x => x.Timestamp < DateTimeOffset.Now);
+            Reminders.SaveConfig();
 
-            if (DynamicMessages.GetSetting("messages", out List<DynamicMessage> messages))
+            if (DynamicMessages.Messages != null)
             {
-                List<DynamicMessage> toRemove = new List<DynamicMessage>();
-                foreach (var message in messages)
+                foreach (var message in DynamicMessages.Messages)
                 {
                     try
                     {
@@ -255,7 +240,7 @@ namespace DiscordBotNew
 
                         if (discordMessage == null)
                         {
-                            toRemove.Add(message);
+                            DynamicMessages.Messages.Remove(message);
                             continue;
                         }
 
@@ -276,11 +261,7 @@ namespace DiscordBotNew
                     }
                 }
 
-                if (toRemove.Count > 0)
-                {
-                    DynamicMessages.AddSetting("messages", messages.Except(toRemove));
-                    DynamicMessages.SaveSettings();
-                }
+                DynamicMessages.SaveConfig();
             }
         }
 
@@ -296,17 +277,17 @@ namespace DiscordBotNew
                     Game = null,
                     StartedPlaying = null
                 };
-                CurrentUserStatuses.Remove(Client.CurrentUser.Id);
-                CurrentUserStatuses.Add(Client.CurrentUser.Id, status);
+                Statuses.Statuses.Remove(Client.CurrentUser.Id);
+                Statuses.Statuses.Add(Client.CurrentUser.Id, status);
 
-                if (Settings.GetSetting("botOwner", out ulong id))
+                if (Settings.OwnerId != null)
                 {
-                    if (Settings.GetSetting("announceStartup", out bool announce) && announce)
+                    if (Settings.AnnounceStartup.HasValue && Settings.AnnounceStartup.Value)
                     {
 #if !DEBUG
-                        await Client.GetUser(id).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
+                        await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
 #else
-                        await Client.GetUser(id).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
+                        await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
 #endif
                     }
 
@@ -315,18 +296,18 @@ namespace DiscordBotNew
                         string message = "***The bot has restarted due to an error***:\n\n" + File.ReadAllText(ExceptionFilePath);
                         foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500)))
                         {
-                            await Client.GetUser(id).SendMessageAsync(m);
+                            await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync(m);
                         }
                         File.Delete(ExceptionFilePath);
                     }
                 }
 
-                if (Settings.GetSetting("game", out string game))
+                if (Settings.Game != null)
                 {
-                    await Client.SetGameAsync(game);
+                    await Client.SetGameAsync(Settings.Game);
                 }
 
-                reminders = remindersManager.GetSetting("reminders", out List<(ulong senderId, ulong receiverId, DateTimeOffset time, string message)> loadedReminders) ? loadedReminders : new List<(ulong senderId, ulong receiverId, DateTimeOffset timestamp, string message)>();
+                Reminders.Reminders = Reminders.Reminders ?? new List<ReminderInfo>();
 
                 ulong tick = 0;
                 while (true)
@@ -339,8 +320,8 @@ namespace DiscordBotNew
             }
             catch (Exception ex)
             {
-                if (Settings.GetSetting("botOwner", out ulong id))
-                    await Client.GetUser(id).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] {ex}");
+                if (Settings.OwnerId.HasValue)
+                    await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] {ex}");
             }
         }
 
@@ -348,7 +329,7 @@ namespace DiscordBotNew
         {
             var context = new DiscordUserMessageContext((IUserMessage)arg, this);
             string commandPrefix = CommandTools.GetCommandPrefix(context, context.Channel);
-            var status = CurrentUserStatuses.GetValueOrDefault(arg.Author.Id) ??
+            var status = Statuses.Statuses.GetValueOrDefault(arg.Author.Id) ??
                          new UserStatusInfo
                          {
                              StatusLastChanged = DateTimeOffset.MinValue,
@@ -358,7 +339,7 @@ namespace DiscordBotNew
                              LastMessageSent = DateTimeOffset.MinValue
                          };
             status.LastMessageSent = DateTimeOffset.Now;
-            CurrentUserStatuses[arg.Author.Id] = status;
+            Statuses.Statuses[arg.Author.Id] = status;
             if (arg.Content.Trim().StartsWith(commandPrefix) && !arg.Author.IsBot)
             {
                 await CommandRunner.Run(arg.Content, context, commandPrefix, false);
@@ -370,21 +351,5 @@ namespace DiscordBotNew
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
-
-        public void AddReminder((ulong, ulong, DateTimeOffset, string) reminder)
-        {
-            reminders.Add(reminder);
-            remindersManager.AddSetting("reminders", reminders);
-            remindersManager.SaveSettings();
-        }
-
-        public void DeleteReminder((ulong, ulong, DateTimeOffset, string) reminder)
-        {
-            reminders.Remove(reminder);
-            remindersManager.AddSetting("reminders", reminders);
-            remindersManager.SaveSettings();
-        }
-
-        public IEnumerable<(ulong sender, ulong receiver, DateTimeOffset time, string message)> GetReminders(ulong receiver) => reminders.Where(x => x.receiverId == receiver);
     }
 }

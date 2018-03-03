@@ -10,22 +10,14 @@ namespace DiscordBotNew.Settings
 {
     public static class ConfigFileManager
     {
-        private static List<object> ConfigFiles { get; }
-
-        static ConfigFileManager()
+        public static void LoadConfigFiles(DiscordBot bot)
         {
-            ConfigFiles = new List<object>();
             var configs = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsClass && x.Namespace == "DiscordBotNew.Settings.Models" && x.IsSubclassOf(typeof(Config)));
-            foreach (var config in configs)
+            foreach (var property in bot.GetType().GetProperties().Where(x => x.PropertyType.IsSubclassOf(typeof(Config))))
             {
-                object c = JsonConvert.DeserializeObject(File.ReadAllText(Config.BasePath + config.GetCustomAttribute<ConfigFileAttribute>().FileName), config);
-                ConfigFiles.Add(c);
+                object c = JsonConvert.DeserializeObject(File.ReadAllText(Config.BasePath + property.PropertyType.GetCustomAttribute<ConfigFileAttribute>().FileName), property.PropertyType);
+                property.SetValue(bot, c);
             }
-        }
-
-        public static T GetConfig<T>() where T : Config
-        {
-            return (T)ConfigFiles.FirstOrDefault(x => typeof(T) == x.GetType());
         }
     }
 }

@@ -72,9 +72,8 @@ namespace DiscordBotNew.CommandLoader
 
         public string GetPermissionError(DiscordMessageContext context)
         {
-            context.Bot.Settings.GetSetting("botOwner", out ulong id);
-            if (id == context.MessageAuthor.Id) return null;
-            if (botOwnerOnly && id != context.MessageAuthor.Id) return "Only the bot owner can run that command";
+            if (context.Bot.Settings.OwnerId == context.MessageAuthor.Id) return null;
+            if (botOwnerOnly && context.Bot.Settings.OwnerId != context.MessageAuthor.Id) return "Only the bot owner can run that command";
 
             var guildChannel = context.Channel as IGuildChannel;
             if (guildChannel == null) return "That command requires permissions that only exist in server channels";

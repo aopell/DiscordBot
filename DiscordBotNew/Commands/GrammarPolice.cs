@@ -29,11 +29,11 @@ namespace DiscordBotNew.Commands
 
         public async Task Start()
         {
-            if (!parent.Settings.GetSetting("grammarToken", out string token)) throw new KeyNotFoundException("Token not found in settings file");
-            await Client.LoginAsync(TokenType.Bot, token);
+            if (parent.Settings.GrammarToken == null) throw new KeyNotFoundException("Token not found in settings file");
+            await Client.LoginAsync(TokenType.Bot, parent.Settings.GrammarToken);
             await Client.StartAsync();
 
-            await RestClient.LoginAsync(TokenType.Bot, token);
+            await RestClient.LoginAsync(TokenType.Bot, parent.Settings.GrammarToken);
         }
 
         public async Task Stop()

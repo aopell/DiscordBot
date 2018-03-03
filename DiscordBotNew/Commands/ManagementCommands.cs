@@ -81,8 +81,8 @@ namespace DiscordBotNew.Commands
         public static async Task<ICommandResult> Game(DiscordUserMessageContext context, [JoinRemainingParameters] string game)
         {
             await context.Bot.Client.SetGameAsync(game);
-            context.Bot.Settings.AddSetting("game", game);
-            context.Bot.Settings.SaveSettings();
+            context.Bot.Settings.Game = game;
+            context.Bot.Settings.SaveConfig();
             return new SuccessResult("Game updated");
         }
 
@@ -94,14 +94,14 @@ namespace DiscordBotNew.Commands
                 case FileAction.Get:
                     if (filename == null) return new ErrorResult("Please provide a filename");
                     if (!context.Bot.FileNames.Contains(filename)) return new ErrorResult("The provided filename was not a valid option");
-                    await context.Channel.SendFileAsync(SettingsManager.BasePath + filename);
+                    await context.Channel.SendFileAsync(Config.BasePath + filename);
                     return new SuccessResult();
                 case FileAction.Put:
                     if (filename == null) return new ErrorResult("Please provide a filename");
                     if (!context.Bot.FileNames.Contains(filename)) return new ErrorResult("The provided filename was not a valid option");
                     if (context.Message.Attachments.Count == 0) return new ErrorResult("Please attach a file with your message");
                     var attachment = context.Message.Attachments.First();
-                    using (var fileStream = System.IO.File.Create(SettingsManager.BasePath + filename))
+                    using (var fileStream = System.IO.File.Create(Config.BasePath + filename))
                     {
                         await (await new HttpClient().GetStreamAsync(attachment.Url)).CopyToAsync(fileStream);
                     }

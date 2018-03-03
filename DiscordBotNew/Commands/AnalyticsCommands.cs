@@ -122,18 +122,18 @@ namespace DiscordBotNew.Commands
                     });
                 }
 
-                File.WriteAllLines(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt", data);
+                File.WriteAllLines(Config.BasePath + $"analytics-{context.Guild.Id}.txt", data);
 
                 if (!includeMessageText)
                 {
-                    using (var stream = File.OpenRead(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt"))
+                    using (var stream = File.OpenRead(Config.BasePath + $"analytics-{context.Guild.Id}.txt"))
                     {
                         await context.Channel.SendFileAsync(stream, $"analytics-{context.Guild.Id}-{DateTimeOffset.Now.ToUnixTimeSeconds()}.txt");
                     }
                 }
                 else
                 {
-                    await context.Reply($"Finished creating analytics file. Saved as `analytics-{context.Guild.Id}.txt` ({Math.Round(new FileInfo(SettingsManager.BasePath + $"analytics-{context.Guild.Id}.txt").Length / 1048576d, 2)} MB)");
+                    await context.Reply($"Finished creating analytics file. Saved as `analytics-{context.Guild.Id}.txt` ({Math.Round(new FileInfo(Config.BasePath + $"analytics-{context.Guild.Id}.txt").Length / 1048576d, 2)} MB)");
                 }
             }
             return new SuccessResult();

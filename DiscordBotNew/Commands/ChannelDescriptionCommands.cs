@@ -14,9 +14,7 @@ namespace DiscordBotNew.Commands
         [Command("description"), HelpText("Sets a dynamic channel description for the current channel"), CommandScope(ChannelType.Text), Permissions(false, new[] { ChannelPermission.ManageChannel })]
         public static async Task<ICommandResult> Description(DiscordUserMessageContext context, ChannelDescriptionAction action, [HelpText("The dynamic description text, surround commands in {{ }}"), JoinRemainingParameters] string text = "")
         {
-            var channelDescriptions = context.Bot.ChannelDescriptions.GetSetting("descriptions", out Dictionary<ulong, string> descriptions)
-                                          ? descriptions
-                                          : new Dictionary<ulong, string>();
+            var channelDescriptions = context.Bot.ChannelDescriptions.Descriptions ?? new Dictionary<ulong, string>();
 
             var textChannel = (ITextChannel)context.Channel;
 
@@ -37,16 +35,17 @@ namespace DiscordBotNew.Commands
                     {
                         channelDescriptions.Add(textChannel.Id, text);
                     }
-                    context.Bot.ChannelDescriptions.AddSetting("descriptions", channelDescriptions);
-                    context.Bot.ChannelDescriptions.SaveSettings();
+
+                    context.Bot.ChannelDescriptions.Descriptions = channelDescriptions;
+                    context.Bot.ChannelDescriptions.SaveConfig();
                     return new SuccessResult("Description updated sucessfully");
                 case ChannelDescriptionAction.Remove:
                     if (channelDescriptions.ContainsKey(textChannel.Id))
                     {
                         await textChannel.ModifyAsync(x => x.Topic = "");
                         channelDescriptions.Remove(textChannel.Id);
-                        context.Bot.ChannelDescriptions.AddSetting("descriptions", channelDescriptions);
-                        context.Bot.ChannelDescriptions.SaveSettings();
+                        context.Bot.ChannelDescriptions.Descriptions = channelDescriptions;
+                        context.Bot.ChannelDescriptions.SaveConfig();
                         return new SuccessResult("Description removed sucessfully");
                     }
                     else

@@ -10,12 +10,15 @@ namespace DiscordBotNew.Settings.Models
     {
         public string Token { get; set; }
         public string GrammarToken { get; set; }
-        public ulong OwnerId { get; set; }
+        public ulong? OwnerId { get; set; }
         private ulong BotOwner
         {
             set => OwnerId = value;
         }
         public string CommandPrefix { get; set; }
         public string Timezone { get; set; }
+        public bool? AnnounceStartup { get; set; }
+        public string Game { get; set; }
+        public Dictionary<ulong, string> CustomPrefixes { get; set; }
     }
 }
