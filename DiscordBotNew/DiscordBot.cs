@@ -9,6 +9,7 @@ using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
+using DiscordBotNew.CommandLoader.BinaryAsWhitespace;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.Commands;
 using DiscordBotNew.Settings;
@@ -205,6 +206,7 @@ namespace DiscordBotNew
 
             foreach (var reminder in Reminders.Reminders.Where(reminder => reminder.Timestamp < DateTimeOffset.Now))
             {
+                string json = JsonConvert.SerializeObject(reminder.Slim());
                 EmbedBuilder embed = new EmbedBuilder
                 {
                     Author = new EmbedAuthorBuilder
@@ -213,12 +215,16 @@ namespace DiscordBotNew
                         IconUrl = Client.GetUser(reminder.SenderId)?.AvatarUrlOrDefaultAvatar()
                     },
                     Description = reminder.Message,
-                    Timestamp = reminder.Timestamp,
                     ThumbnailUrl = "http://icons.iconarchive.com/icons/webalys/kameleon.pics/512/Bell-icon.png",
+                    Footer = new EmbedFooterBuilder
+                    {
+                        Text = new string(WhitespaceConverter.ConvertToWhitespace(Encoding.UTF8.GetBytes(json)))
+                    },
                     Color = new Color(224, 79, 95)
                 };
 
                 var message = await Client.GetUser(reminder.ReceiverId).SendMessageAsync("", embed: embed);
+                await message.AddReactionAsync(new Emoji("💤"));
             }
 
             Reminders.Reminders.RemoveAll(x => x.Timestamp < DateTimeOffset.Now);

@@ -39,5 +39,31 @@ namespace DiscordBotNew.Settings.Models
         {
             set => Message = value;
         }
+
+        public ReminderSlim Slim() => this;
+    }
+
+    public class ReminderSlim
+    {
+        public ulong S { get; set; }
+        public ulong R { get; set; }
+        public DateTimeOffset T { get; set; }
+        public string M { get; set; }
+
+        public static implicit operator ReminderSlim(ReminderInfo r) => new ReminderSlim
+        {
+            S = r.SenderId,
+            R = r.ReceiverId,
+            T = r.Timestamp,
+            M = r.Message
+        };
+
+        public static implicit operator ReminderInfo(ReminderSlim r) => new ReminderInfo
+        {
+            SenderId = r.S,
+            ReceiverId = r.R,
+            Timestamp = r.T,
+            Message = r.M
+        };
     }
 }
