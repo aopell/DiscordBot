@@ -11,7 +11,7 @@ namespace DiscordBotNew.Commands
 {
     public static class ChannelDescriptionCommands
     {
-        [Command("description"), HelpText("Sets a dynamic channel description for the current channel"), CommandScope(ChannelType.Text), Permissions(false, new[] { ChannelPermission.ManageChannel })]
+        [Command("description"), HelpText("Sets a dynamic channel description for the current channel"), CommandScope(ChannelType.Text), Permissions(false, new[] { ChannelPermission.ManageChannels })]
         public static async Task<ICommandResult> Description(DiscordUserMessageContext context, ChannelDescriptionAction action, [HelpText("The dynamic description text, surround commands in {{ }}"), JoinRemainingParameters] string text = "")
         {
             var channelDescriptions = context.Bot.ChannelDescriptions.Descriptions ?? new Dictionary<ulong, string>();

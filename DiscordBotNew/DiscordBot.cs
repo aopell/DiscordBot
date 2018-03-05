@@ -102,7 +102,7 @@ namespace DiscordBotNew
         {
             await Log(new LogMessage(LogSeverity.Info, "UserUpdate", $"{arg2.Username} updated"));
 
-            if (arg1.Status != arg2.Status || arg1.Game?.Name != arg2.Game?.Name)
+            if (arg1.Status != arg2.Status || arg1.Activity?.Name != arg2.Activity?.Name)
             {
                 DateTimeOffset currentTime = DateTimeOffset.Now;
 
@@ -118,9 +118,9 @@ namespace DiscordBotNew
                             previousStatus.LastOnline = currentTime;
                         }
                     }
-                    if (arg1.Game?.Name != arg2.Game?.Name)
+                    if (arg1.Activity?.Name != arg2.Activity?.Name)
                     {
-                        previousStatus.Game = arg2.Game?.Name;
+                        previousStatus.Game = arg2.Activity?.Name;
                         previousStatus.StartedPlaying = DateTimeOffset.Now;
                     }
                 }
@@ -223,7 +223,7 @@ namespace DiscordBotNew
                     Color = new Color(224, 79, 95)
                 };
 
-                var message = await Client.GetUser(reminder.ReceiverId).SendMessageAsync("", embed: embed);
+                var message = await Client.GetUser(reminder.ReceiverId).SendMessageAsync("", embed: embed.Build());
                 await message.AddReactionAsync(new Emoji("💤"));
             }
 

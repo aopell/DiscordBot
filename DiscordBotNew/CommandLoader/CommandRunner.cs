@@ -178,7 +178,7 @@ namespace DiscordBotNew.CommandLoader
                                     .WithName("Help")
                                     .WithIconUrl("https://www.shareicon.net/data/128x128/2016/08/18/809295_info_512x512.png");
                             });
-                await d.Reply("", embed: embed);
+                await d.Reply("", embed: embed.Build());
             }
 
             if (error != null)
@@ -190,7 +190,9 @@ namespace DiscordBotNew.CommandLoader
             {
                 if (awaitResult) return await RunCommand(context, commandToRun, values.ToArray());
 
+#pragma warning disable 4014
                 RunCommand(context, commandToRun, values.ToArray());
+#pragma warning restore 4014
                 return new SuccessResult();
             }
         }
@@ -298,8 +300,8 @@ namespace DiscordBotNew.CommandLoader
                 Color = new Color(33, 150, 243)
             };
 
-            bool paginate;
-            if (paginate = int.TryParse(command, out int page))
+            bool paginate = int.TryParse(command, out int page);
+            if (paginate)
             {
                 command = null;
             }
@@ -330,6 +332,7 @@ namespace DiscordBotNew.CommandLoader
                 return new ErrorResult($"The requested command {commandPrefix}{command} was not found");
             }
 
+            List<EmbedFieldBuilder> fields = new List<EmbedFieldBuilder>();
             foreach (MethodInfo method in commands)
             {
                 var title = new StringBuilder();
@@ -406,12 +409,16 @@ namespace DiscordBotNew.CommandLoader
                         }
                     }
                 }
-                builder.AddField(title.ToString(), text.ToString());
+                fields.Add(new EmbedFieldBuilder{ Name = title.ToString(), Value = text.ToString()});
             }
 
-            if (!paginate) return new SuccessResult(embed: builder);
+            if (!paginate)
+            {
+                builder.Fields = fields;
+                return new SuccessResult(embed: builder.Build());
+            }
 
-            await PaginatedCommand.SendPaginatedMessage(context, "help", builder.Fields.Select(x => new KeyValuePair<string, string>(x.Name, x.Value.ToString())).ToList(), page, pageSize, new EmbedBuilder().WithTitle("Help").WithColor(new Color(33, 150, 243)));
+            await PaginatedCommand.SendPaginatedMessage(context, "help", fields.Select(x => new KeyValuePair<string, string>(x.Name, x.Value.ToString())).ToList(), page, pageSize, new EmbedBuilder().WithTitle("Help").WithColor(new Color(33, 150, 243)));
 
             return new SuccessResult();
         }

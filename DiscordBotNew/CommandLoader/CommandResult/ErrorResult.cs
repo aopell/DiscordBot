@@ -40,7 +40,7 @@ namespace DiscordBotNew.CommandLoader.CommandResult
                 }
             };
 
-            return builder;
+            return builder.Build();
         }
 
         public override string ToString() => $"**{Title}**\n{Message}";

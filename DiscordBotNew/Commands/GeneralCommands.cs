@@ -177,7 +177,7 @@ namespace DiscordBotNew.Commands
                         ImageUrl = attachment.Url,
                         Title = attachment.Filename,
                         Url = attachment.Url
-                    });
+                    }.Build());
                 }
             }
 
@@ -186,7 +186,7 @@ namespace DiscordBotNew.Commands
                 await context.Channel.SendMessageAsync("", embed: embed);
             }
 
-            return new SuccessResult(embed: builder);
+            return new SuccessResult(embed: builder.Build());
         }
 
         [Command("countdowns"), HelpText("Lists countdowns for the current server"), CommandScope(ChannelType.Text)]
@@ -230,7 +230,7 @@ namespace DiscordBotNew.Commands
                 countdownEmbed.AddField(countdown.Key, (countdown.Value - DateTimeOffset.Now).ToLongString());
             }
 
-            return new SuccessResult(embed: countdownEmbed);
+            return new SuccessResult(embed: countdownEmbed.Build());
         }
 
         [Command("countdown"), HelpText("Creates, edits, or deletes a countdown"), CommandScope(ChannelType.Text)]
@@ -249,6 +249,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult($"The `countdown` command is not valid in the context `{context.GetType().Name}`");
             }
 
+            context.Bot.Countdowns.Countdowns = context.Bot.Countdowns.Countdowns ?? new Dictionary<ulong, Dictionary<string, DateTimeOffset>>();
             var countdowns = context.Bot.Countdowns.Countdowns.GetValueOrDefault(channel.GuildId) ?? new Dictionary<string, DateTimeOffset>();
             switch (action)
             {
@@ -300,8 +301,8 @@ namespace DiscordBotNew.Commands
                 embed: new EmbedBuilder().WithDescription($"in {difference.ToLongString()}")
                                          .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
                                          .WithColor(0x7689d8)
-                                         .AddInlineField("📅", then.ToString("d"))
-                                         .AddInlineField(getClockEmoji(then), then.ToString("t")));
+                                         .AddField("📅", then.ToString("d"),true)
+                                         .AddField(getClockEmoji(then), then.ToString("t"),true).Build());
             }
 
             return new SuccessResult($"{difference.ToLongString()} until {name}");
@@ -459,7 +460,7 @@ namespace DiscordBotNew.Commands
                     Description = targetUser.Status.ToString()
                 };
 
-                statusEmbed.AddInlineField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString());
+                statusEmbed.AddField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString(),true);
                 if (targetUser.Status != UserStatus.Online)
                     statusEmbed.AddField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
                 if (statusInfo.Game != null)
@@ -470,7 +471,7 @@ namespace DiscordBotNew.Commands
                     statusEmbed.AddField("Last Message Sent", text.Length > 0 ? $"{text} ago" : "Just now");
                 }
 
-                return new SuccessResult(embed: statusEmbed);
+                return new SuccessResult(embed: statusEmbed.Build());
             }
 
             return new ErrorResult("User status history not found");

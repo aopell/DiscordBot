@@ -74,7 +74,7 @@ namespace DiscordBotNew.Commands
             foreach (ITextChannel channel in channels)
             {
                 ChannelPermissions permissions = (await guild.GetCurrentUserAsync()).GetPermissions(channel);
-                if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
+                if (!permissions.ViewChannel || !permissions.ReadMessageHistory)
                 {
                     continue;
                 }
@@ -141,7 +141,7 @@ namespace DiscordBotNew.Commands
             foreach (ITextChannel channel in channels)
             {
                 ChannelPermissions permissions = (await guild.GetCurrentUserAsync()).GetPermissions(channel);
-                if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
+                if (!permissions.ViewChannel || !permissions.ReadMessageHistory)
                 {
                     continue;
                 }
@@ -149,7 +149,7 @@ namespace DiscordBotNew.Commands
                 int messagesInChannel = 0;
                 oldLeaderboard.ChannelMessages[channel.Id] = 0;
 
-                var messages = (await channel.GetMessagesAsync(limit: 100).Flatten()).ToList();
+                var messages = (await channel.GetMessagesAsync(limit: 100).FlattenAsync()).ToList();
                 IMessage lastMessage;
                 do
                 {
@@ -184,7 +184,7 @@ namespace DiscordBotNew.Commands
                         }
                     }
 
-                    messages = (await channel.GetMessagesAsync(lastMessage, Direction.Before).Flatten()).ToList();
+                    messages = (await channel.GetMessagesAsync(lastMessage, Direction.Before).FlattenAsync()).ToList();
                 } while (lastMessage.Timestamp > deltaTime);
 
                 leaderboard.ChannelMessages[channel.Id] = messagesInChannel;
@@ -217,14 +217,14 @@ namespace DiscordBotNew.Commands
             foreach (ITextChannel channel in channels)
             {
                 ChannelPermissions permissions = (await guild.GetCurrentUserAsync()).GetPermissions(channel);
-                if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
+                if (!permissions.ViewChannel || !permissions.ReadMessageHistory)
                 {
                     continue;
                 }
 
                 int messagesInChannel = 0;
 
-                var messages = (await channel.GetMessagesAsync(limit: 100).Flatten()).ToList();
+                var messages = (await channel.GetMessagesAsync(limit: 100).FlattenAsync()).ToList();
                 IMessage lastMessage;
                 do
                 {
@@ -247,7 +247,7 @@ namespace DiscordBotNew.Commands
                         messagesInChannel++;
                     }
 
-                    messages = (await channel.GetMessagesAsync(lastMessage, Direction.Before).Flatten()).ToList();
+                    messages = (await channel.GetMessagesAsync(lastMessage, Direction.Before).FlattenAsync()).ToList();
                 } while (lastMessage.Timestamp > leaderboard.OldLeaderboard.TimeGenerated);
 
                 if (!leaderboard.ChannelMessages.ContainsKey(channel.Id))

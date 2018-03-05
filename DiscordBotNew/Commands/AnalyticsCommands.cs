@@ -102,7 +102,7 @@ namespace DiscordBotNew.Commands
                 foreach (ITextChannel channel in channels)
                 {
                     ChannelPermissions permissions = (await context.Guild.GetCurrentUserAsync()).GetPermissions(channel);
-                    if (!permissions.ReadMessages || !permissions.ReadMessageHistory)
+                    if (!permissions.ViewChannel || !permissions.ReadMessageHistory)
                     {
                         continue;
                     }

@@ -14,7 +14,7 @@ namespace DiscordBotNew.CommandLoader
     {
         public static Regex FooterRegex = new Regex("(?<command>.*?) \\| \\d+-\\d+ of \\d+ \\| Page (?<pageNumber>\\d+) of (?<lastPage>\\d+)");
 
-        private static EmbedBuilder GeneratePaginatedEmbed(string command, List<KeyValuePair<string, string>> content, int pageNumber, int pageSize, EmbedBuilder template = null)
+        private static Embed GeneratePaginatedEmbed(string command, List<KeyValuePair<string, string>> content, int pageNumber, int pageSize, EmbedBuilder template = null)
         {
             if (template == null)
             {
@@ -29,7 +29,7 @@ namespace DiscordBotNew.CommandLoader
                 template.AddField(f.Key, f.Value);
             }
 
-            return template;
+            return template.Build();
         }
 
         public static async Task SendPaginatedMessage(DiscordMessageContext context, string command, List<KeyValuePair<string, string>> content, int pageNumber, int pageSize, EmbedBuilder template = null)

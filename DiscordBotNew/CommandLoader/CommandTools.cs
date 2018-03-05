@@ -92,7 +92,7 @@ namespace DiscordBotNew.CommandLoader
 
         public static async Task<IUser> GetUserByUsername(string username, IMessageChannel channel)
         {
-            var users = (await channel.GetUsersAsync().Flatten()).Where(user => user.Username == username).ToArray();
+            var users = (await channel.GetUsersAsync().FlattenAsync()).Where(user => user.Username == username).ToArray();
             if (users.Length == 1)
                 return users[0];
             if (users.Length > 0)

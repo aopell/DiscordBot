@@ -83,7 +83,7 @@ namespace DiscordBotNew
                     messageToSend = p.Options.OrderByDescending(x => x.Votes.Count).Where(o => !winners.Contains(o)).Aggregate(messageToSend, (current, o) => current + $"{o.Text} ({o.Votes.Count} votes){(p.Anonymous ? "" : $": {string.Join(", ", (from v in o.Votes select (v as IGuildUser)?.Nickname ?? v.Username))}")}\n");
                     builder.Description = messageToSend;
                     polls.Remove(c.Id);
-                    return new SuccessResult(embed: builder);
+                    return new SuccessResult(embed: builder.Build());
                 }
             }
 
@@ -170,7 +170,7 @@ namespace DiscordBotNew
 
             for (int i = 0; i < Options.Count; i++)
             {
-                builer.AddInlineField((i + 1).ToString(), Options[i].Text);
+                builer.AddField((i + 1).ToString(), Options[i].Text, true);
             }
 
             if (TotalVotes > 0)
@@ -178,7 +178,7 @@ namespace DiscordBotNew
                 builer.AddField("Already Voted", string.Join(", ", Voters.Select(voter => voter.Key.NicknameOrUsername())));
             }
 
-            return builer;
+            return builer.Build();
         }
     }
 

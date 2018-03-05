@@ -34,7 +34,7 @@ namespace DiscordBotNew.CommandLoader.CommandContext
             const int maxMessageLength = 1500;
             foreach (string m in Enumerable.Range(0, message.Length / maxMessageLength + 1).Select(i => message.Substring(i * maxMessageLength, message.Length - i * maxMessageLength > maxMessageLength ? maxMessageLength : message.Length - i * maxMessageLength)))
             {
-                await ReplyError(m, ex.GetType().Name);
+                await ReplyError($"```{m}```", ex.GetType().Name);
             }
 #else
             await ReplyError(ex.Message, ex.GetType().Name);
@@ -61,7 +61,7 @@ namespace DiscordBotNew.CommandLoader.CommandContext
                 }
             };
 
-            return embed;
+            return embed.Build();
         }
 
         protected static Embed BuildErrorEmbed(Exception error) => BuildErrorEmbed(error.Message, $"Error - {error.GetType().Name}");
