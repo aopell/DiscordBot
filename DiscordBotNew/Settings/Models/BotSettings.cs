@@ -11,6 +11,7 @@ namespace DiscordBotNew.Settings.Models
         public string Token { get; set; }
         public string GrammarToken { get; set; }
         public ulong? OwnerId { get; set; }
+        [JsonProperty("botOwner")]
         private ulong BotOwner
         {
             set => OwnerId = value;
@@ -20,5 +21,6 @@ namespace DiscordBotNew.Settings.Models
         public bool? AnnounceStartup { get; set; }
         public string Game { get; set; }
         public Dictionary<ulong, string> CustomPrefixes { get; set; }
+        public ulong? StartupReplyChannel { get; set; }
     }
 }

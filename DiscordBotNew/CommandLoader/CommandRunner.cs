@@ -167,7 +167,7 @@ namespace DiscordBotNew.CommandLoader
                 break;
             }
 
-            if (args.Length > 0 && context is DiscordMessageContext d && args[0] == "help")
+            if (args.Length > 0 && context is DiscordMessageContext d && args[0] == "help" && commandName != "help")
             {
                 var embed = new EmbedBuilder()
                             .WithDescription($"Did you mean `{prefix}help {commandName}`?")
@@ -409,7 +409,7 @@ namespace DiscordBotNew.CommandLoader
                         }
                     }
                 }
-                fields.Add(new EmbedFieldBuilder{ Name = title.ToString(), Value = text.ToString()});
+                fields.Add(new EmbedFieldBuilder { Name = title.ToString(), Value = text.ToString() });
             }
 
             if (!paginate)

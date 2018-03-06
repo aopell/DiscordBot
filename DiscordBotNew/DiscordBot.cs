@@ -308,6 +308,13 @@ namespace DiscordBotNew
                     }
                 }
 
+                if (Settings.StartupReplyChannel.HasValue)
+                {
+                    await ((ITextChannel)Client.GetChannel(Settings.StartupReplyChannel.Value)).SendMessageAsync("I return! You can never escape me!");
+                    Settings.StartupReplyChannel = null;
+                    Settings.SaveConfig();
+                }
+
                 if (Settings.Game != null)
                 {
                     await Client.SetGameAsync(Settings.Game);

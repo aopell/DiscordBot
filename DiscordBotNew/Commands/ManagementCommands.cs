@@ -65,7 +65,7 @@ namespace DiscordBotNew.Commands
             var bulkDelete = toDelete.Where(msg => msg.Timestamp + TimeSpan.FromDays(14) > DateTimeOffset.Now);
             var remaining = toDelete.Except(bulkDelete);
 
-            await ((ITextChannel) context.Channel).DeleteMessagesAsync(bulkDelete);
+            await ((ITextChannel)context.Channel).DeleteMessagesAsync(bulkDelete);
             foreach (IMessage msg in remaining)
             {
                 await msg.DeleteAsync();
@@ -75,7 +75,13 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("kill"), HelpText("Kills the bot"), Permissions(ownerOnly: true)]
-        public static void Kill(DiscordUserMessageContext context) => Environment.Exit(0);
+        public static async void Kill(DiscordUserMessageContext context)
+        {
+            await context.Reply("Why??? Why do you do this to meeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+            context.Bot.Settings.StartupReplyChannel = context.Channel.Id;
+            context.Bot.Settings.SaveConfig();
+            Environment.Exit(0);
+        }
 
         [Command("game"), HelpText("Sets the current game for the bot"), Permissions(ownerOnly: true)]
         public static async Task<ICommandResult> Game(DiscordUserMessageContext context, [JoinRemainingParameters] string game)

@@ -301,8 +301,8 @@ namespace DiscordBotNew.Commands
                 embed: new EmbedBuilder().WithDescription($"in {difference.ToLongString()}")
                                          .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
                                          .WithColor(0x7689d8)
-                                         .AddField("📅", then.ToString("d"),true)
-                                         .AddField(getClockEmoji(then), then.ToString("t"),true).Build());
+                                         .AddField("🗓", then.ToString("dddd, MMMM d, yyyy"), true)
+                                         .AddField(getClockEmoji(then), then.ToString("t"), true).Build());
             }
 
             return new SuccessResult($"{difference.ToLongString()} until {name}");
@@ -460,7 +460,7 @@ namespace DiscordBotNew.Commands
                     Description = targetUser.Status.ToString()
                 };
 
-                statusEmbed.AddField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString(),true);
+                statusEmbed.AddField($"{targetUser.Status} For", (DateTimeOffset.Now - statusInfo.StatusLastChanged).ToLongString(), true);
                 if (targetUser.Status != UserStatus.Online)
                     statusEmbed.AddField("Last Online", $"{(DateTimeOffset.Now - statusInfo.LastOnline).ToLongString()} ago");
                 if (statusInfo.Game != null)
