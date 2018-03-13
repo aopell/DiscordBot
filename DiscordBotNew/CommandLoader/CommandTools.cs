@@ -81,6 +81,7 @@ namespace DiscordBotNew.CommandLoader
                     var guildChannel = channel as IGuildChannel;
                     return guildChannel == null || !context.Bot.Settings.CustomPrefixes.ContainsKey(guildChannel.Guild.Id) ? commandPrefix : context.Bot.Settings.CustomPrefixes[guildChannel.Guild.Id];
                 }
+
                 return context.Bot.Settings.CustomPrefixes.ContainsKey(channel.Id) ? context.Bot.Settings.CustomPrefixes[channel.Id] : commandPrefix;
             }
 
@@ -117,6 +118,7 @@ namespace DiscordBotNew.CommandLoader
                 response.Append(difference.Minutes != 0 ? $"{difference.Minutes} minute{(difference.Minutes == 1 ? "" : "s")} " : "");
                 response.Append(showSeconds && difference.Seconds != 0 ? $"{difference.Seconds} second{(difference.Seconds == 1 ? "" : "s")}" : "");
             }
+
             return response.ToString().Trim();
         }
 
@@ -137,6 +139,7 @@ namespace DiscordBotNew.CommandLoader
                 response.Append(difference.Minutes != 0 ? $"{difference.Minutes}m " : "");
                 response.Append(showSeconds && difference.Seconds != 0 ? $"{difference.Seconds}s" : "");
             }
+
             return response.ToString().Trim();
         }
 
@@ -239,12 +242,44 @@ namespace DiscordBotNew.CommandLoader
                     currentString.Append(input[i]);
                 }
             }
+
             if (!string.IsNullOrWhiteSpace(currentString.ToString()))
             {
                 args.Add(currentString.ToString());
             }
 
             return args.ToArray();
+        }
+
+        public static EmbedBuilder GenerateCountdownEmbed(DiscordBot bot, string name, DateTimeOffset date)
+        {
+            var now = DateTimeOffset.Now;
+            TimeSpan difference = date.ToUniversalTime() - now;
+            var then = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(now + difference, bot.DefaultTimeZone);
+            return new EmbedBuilder().WithDescription($"in {difference.ToLongString()}")
+                                     .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
+                                     .WithColor(0x7689d8)
+                                     .AddField("🗓", then.ToString("dddd, MMMM d, yyyy"), true)
+                                     .AddField(GetClockEmoji(then), then.ToString("t"), true);
+        }
+
+        public static EmbedBuilder GenerateCountdownCompleteEmbed(DiscordBot bot, string name, DateTimeOffset date)
+        {
+            var now = DateTimeOffset.Now;
+            TimeSpan difference = date.ToUniversalTime() - now;
+            var then = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(now + difference, bot.DefaultTimeZone);
+            return new EmbedBuilder().WithTitle("Countdown Complete")
+                                     .WithDescription(name)
+                                     .WithThumbnailUrl("https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
+                                     .WithColor(0xDE2A42)
+                                     .AddField("🗓", then.ToString("dddd, MMMM d, yyyy"), true)
+                                     .AddField(GetClockEmoji(then), then.ToString("t"), true);
+        }
+
+        private static string GetClockEmoji(DateTimeOffset time)
+        {
+            string[] clocks = { "🕛", "🕧", "🕐", "🕜", "🕑", "🕝", "🕒", "🕞", "🕓", "🕟", "🕔", "🕠", "🕕", "🕡", "🕖", "🕢", "🕗", "🕣", "🕘", "🕤", "🕙", "🕥", "🕚", "🕦" };
+            return clocks[time.Hour % 12 * 2 + (time.Minute < 30 ? 0 : 1)];
         }
     }
 }

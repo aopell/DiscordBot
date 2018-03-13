@@ -9,7 +9,6 @@ using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
-using DiscordBotNew.CommandLoader.BinaryAsWhitespace;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.Commands;
 using DiscordBotNew.Settings;
@@ -204,9 +203,35 @@ namespace DiscordBotNew
         {
             Statuses.SaveConfig();
 
+            bool countdownsModified = false;
+            foreach (ulong guild in Countdowns.Countdowns.Keys)
+            {
+                ulong? channel = (Countdowns.CountdownChannels?.ContainsKey(guild) ?? false) ? Countdowns.CountdownChannels[guild] : (ulong?)null;
+                if (channel == null) continue;
+                foreach (var countdown in Countdowns.Countdowns[guild])
+                {
+                    if (countdown.Value < DateTimeOffset.Now)
+                    {
+                        await ((ITextChannel)Client.GetChannel(channel.Value)).SendMessageAsync("", embed: CommandTools.GenerateCountdownCompleteEmbed(this, countdown.Key, countdown.Value).Build());
+                        countdownsModified = true;
+                    }
+                }
+            }
+
+            if (countdownsModified)
+            {
+                foreach (ulong guild in Countdowns.Countdowns.Keys)
+                {
+                    foreach (string key in Countdowns.Countdowns[guild].Where(x => x.Value < DateTimeOffset.Now).Select(x => x.Key).ToArray())
+                    {
+                        Countdowns.Countdowns[guild].Remove(key);
+                    }
+                }
+                Countdowns.SaveConfig();
+            }
+
             foreach (var reminder in Reminders.Reminders.Where(reminder => reminder.Timestamp < DateTimeOffset.Now))
             {
-                string json = JsonConvert.SerializeObject(reminder.Slim());
                 EmbedBuilder embed = new EmbedBuilder
                 {
                     Author = new EmbedAuthorBuilder
@@ -216,10 +241,7 @@ namespace DiscordBotNew
                     },
                     Description = reminder.Message,
                     ThumbnailUrl = "http://icons.iconarchive.com/icons/webalys/kameleon.pics/512/Bell-icon.png",
-                    Footer = new EmbedFooterBuilder
-                    {
-                        Text = new string(WhitespaceConverter.ConvertToWhitespace(Encoding.UTF8.GetBytes(json)))
-                    },
+                    Timestamp = reminder.Timestamp,
                     Color = new Color(224, 79, 95)
                 };
 

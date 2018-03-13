@@ -8,5 +8,6 @@ namespace DiscordBotNew.Settings.Models
     public class GuildCountdowns : Config
     {
         public Dictionary<ulong, Dictionary<string, DateTimeOffset>> Countdowns { get; set; }
+        public Dictionary<ulong, ulong> CountdownChannels { get; set; }
     }
 }

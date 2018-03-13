@@ -39,19 +39,5 @@ namespace DiscordBotNew.Settings.Models
         {
             set => Message = value;
         }
-
-        public ReminderUserInfoSlim Slim() => this;
-    }
-
-    public class ReminderUserInfoSlim
-    {
-        public ulong S { get; set; }
-        public ulong R { get; set; }
-
-        public static implicit operator ReminderUserInfoSlim(ReminderInfo r) => new ReminderUserInfoSlim
-        {
-            S = r.SenderId,
-            R = r.ReceiverId
-        };
     }
 }
