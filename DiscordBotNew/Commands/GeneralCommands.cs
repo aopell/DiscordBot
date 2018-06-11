@@ -187,7 +187,7 @@ namespace DiscordBotNew.Commands
                 await context.Channel.SendMessageAsync("", embed: embed);
             }
 
-            return new SuccessResult(embed: builder.Build());
+            return new SuccessResult(messageChannel is IGuildChannel g ? $"Jump to message: <https://discordapp.com/channels/{g.GuildId}/{messageChannel.Id}?jump={id}>" : "", embed: builder.Build());
         }
 
         [Command("back"), HelpText("Creates a backronym from the given text")]
