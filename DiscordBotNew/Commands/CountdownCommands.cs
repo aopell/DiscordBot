@@ -113,7 +113,7 @@ namespace DiscordBotNew.Commands
             return GenerateCountdownResult(context, name, countdowns[name]);
         }
 
-        private static SuccessResult GenerateCountdownResult(ICommandContext context, string name, DateTimeOffset date) => context is DiscordMessageContext ? new SuccessResult(embed: CommandTools.GenerateCountdownEmbed(context.Bot, name, date).Build()) : new SuccessResult($"{(date.ToUniversalTime() - DateTimeOffset.Now).ToLongString()} until {name}");
+        private static SuccessResult GenerateCountdownResult(ICommandContext context, string name, DateTimeOffset date) => context is DiscordMessageContext ? new SuccessResult(embed: CommandTools.GenerateCountdownEmbed(context.Bot, name, date).Build()) : new SuccessResult($"{(date.ToUniversalTime() - DateTimeOffset.Now).ToLongString(!(context is DiscordChannelDescriptionContext))} until {name}");
 
         [Command("countdown"), HelpText("Views the status of a countdown timer"), CommandScope(ChannelType.Text)]
         public static ICommandResult Countdown(ICommandContext context, [JoinRemainingParameters] string name)
