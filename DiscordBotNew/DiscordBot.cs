@@ -332,7 +332,14 @@ namespace DiscordBotNew
 
                 if (Settings.StartupReplyChannel.HasValue)
                 {
-                    await ((ITextChannel)Client.GetChannel(Settings.StartupReplyChannel.Value)).SendMessageAsync("I return! You can never escape me!");
+                    try
+                    {
+                        await ((ITextChannel)Client.GetChannel(Settings.StartupReplyChannel.Value)).SendMessageAsync("I return! You can never escape me!");
+                    }
+                    catch
+                    {
+                        // Fail silently and set to null
+                    }
                     Settings.StartupReplyChannel = null;
                     Settings.SaveConfig();
                 }
@@ -356,7 +363,7 @@ namespace DiscordBotNew
             catch (Exception ex)
             {
                 if (Settings.OwnerId.HasValue)
-                    await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] {ex}");
+                    await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] ```{ex}\n\n{ex.InnerException}```");
             }
         }
 
