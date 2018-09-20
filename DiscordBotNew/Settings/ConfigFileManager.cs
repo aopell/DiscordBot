@@ -15,7 +15,10 @@ namespace DiscordBotNew.Settings
             var configs = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsClass && x.Namespace == "DiscordBotNew.Settings.Models" && x.IsSubclassOf(typeof(Config)));
             foreach (var property in bot.GetType().GetProperties().Where(x => x.PropertyType.IsSubclassOf(typeof(Config))))
             {
-                object c = JsonConvert.DeserializeObject(File.ReadAllText(Config.BasePath + property.PropertyType.GetCustomAttribute<ConfigFileAttribute>().FileName), property.PropertyType);
+                string filePath = Config.BasePath + property.PropertyType.GetCustomAttribute<ConfigFileAttribute>().FileName;
+
+                if (!File.Exists(filePath)) continue;
+                object c = JsonConvert.DeserializeObject(File.ReadAllText(filePath), property.PropertyType);
                 property.SetValue(bot, c);
             }
         }

@@ -21,13 +21,14 @@ namespace DiscordBotNew
     {
         public DiscordSocketClient Client { get; private set; }
         public DiscordRestClient RestClient { get; private set; }
-        public BotSettings Settings { get; private set; }
-        public ChannelDescriptions ChannelDescriptions { get; private set; }
-        public UserStatuses Statuses { get; private set; }
-        public GuildLeaderboards Leaderboards { get; private set; }
-        public DynamicMessages DynamicMessages { get; private set; }
-        public GuildCountdowns Countdowns { get; private set; }
-        public UserReminders Reminders { get; private set; }
+        public BotSettings Settings { get; }
+        public ChannelDescriptions ChannelDescriptions { get; }
+        public UserStatuses Statuses { get; }
+        public GuildLeaderboards Leaderboards { get; }
+        public DynamicMessages DynamicMessages { get; }
+        public GuildCountdowns Countdowns { get; }
+        public UserReminders Reminders { get; }
+        public EventsLog EventsLog { get; }
 
         private const string ExceptionFilePath = Config.BasePath + "exception.txt";
         public GrammarPolice Grammar { get; private set; }
@@ -163,13 +164,13 @@ namespace DiscordBotNew
             Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
             if (ChannelDescriptions.Descriptions != null)
             {
+                var toRemove = new List<ulong>();
                 foreach (var item in ChannelDescriptions.Descriptions)
                 {
                     var channel = (ITextChannel)Client.GetChannel(item.Key);
                     if (channel == null)
                     {
-                        ChannelDescriptions.Descriptions.Remove(item.Key);
-                        ChannelDescriptions.SaveConfig();
+                        toRemove.Add(item.Key);
                         continue;
                     }
                     string topic = item.Value;
@@ -178,7 +179,7 @@ namespace DiscordBotNew
                                      async m =>
                                      {
                                          var context = new DiscordChannelDescriptionContext(m.Groups[1].Value, channel, this);
-                                         var result = await CommandRunner.RunTimer(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel as IMessageChannel), true, tick);
+                                         var result = await CommandRunner.RunTimer(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel), true, tick);
                                          abort = result == null;
                                          return result?.ToString().Trim() ?? "";
                                      });
@@ -195,6 +196,12 @@ namespace DiscordBotNew
                     {
                         // Fail silently
                     }
+                }
+
+                foreach (ulong d in toRemove)
+                {
+                    EventsLog.LogEvent($"Channel {d} with dynamic description '{ChannelDescriptions.Descriptions[d]}' deleted");
+                    ChannelDescriptions.Descriptions.Remove(d);
                 }
             }
         }
@@ -254,6 +261,7 @@ namespace DiscordBotNew
 
             if (DynamicMessages.Messages != null)
             {
+                var toRemove = new List<DynamicMessageInfo>();
                 foreach (var message in DynamicMessages.Messages)
                 {
                     try
@@ -263,12 +271,13 @@ namespace DiscordBotNew
                             continue;
                         }
 
-                        var channel = (IMessageChannel)Client.GetGuild(message.GuildId).GetChannel(message.ChannelId);
-                        var discordMessage = (IUserMessage)await channel.GetMessageAsync(message.MessageId);
+                        var channel = (IMessageChannel)Client.GetGuild(message.GuildId)?.GetChannel(message.ChannelId);
+                        var discordMessage = (IUserMessage)await channel?.GetMessageAsync(message.MessageId);
 
                         if (discordMessage == null)
                         {
-                            DynamicMessages.Messages.Remove(message);
+                            toRemove.Add(message);
+                            EventsLog.LogEvent($"Dynamic message in channel {message.ChannelId} with ID {message.MessageId} deleted");
                             continue;
                         }
 
@@ -289,6 +298,7 @@ namespace DiscordBotNew
                     }
                 }
 
+                DynamicMessages.Messages.RemoveAll(x => toRemove.Contains(x));
                 DynamicMessages.SaveConfig();
             }
         }
@@ -322,7 +332,7 @@ namespace DiscordBotNew
                     if (File.Exists(ExceptionFilePath))
                     {
                         string message = "***The bot has restarted due to an error***:\n\n" + File.ReadAllText(ExceptionFilePath);
-                        foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500)))
+                        foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => "```\n" + message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500) + "```"))
                         {
                             await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync(m);
                         }
@@ -334,7 +344,7 @@ namespace DiscordBotNew
                 {
                     try
                     {
-                        await ((ITextChannel)Client.GetChannel(Settings.StartupReplyChannel.Value)).SendMessageAsync("I return! You can never escape me!");
+                        await ((ITextChannel)Client.GetChannel(Settings.StartupReplyChannel.Value)).SendMessageAsync("I have returned");
                     }
                     catch
                     {

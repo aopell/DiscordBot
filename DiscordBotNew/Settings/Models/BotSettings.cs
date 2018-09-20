@@ -22,5 +22,10 @@ namespace DiscordBotNew.Settings.Models
         public string Game { get; set; }
         public Dictionary<ulong, string> CustomPrefixes { get; set; }
         public ulong? StartupReplyChannel { get; set; }
+
+        public BotSettings()
+        {
+            CustomPrefixes = new Dictionary<ulong, string>();
+        }
     }
 }

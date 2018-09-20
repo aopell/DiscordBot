@@ -9,5 +9,10 @@ namespace DiscordBotNew.Settings.Models
     public class GuildLeaderboards : Config
     {
         public Dictionary<ulong, Leaderboard> Leaderboards { get; set; }
+
+        public GuildLeaderboards()
+        {
+            Leaderboards = new Dictionary<ulong, Leaderboard>();
+        }
     }
 }

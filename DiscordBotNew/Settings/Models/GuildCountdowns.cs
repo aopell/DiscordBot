@@ -9,5 +9,11 @@ namespace DiscordBotNew.Settings.Models
     {
         public Dictionary<ulong, Dictionary<string, DateTimeOffset>> Countdowns { get; set; }
         public Dictionary<ulong, ulong> CountdownChannels { get; set; }
+
+        public GuildCountdowns()
+        {
+            Countdowns = new Dictionary<ulong, Dictionary<string, DateTimeOffset>>();
+            CountdownChannels = new Dictionary<ulong, ulong>();
+        }
     }
 }

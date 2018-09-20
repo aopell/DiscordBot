@@ -8,6 +8,11 @@ namespace DiscordBotNew.Settings.Models
     public class DynamicMessages : Config
     {
         public List<DynamicMessageInfo> Messages { get; set; }
+
+        public DynamicMessages()
+        {
+            Messages = new List<DynamicMessageInfo>();
+        }
     }
 
     public class DynamicMessageInfo

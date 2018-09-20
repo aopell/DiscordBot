@@ -9,6 +9,11 @@ namespace DiscordBotNew.Settings.Models
     public class UserReminders : Config
     {
         public List<ReminderInfo> Reminders { get; set; }
+
+        public UserReminders()
+        {
+            Reminders = new List<ReminderInfo>();
+        }
     }
 
     public class ReminderInfo

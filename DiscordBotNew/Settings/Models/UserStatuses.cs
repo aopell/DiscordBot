@@ -8,6 +8,11 @@ namespace DiscordBotNew.Settings.Models
     public class UserStatuses : Config
     {
         public Dictionary<ulong, UserStatusInfo> Statuses { get; set; }
+
+        public UserStatuses()
+        {
+            Statuses = new Dictionary<ulong, UserStatusInfo>();
+        }
     }
 
     public class UserStatusInfo
