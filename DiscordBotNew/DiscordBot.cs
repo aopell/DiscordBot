@@ -21,14 +21,14 @@ namespace DiscordBotNew
     {
         public DiscordSocketClient Client { get; private set; }
         public DiscordRestClient RestClient { get; private set; }
-        public BotSettings Settings { get; }
-        public ChannelDescriptions ChannelDescriptions { get; }
-        public UserStatuses Statuses { get; }
-        public GuildLeaderboards Leaderboards { get; }
-        public DynamicMessages DynamicMessages { get; }
-        public GuildCountdowns Countdowns { get; }
-        public UserReminders Reminders { get; }
-        public EventsLog EventsLog { get; }
+        public BotSettings Settings { get; private set; }
+        public ChannelDescriptions ChannelDescriptions { get; private set; }
+        public UserStatuses Statuses { get; private set; }
+        public GuildLeaderboards Leaderboards { get; private set; }
+        public DynamicMessages DynamicMessages { get; private set; }
+        public GuildCountdowns Countdowns { get; private set; }
+        public UserReminders Reminders { get; private set; }
+        public EventsLog EventsLog { get; private set; }
 
         private const string ExceptionFilePath = Config.BasePath + "exception.txt";
         public GrammarPolice Grammar { get; private set; }
