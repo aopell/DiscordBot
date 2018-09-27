@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace DiscordBotNew
 {
     public class DiscordBot
     {
+        public static DiscordBot MainInstance = null;
         public DiscordSocketClient Client { get; private set; }
         public DiscordRestClient RestClient { get; private set; }
         public BotSettings Settings { get; private set; }
@@ -41,11 +43,34 @@ namespace DiscordBotNew
         public static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            new DiscordBot().MainAsync().GetAwaiter().GetResult();
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+            MainInstance = new DiscordBot();
+            MainInstance.MainAsync().GetAwaiter().GetResult();
+        }
+
+        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(MainInstance?.Settings.StatusMessageWebhook))
+            {
+                try
+                {
+                    new HttpClient().PostAsync(MainInstance.Settings.StatusMessageWebhook, new StringContent("{\"content\":\"[" + DateTimeOffset.Now + "] Process exiting\"}", Encoding.UTF8, "application/json"));
+                }
+                catch { }
+            }
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
+            if (!string.IsNullOrEmpty(MainInstance?.Settings.StatusMessageWebhook))
+            {
+                try
+                {
+                    new HttpClient().PostAsync(MainInstance.Settings.StatusMessageWebhook, new StringContent("{\"content\":\"[" + DateTimeOffset.Now + "] " + e.ExceptionObject + "\"}", Encoding.UTF8, "application/json"));
+                }
+                catch { }
+            }
+
             File.WriteAllText(ExceptionFilePath, e.ExceptionObject.ToString());
         }
 
@@ -149,6 +174,7 @@ namespace DiscordBotNew
             createFile("dynamic-messages.json");
             createFile("countdowns.json");
             createFile("reminders.json");
+            createFile("log.json");
 
             void createFile(string filename)
             {
@@ -200,7 +226,9 @@ namespace DiscordBotNew
 
                 foreach (ulong d in toRemove)
                 {
-                    EventsLog.LogEvent($"Channel {d} with dynamic description '{ChannelDescriptions.Descriptions[d]}' deleted");
+                    string status = $"Channel {d} with dynamic description '{ChannelDescriptions.Descriptions[d]}' deleted";
+                    EventsLog.LogEvent(status);
+                    await SendStatusMessage(status);
                     ChannelDescriptions.Descriptions.Remove(d);
                 }
             }
@@ -215,7 +243,7 @@ namespace DiscordBotNew
             {
                 ulong? channel = (Countdowns.CountdownChannels?.ContainsKey(guild) ?? false) ? Countdowns.CountdownChannels[guild] : (ulong?)null;
                 if (channel == null) continue;
-                foreach (var countdown in Countdowns.Countdowns[guild])
+                foreach (var countdown in Countdowns.Countdowns[guild].ToList())
                 {
                     if (countdown.Value < DateTimeOffset.Now)
                     {
@@ -277,7 +305,9 @@ namespace DiscordBotNew
                         if (discordMessage == null)
                         {
                             toRemove.Add(message);
-                            EventsLog.LogEvent($"Dynamic message in channel {message.ChannelId} with ID {message.MessageId} deleted");
+                            string status = $"Dynamic message in channel {message.ChannelId} with ID {message.MessageId} deleted";
+                            EventsLog.LogEvent(status);
+                            await SendStatusMessage(status);
                             continue;
                         }
 
@@ -318,26 +348,20 @@ namespace DiscordBotNew
                 Statuses.Statuses.Remove(Client.CurrentUser.Id);
                 Statuses.Statuses.Add(Client.CurrentUser.Id, status);
 
-                if (Settings.OwnerId != null)
-                {
-                    if (Settings.AnnounceStartup.HasValue && Settings.AnnounceStartup.Value)
-                    {
 #if !DEBUG
-                        await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
+                await SendStatusMessage($"[{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
 #else
-                        await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
+                await SendStatusMessage($"[DEBUG] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] Now online!");
 #endif
-                    }
 
-                    if (File.Exists(ExceptionFilePath))
+                if (File.Exists(ExceptionFilePath))
+                {
+                    string message = "***The bot has restarted due to an error***:\n\n" + File.ReadAllText(ExceptionFilePath);
+                    foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => "```\n" + message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500) + "```"))
                     {
-                        string message = "***The bot has restarted due to an error***:\n\n" + File.ReadAllText(ExceptionFilePath);
-                        foreach (string m in Enumerable.Range(0, message.Length / 1500 + 1).Select(i => "```\n" + message.Substring(i * 1500, message.Length - i * 1500 > 1500 ? 1500 : message.Length - i * 1500) + "```"))
-                        {
-                            await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync(m);
-                        }
-                        File.Delete(ExceptionFilePath);
+                        await SendStatusMessage(m, true);
                     }
+                    File.Delete(ExceptionFilePath);
                 }
 
                 if (Settings.StartupReplyChannel.HasValue)
@@ -372,8 +396,7 @@ namespace DiscordBotNew
             }
             catch (Exception ex)
             {
-                if (Settings.OwnerId.HasValue)
-                    await Client.GetUser(Settings.OwnerId.Value).SendMessageAsync($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] ```{ex}\n\n{ex.InnerException}```");
+                await SendStatusMessage($"[ERROR] [{TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Now, DefaultTimeZone)}] ```{ex}\n\n{ex.InnerException}```", true);
             }
         }
 
@@ -402,6 +425,21 @@ namespace DiscordBotNew
         {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
+        }
+
+        public async Task<bool> SendStatusMessage(string message, bool mentionOwner = false)
+        {
+            if (!Settings.StatusMessageChannel.HasValue) return false;
+
+            try
+            {
+                await ((IMessageChannel)Client.GetChannel(Settings.StatusMessageChannel.Value)).SendMessageAsync((mentionOwner && Settings.OwnerId.HasValue ? $"<@{Settings.OwnerId}>\n" : "") + message);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

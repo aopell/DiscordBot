@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using IO = System.IO;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -35,7 +36,7 @@ namespace DiscordBotNew.Commands
             {
                 await context.Message.AddReactionAsync(CommandTools.LoadingEmote);
 
-                using (var fileStream = System.IO.File.Create("avatar.png"))
+                using (var fileStream = IO.File.Create("avatar.png"))
                 {
                     var stream = await new HttpClient().GetStreamAsync(url);
                     stream.CopyTo(fileStream);
@@ -95,25 +96,26 @@ namespace DiscordBotNew.Commands
         [Command("file"), HelpText("Gets, puts, or lists bot settings files"), Permissions(ownerOnly: true)]
         public static async Task<ICommandResult> File(DiscordUserMessageContext context, FileAction action, string filename = null)
         {
+            if (filename != null && !context.Bot.FileNames.Contains(filename)) return new ErrorResult("The provided filename was not a valid option");
             switch (action)
             {
                 case FileAction.Get:
                     if (filename == null) return new ErrorResult("Please provide a filename");
-                    if (!context.Bot.FileNames.Contains(filename)) return new ErrorResult("The provided filename was not a valid option");
                     await context.Channel.SendFileAsync(Config.BasePath + filename);
                     return new SuccessResult();
                 case FileAction.Put:
                     if (filename == null) return new ErrorResult("Please provide a filename");
-                    if (!context.Bot.FileNames.Contains(filename)) return new ErrorResult("The provided filename was not a valid option");
                     if (context.Message.Attachments.Count == 0) return new ErrorResult("Please attach a file with your message");
                     var attachment = context.Message.Attachments.First();
-                    using (var fileStream = System.IO.File.Create(Config.BasePath + filename))
+                    using (var fileStream = IO.File.Create(Config.BasePath + filename))
                     {
                         await (await new HttpClient().GetStreamAsync(attachment.Url)).CopyToAsync(fileStream);
                     }
                     return new SuccessResult("File successfully replaced");
                 case FileAction.List:
-                    return new SuccessResult($"```\nAvailable Files:\n\n{string.Join("\n", context.Bot.FileNames)}\n```");
+                    return new SuccessResult($"```\nAvailable Files:\n\n{context.Bot.FileNames.OrderBy(x => x).Aggregate((x, y) => $"{x}\n{y}")}\n```");
+                case FileAction.Print:
+                    return new SuccessResult($"```{Path.GetExtension(filename).TrimStart('.')}\n{IO.File.ReadAllText(Config.BasePath + filename)}\n```");
                 default:
                     return new ErrorResult("Unknown option");
             }
@@ -141,7 +143,8 @@ namespace DiscordBotNew.Commands
         {
             [HelpText("Gets the file with the provided name")] Get,
             [HelpText("Replaces the file with the provided name with the provided file")] Put,
-            [HelpText("Lists all files that can be accessed")] List
+            [HelpText("Lists all files that can be accessed")] List,
+            [HelpText("Prints the contents of the file with the provided name")] Print
         }
 
         public enum GrammarAction
