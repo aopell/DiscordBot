@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBotNew.CommandLoader;
@@ -14,7 +6,14 @@ using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.Commands;
 using DiscordBotNew.Settings;
 using DiscordBotNew.Settings.Models;
-using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace DiscordBotNew
 {
@@ -31,6 +30,7 @@ namespace DiscordBotNew
         public GuildCountdowns Countdowns { get; private set; }
         public UserReminders Reminders { get; private set; }
         public EventsLog EventsLog { get; private set; }
+        public GithubRepos GithubRepos { get; private set; }
 
         private const string ExceptionFilePath = Config.BasePath + "exception.txt";
         public GrammarPolice Grammar { get; private set; }
@@ -175,6 +175,7 @@ namespace DiscordBotNew
             createFile("countdowns.json");
             createFile("reminders.json");
             createFile("log.json");
+            createFile("github.json");
 
             void createFile(string filename)
             {
@@ -418,6 +419,15 @@ namespace DiscordBotNew
             if (arg.Content.Trim().StartsWith(commandPrefix) && !arg.Author.IsBot)
             {
                 await CommandRunner.Run(arg.Content, context, commandPrefix, false);
+            }
+
+            if (context.Guild != null 
+                && GithubRepos.Username != null
+                && GithubRepos.Token != null 
+                && GithubRepos.Repositories.ContainsKey(context.Guild.Id)
+                && GithubRepos.Repositories[context.Guild.Id] != null)
+            {
+                await GithubHelper.Run(context, GithubRepos.Username, GithubRepos.Token, GithubRepos.Repositories[context.Guild.Id]);
             }
         }
 
