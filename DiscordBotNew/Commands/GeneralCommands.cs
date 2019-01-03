@@ -612,6 +612,12 @@ namespace DiscordBotNew.Commands
             }
         }
 
+        [Command("reveal"), HelpText("Displays the exact text received by the bot")]
+        public static ICommandResult Reveal(DiscordUserMessageContext context)
+        {
+            return new SuccessResult($"```{context.Message.Content}```");
+        }
+
         public enum ReminderAction
         {
             [HelpText("Lists your upcoming reminders")] List,
