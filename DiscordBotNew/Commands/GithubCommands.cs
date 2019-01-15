@@ -145,7 +145,7 @@ namespace DiscordBotNew.Commands
                         var github_commit = JsonConvert.DeserializeObject<GithubCommit>(response);
                         string commit_body = ProcessGithubMarkdown(github_commit.commit.other_lines, repository);
                         var embed = new EmbedBuilder()
-                            .WithTitle(ProcessGithubMarkdown(github_commit.commit.first_line, repository))
+                            .WithTitle(github_commit.commit.first_line)
                             .WithAuthor(github_commit.author.login, github_commit.author.avatar_url, github_commit.author.html_url)
                             .WithDescription(commit_body.Length > 1950 ? $"{commit_body.Substring(0, 1950)}..." : commit_body)
                             .WithUrl(github_commit.html_url)
