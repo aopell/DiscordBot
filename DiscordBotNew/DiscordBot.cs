@@ -346,6 +346,7 @@ namespace DiscordBotNew
                     Game = null,
                     StartedPlaying = null
                 };
+
                 Statuses.Statuses.Remove(Client.CurrentUser.Id);
                 Statuses.Statuses.Add(Client.CurrentUser.Id, status);
 
@@ -421,9 +422,9 @@ namespace DiscordBotNew
                 await CommandRunner.Run(arg.Content, context, commandPrefix, false);
             }
 
-            if (context.Guild != null 
+            if (context.Guild != null
                 && GithubRepos.Username != null
-                && GithubRepos.Token != null 
+                && GithubRepos.Token != null
                 && GithubRepos.Repositories.ContainsKey(context.Guild.Id)
                 && GithubRepos.Repositories[context.Guild.Id] != null)
             {

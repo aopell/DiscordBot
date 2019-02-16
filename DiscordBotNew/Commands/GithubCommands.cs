@@ -2,11 +2,10 @@
 using DiscordBotNew.CommandLoader;
 using DiscordBotNew.CommandLoader.CommandContext;
 using DiscordBotNew.CommandLoader.CommandResult;
-using Newtonsoft.Json;
+using Octokit;
 using System;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -17,14 +16,22 @@ namespace DiscordBotNew.Commands
         [Command("linkrepo", "linkgithub", "githublink"), HelpText("Links a GitHub repository to the current server; enables GitHub helper"), CommandScope(ChannelType.Text), Permissions(guildPermissions: new[] { GuildPermission.Administrator })]
         public static async Task<ICommandResult> LinkRepository(DiscordUserMessageContext context, string repository)
         {
+            var client = new GitHubClient(new ProductHeaderValue("Netcat-Discord-Bot"));
+            client.Credentials = new Credentials(context.Bot.GithubRepos.Token);
+
             if (context.Guild == null) return new ErrorResult("Must be in a guild");
             if (!Regex.IsMatch(repository, @"^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}/[\w.-]+$"))
             {
                 return new ErrorResult("Repository name was not in the correct format. Please use the format `user/repository` or `organization/repository`");
             }
-            else if ((await new HttpClient().GetAsync($"https://github.com/{repository}")).StatusCode == HttpStatusCode.NotFound)
+
+            try
             {
-                return new ErrorResult("That repository was not found. This feature currently does not support private repositories, sorry for the inconvenience.");
+                await client.Repository.Get(repository.Split('/')[0], repository.Split('/')[1]);
+            }
+            catch (NotFoundException)
+            {
+                return new ErrorResult("That repository was not found. This feature currently does not support private repositories unless the GitHub user Netcat-Bot is a repository member, sorry for the inconvenience.");
             }
 
             context.Bot.GithubRepos.Repositories[context.Guild.Id] = repository;
@@ -52,18 +59,10 @@ namespace DiscordBotNew.Commands
                                      $"\nUse the `unlinkrepo` command to unlink the currently linked repository" +
                                      $"\n\nOnce a repository is linked, you can use the following features of GitHub Helper:" +
                                      $"\n\n**Display Summaries of Issues, Users, and Commits**" +
-                                     $"\nType `GH#NNN` anywhere in your message to display a summary of issue number NNN" +
+                                     $"\nType `GH#[NNN]` anywhere in your message to display a summary of issue number [NNN]" +
                                      $"\nType `GH@[USER]` anywhere in your message to display a summary of GitHub user [USER]" +
                                      $"\nType `GH:[COMMIT SHA1]` anywhere in your message to display a summary of the commit with the hash [COMMIT SHA1]");
         }
-    }
-
-    public enum GithubType
-    {
-        Issue = 0,
-        Issues = 0,
-        Milestone = 1,
-        Milestones = 1
     }
 
     public static class GithubHelper
@@ -89,112 +88,194 @@ namespace DiscordBotNew.Commands
         {
             try
             {
-                var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("Authorization", $"Token {token}");
-                client.DefaultRequestHeaders.Add("User-Agent", "Netcat Discord Bot");
-
-                const string ApiBaseUrl = "https://api.github.com";
-                string RepositoryBaseUrl = ApiBaseUrl + $"/repos/{repository}";
-                string IssueBaseUrl = RepositoryBaseUrl + "/issues";
-                string CommitBaseUrl = RepositoryBaseUrl + "/commits";
-                string UserBaseUrl = ApiBaseUrl + "/users";
-
                 var issues = Regex.Matches(context.Message.Content, @"\b[gG][hH]#([1-9]\d*)\b").Select(x => int.Parse(x.Groups[1].Value));
                 var commits = Regex.Matches(context.Message.Content, @"\b[gG][hH]:([0-9a-fA-F]{40}|[0-9a-fA-F]{7})\b").Select(x => x.Groups[1].Value);
                 var users = Regex.Matches(context.Message.Content, @"\b[gG][hH]@([a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38})\b").Select(x => x.Groups[1].Value);
+                var milestones = Regex.Matches(context.Message.Content, @"\b[gG][hH]#[mM]([1-9]\d*)\b").Select(x => int.Parse(x.Groups[1].Value));
                 users = users.Concat(Regex.Matches(context.Message.Content, @"[gG][hH]<@(\d+)>").Select(x => context.Bot.Client.GetUser(ulong.Parse(x.Groups[1].Value)).Username));
+
+                string repoOwner = repository.Split('/')[0];
+                string repoName = repository.Split('/')[1];
+
+                if (!issues.Any() && !commits.Any() && !users.Any() && !milestones.Any())
+                {
+                    return;
+                }
+
+                var client = new GitHubClient(new ProductHeaderValue("Netcat-Discord-Bot"));
+                client.Credentials = new Credentials(token);
 
                 foreach (int issue in issues)
                 {
                     try
                     {
-                        var response = await client.GetStringAsync($"{IssueBaseUrl}/{issue}");
-                        var github_issue = JsonConvert.DeserializeObject<GithubIssue>(response);
-                        github_issue.body = ProcessGithubMarkdown(github_issue.body, repository);
-                        var embed = new EmbedBuilder()
-                            .WithTitle($"#{github_issue.number}: {github_issue.title}")
-                            .WithAuthor(github_issue.user.login, github_issue.user.avatar_url, github_issue.user.html_url)
-                            .WithDescription(github_issue.body.Length > 1950 ? $"{github_issue.body.Substring(0, 1950)}..." : github_issue.body)
-                            .WithUrl(github_issue.html_url)
-                            .WithColor(github_issue.state == GithubIssueStatus.open ? Color.Green : Color.Red)
-                            .WithFooter(github_issue.state.ToString()[0].ToString().ToUpper() + github_issue.state.ToString().Substring(1) + (github_issue.pull_request != null ? " Pull Request" : " Issue"))
-                            .WithTimestamp(github_issue.created_at);
+                        Issue githubIssue = await client.Issue.Get(repoOwner, repoName, issue);
+                        PullRequest pr = githubIssue.PullRequest != null ? await client.PullRequest.Get(repoOwner, repoName, int.Parse(githubIssue.PullRequest.Url.Split('/').Last())) : null;
 
-                        if (github_issue.labels != null && github_issue.labels.Length > 0)
+                        string body = ProcessGithubMarkdown(githubIssue.Body, repository);
+                        EmbedBuilder embed = new EmbedBuilder()
+                                             .WithTitle($"#{githubIssue.Number}: {githubIssue.Title}")
+                                             .WithAuthor(githubIssue.User.Login, githubIssue.User.AvatarUrl, githubIssue.User.HtmlUrl)
+                                             .WithDescription(body.Length > 1950 ? $"{body.Substring(0, 1950)}..." : body)
+                                             .WithUrl(githubIssue.HtmlUrl)
+                                             .WithColor(pr != null && pr.Merged ? Color.DarkPurple : githubIssue.State.Value == ItemState.Open ? Color.Green : Color.Red)
+                                             .WithFooter((pr != null && pr.Merged ? "Merged" : char.ToUpper(githubIssue.State.StringValue[0]) + githubIssue.State.StringValue.Substring(1)) + (pr != null ? " Pull Request" : " Issue"))
+                                             .WithTimestamp(githubIssue.CreatedAt);
+
+                        if (githubIssue.Labels != null && githubIssue.Labels.Count > 0)
                         {
-                            embed.AddField("Labels", string.Join(", ", github_issue.labels.Select(x => x.name)), inline: true);
+                            embed.AddField("Labels", string.Join(", ", githubIssue.Labels.Select(x => x.Name)), inline: true);
                         }
-                        if (github_issue.milestone != null)
+
+                        if (githubIssue.Milestone != null)
                         {
-                            embed.AddField("Milestone", MDLink(github_issue.milestone.title, github_issue.milestone.html_url), inline: true);
+                            embed.AddField("Milestone", MDLink(githubIssue.Milestone.Title, githubIssue.Milestone.HtmlUrl), inline: true);
                         }
-                        if (github_issue.assignees != null && github_issue.assignees.Length > 0)
+
+                        if (githubIssue.Assignees != null && githubIssue.Assignees.Count > 0)
                         {
-                            embed.AddField("Assignees", string.Join(", ", github_issue.assignees.Select(x => MDLink(x.login, x.html_url))), inline: true);
+                            embed.AddField("Assignees", string.Join(", ", githubIssue.Assignees.Select(x => MDLink(x.Login, x.HtmlUrl))), inline: true);
                         }
+
+                        if (githubIssue.Comments > 0)
+                        {
+                            embed.AddField("Comments", githubIssue.Comments, inline: true);
+                        }
+
+                        if (pr != null)
+                        {
+                            embed.AddField("Branches", $"{pr.Base.Label} ← {pr.Head.Label}");
+                            embed.AddField("Stats", $"{pr.Commits} commit{(pr.Commits == 1 ? "" : "s")}\n" +
+                                                    $"{pr.ChangedFiles} file{(pr.ChangedFiles == 1 ? "" : "s")} changed\n" +
+                                                    $"{pr.Additions + pr.Deletions} changes (+{pr.Additions} / -{pr.Deletions})",
+                                                    inline: true);
+                        }
+
                         await context.Reply("", embed: embed.Build());
                     }
-                    catch (HttpRequestException) { }
+                    catch (NotFoundException) { }
                 }
 
                 foreach (string commit in commits)
                 {
                     try
                     {
-                        var response = await client.GetStringAsync($"{CommitBaseUrl}/{commit}");
-                        var github_commit = JsonConvert.DeserializeObject<GithubCommit>(response);
-                        string commit_body = ProcessGithubMarkdown(github_commit.commit.other_lines, repository);
-                        var embed = new EmbedBuilder()
-                            .WithTitle(github_commit.commit.first_line)
-                            .WithAuthor(github_commit.author.login, github_commit.author.avatar_url, github_commit.author.html_url)
-                            .WithDescription(commit_body.Length > 1950 ? $"{commit_body.Substring(0, 1950)}..." : commit_body)
-                            .WithUrl(github_commit.html_url)
-                            .WithColor(Color.LightGrey)
-                            .WithFooter($"Commit {commit.Substring(0, 7)}")
-                            .WithTimestamp(github_commit.commit.committer.date)
-                            .AddField("Total Changes", github_commit.stats.ToString(), inline: true)
-                            .AddField("Files Changed", string.Join('\n', github_commit.files.Select(x => x.ToString())), inline: true);
-                        if (github_commit.commit.comment_count > 0)
+                        GitHubCommit githubCommit = await client.Repository.Commit.Get(repoOwner, repoName, commit);
+                        string commitBody = ProcessGithubMarkdown(githubCommit.Commit.Message.Contains('\n') ? githubCommit.Commit.Message.Substring(githubCommit.Commit.Message.IndexOf('\n')) : "", repository);
+                        EmbedBuilder embed = new EmbedBuilder()
+                                             .WithTitle(githubCommit.Commit.Message.Split('\n')[0])
+                                             .WithAuthor(githubCommit.Author.Login, githubCommit.Author.AvatarUrl, githubCommit.Author.HtmlUrl)
+                                             .WithDescription(commitBody.Length > 1950 ? $"{commitBody.Substring(0, 1950)}..." : commitBody)
+                                             .WithUrl(githubCommit.HtmlUrl)
+                                             .WithColor(Color.LightGrey)
+                                             .WithFooter($"Commit {commit.Substring(0, 7)}")
+                                             .WithTimestamp(githubCommit.Commit.Committer.Date)
+                                             .AddField("Total Changes", $"{githubCommit.Stats.Total} (+{githubCommit.Stats.Additions} / -{githubCommit.Stats.Deletions})", inline: true)
+                                             .AddField("Files Changed", string.Join('\n', githubCommit.Files.Select(x => $"{MDLink("🔗", x.BlobUrl)} `{x.Filename}` • {githubCommit.Stats.Total} (+{githubCommit.Stats.Additions} / -{githubCommit.Stats.Deletions})")), inline: true);
+                        if (githubCommit.Commit.CommentCount > 0)
                         {
-                            embed.AddField("Comments", github_commit.commit.comment_count, inline: true);
+                            embed.AddField("Comments", githubCommit.Commit.CommentCount, inline: true);
                         }
 
                         await context.Reply("", embed: embed.Build());
                     }
-                    catch (HttpRequestException) { }
+                    catch (NotFoundException) { }
                 }
 
                 foreach (string user in users)
                 {
                     try
                     {
-                        var response = await client.GetStringAsync($"{UserBaseUrl}/{user}");
-                        var github_user = JsonConvert.DeserializeObject<GithubUserFull>(response);
-                        var embed = new EmbedBuilder()
-                            .WithAuthor(github_user.name == null ? github_user.login : $"{github_user.name} ({github_user.login})", github_user.avatar_url, github_user.html_url)
-                            .WithDescription(github_user.bio == null  ? "" : github_user.bio.Length > 1950 ? $"{github_user.bio.Substring(0, 1950)}..." : github_user.bio)
-                            .WithColor(Color.LightGrey)
-                            .AddField("Followers", github_user.followers, inline: true)
-                            .AddField("Following", github_user.following, inline: true)
-                            .AddField("Public Repositories", github_user.public_repos, inline: true)
-                            .AddField("Public Gists", github_user.public_gists, inline: true);
+                        User githubUser = await client.User.Get(user);
+                        EmbedBuilder embed = new EmbedBuilder()
+                                             .WithAuthor(githubUser.Name == null ? githubUser.Login : $"{githubUser.Name} ({githubUser.Login})", githubUser.AvatarUrl, githubUser.HtmlUrl)
+                                             .WithDescription(githubUser.Bio == null ? "" : githubUser.Bio.Length > 1950 ? $"{githubUser.Bio.Substring(0, 1950)}..." : githubUser.Bio)
+                                             .WithColor(Color.LightGrey)
+                                             .AddField("Followers", githubUser.Followers, inline: true)
+                                             .AddField("Following", githubUser.Following, inline: true)
+                                             .AddField("Public Repositories", githubUser.PublicRepos, inline: true)
+                                             .AddField("Public Gists", githubUser.PublicGists, inline: true);
 
-                        if (!string.IsNullOrEmpty(github_user.company))
+                        if (!string.IsNullOrEmpty(githubUser.Company))
                         {
-                            embed.AddField("Company", github_user.company, inline: true);
+                            embed.AddField("Company", githubUser.Company, inline: true);
                         }
-                        if (!string.IsNullOrEmpty(github_user.blog))
+
+                        if (!string.IsNullOrEmpty(githubUser.Blog))
                         {
-                            embed.AddField("Website", MDLink(github_user.blog, github_user.blog), inline: true);
+                            embed.AddField("Website", MDLink(githubUser.Blog, githubUser.Blog), inline: true);
                         }
-                        if (!string.IsNullOrEmpty(github_user.location))
+
+                        if (!string.IsNullOrEmpty(githubUser.Location))
                         {
-                            embed.AddField("Location", github_user.location, inline: true);
+                            embed.AddField("Location", githubUser.Location, inline: true);
                         }
 
                         await context.Reply("", embed: embed.Build());
                     }
-                    catch (HttpRequestException) { }
+                    catch (NotFoundException) { }
+                }
+
+                var allIssuesInRepo = milestones != null && milestones.Any() ? await client.Issue.GetAllForRepository(repoOwner, repoName, new RepositoryIssueRequest { State = ItemStateFilter.All }, new ApiOptions { PageSize = 100 }) : null;
+                foreach (int milestone in milestones)
+                {
+                    try
+                    {
+                        Milestone githubMilestone = await client.Issue.Milestone.Get(repoOwner, repoName, milestone);
+                        var issuesInMilestone = allIssuesInRepo.Where(x => x.Milestone?.Number == milestone).ToList();
+                        var open = issuesInMilestone.Where(x => x.State.Value == ItemState.Open).ToList();
+                        var closed = issuesInMilestone.Where(x => x.State.Value == ItemState.Closed).ToList();
+
+                        EmbedBuilder embed = new EmbedBuilder()
+                                             .WithTitle(githubMilestone.Title)
+                                             .WithDescription(githubMilestone.Description == null ? "" : githubMilestone.Description.Length > 1950 ? $"{githubMilestone.Description.Substring(0, 1950)}..." : githubMilestone.Description)
+                                             .WithUrl(githubMilestone.HtmlUrl)
+                                             .WithFooter($"Milestone #{githubMilestone.Number} • {githubMilestone.State.Value.ToString()}")
+                                             .WithColor(githubMilestone.State.Value == ItemState.Open ? Color.Green : Color.Red)
+                                             .WithTimestamp(githubMilestone.CreatedAt);
+
+                        if (githubMilestone.DueOn.HasValue)
+                        {
+                            embed.Timestamp = githubMilestone.DueOn.Value;
+                        }
+
+                        if (open.Count > 0)
+                        {
+                            StringBuilder openIssueString = new StringBuilder();
+
+                            for (int i = 0; i < Math.Min(open.Count, 7); i++)
+                            {
+                                openIssueString.AppendLine(MDLink($"#{open[i].Number}: {(open[i].Title.Length > 50 ? open[i].Title.Substring(0, 50) + "..." : open[i].Title)}", open[i].HtmlUrl));
+                            }
+
+                            if (open.Count - 7 > 0)
+                            {
+                                openIssueString.AppendLine(MDLink($"...and {open.Count - 7} more", githubMilestone.HtmlUrl));
+                            }
+
+                            embed.AddField($"{open.Count} Open Issue{(open.Count == 1 ? "" : "s")}", openIssueString);
+                        }
+
+                        if (closed.Count > 0)
+                        {
+                            StringBuilder closedIssueString = new StringBuilder();
+
+                            for (int i = 0; i < Math.Min(closed.Count, 7); i++)
+                            {
+                                closedIssueString.AppendLine(MDLink($"#{closed[i].Number}: {(closed[i].Title.Length > 50 ? closed[i].Title.Substring(0, 50) + "..." : closed[i].Title)}", closed[i].HtmlUrl));
+                            }
+
+                            if (closed.Count - 7 > 0)
+                            {
+                                closedIssueString.AppendLine(MDLink($"...and {closed.Count - 7} more", githubMilestone.HtmlUrl + "?closed=1"));
+                            }
+
+                            embed.AddField($"{closed.Count} Closed Issue{(closed.Count == 1 ? "" : "s")}", closedIssueString);
+                        }
+
+                        await context.Reply("", embed: embed.Build());
+                    }
+                    catch (NotFoundException) { }
                 }
             }
             catch (Exception ex)
@@ -202,96 +283,5 @@ namespace DiscordBotNew.Commands
                 await context.ReplyError(ex);
             }
         }
-    }
-
-    public class GithubIssue
-    {
-        public string html_url { get; set; }
-        public int number { get; set; }
-        public string title { get; set; }
-        public GithubIssueStatus state { get; set; }
-        public string body { get; set; }
-        public int comments { get; set; }
-        public DateTimeOffset created_at { get; set; }
-        public GithubUser user { get; set; }
-        public GithubMilestone milestone { get; set; }
-        public GithubLabel[] labels { get; set; }
-        public GithubUser[] assignees { get; set; }
-        public GithubPullRequest pull_request { get; set; }
-    }
-    public class GithubUser
-    {
-        public string login { get; set; }
-        public string html_url { get; set; }
-        public string avatar_url { get; set; }
-    }
-    public class GithubUserFull
-    {
-        public string name { get; set; }
-        public string login { get; set; }
-        public string html_url { get; set; }
-        public string avatar_url { get; set; }
-        public string blog { get; set; }
-        public string company { get; set; }
-        public string bio { get; set; }
-        public int public_repos { get; set; }
-        public int public_gists { get; set; }
-        public int followers { get; set; }
-        public int following { get; set; }
-        public string location { get; set; }
-    }
-    public class GithubLabel
-    {
-        public string name { get; set; }
-    }
-    public class GithubPullRequest
-    {
-        public string html_url { get; set; }
-    }
-    public class GithubMilestone
-    {
-        public string html_url { get; set; }
-        public string title { get; set; }
-        public int open_issues { get; set; }
-        public int closed_issues { get; set; }
-        public GithubIssueStatus state { get; set; }
-        public DateTimeOffset? due_on { get; set; }
-    }
-    public class GithubCommit
-    {
-        public string html_url { get; set; }
-        public GithubUser author { get; set; }
-        public GithubCommitObject commit { get; set; }
-        public GithubCommitStats stats { get; set; }
-        public GithubCommitStats[] files { get; set; }
-    }
-    public class GithubCommitObject
-    {
-        public GithubCommitAuthor author { get; set; }
-        public GithubCommitAuthor committer { get; set; }
-        public string message { get; set; }
-        public int comment_count { get; set; }
-        public string first_line => message.Split('\n')[0];
-        public string other_lines => message.Contains('\n') ? message.Substring(message.IndexOf('\n')) : "";
-    }
-    public class GithubCommitAuthor
-    {
-        public string name { get; set; }
-        public string email { get; set; }
-        public DateTimeOffset date { get; set; }
-    }
-    public class GithubCommitStats
-    {
-        public int additions { get; set; }
-        public int deletions { get; set; }
-        public int total_changes => additions + deletions;
-        public string filename { get; set; }
-
-        public override string ToString() => $"{(filename == null ? "" : $"`{filename}` - ")}{total_changes} (+{additions}/-{deletions})";
-    }
-    public enum GithubIssueStatus
-    {
-        open,
-        closed
     }
 }

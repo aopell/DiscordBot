@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using Newtonsoft.Json;
 
 namespace DiscordBotNew.Settings
 {
@@ -18,7 +16,7 @@ namespace DiscordBotNew.Settings
                 string filePath = Config.BasePath + property.PropertyType.GetCustomAttribute<ConfigFileAttribute>().FileName;
 
                 if (!File.Exists(filePath)) continue;
-                object c = JsonConvert.DeserializeObject(File.ReadAllText(filePath), property.PropertyType);
+                object c = JsonConvert.DeserializeObject(File.ReadAllText(filePath), property.PropertyType) ?? Activator.CreateInstance(property.PropertyType);
                 property.SetValue(bot, c);
             }
         }
