@@ -14,6 +14,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using SColor = System.Drawing.Color;
+using SColorConverter = System.Drawing.ColorConverter;
 
 namespace DiscordBotNew.Commands
 {
@@ -325,6 +327,33 @@ namespace DiscordBotNew.Commands
             await CommandRunner.Run(command, dynamicMessageContext, CommandTools.GetCommandPrefix(dynamicMessageContext, message.Channel), false);
 
             return new SuccessResult();
+        }
+
+        [Command("color"), HelpText("Displays a preview of a CSS color")]
+        public static ICommandResult Color(ICommandContext context, string color)
+        {
+            SColor sc;
+
+            try
+            {
+                sc = (SColor)new SColorConverter().ConvertFromString(color);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex);
+            }
+
+            string hex = $"#{sc.R:X2}{sc.G:X2}{sc.B:X2}";
+
+            var embed = new EmbedBuilder().WithTitle(sc.IsNamedColor ? sc.Name : hex)
+                                          .WithUrl($"https://www.color-hex.com/color/{sc.R:X2}{sc.G:X2}{sc.B:X2}")
+                                          .WithThumbnailUrl($"https://www.colorbook.io/imagecreator.php?hex={sc.R:X2}{sc.G:X2}{sc.B:X2}&width=1920&height=1080")
+                                          .WithColor((Color)sc);
+
+            embed.AddField("Hex", hex, true);
+            embed.AddField("RGB", $"{sc.R}, {sc.G}, {sc.B}", true);
+
+            return new SuccessResult(embed: embed.Build());
         }
 
         [Command("cat", "floof", "squish"), HelpText("Cat.")]
