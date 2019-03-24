@@ -13,56 +13,22 @@ namespace DiscordBotNew.Commands
 {
     public static class GithubCommands
     {
-        [Command("linkrepo", "linkgithub", "githublink"), HelpText("Links a GitHub repository to the current server; enables GitHub helper"), CommandScope(ChannelType.Text), Permissions(guildPermissions: new[] { GuildPermission.Administrator })]
-        public static async Task<ICommandResult> LinkRepository(DiscordUserMessageContext context, string repository)
+        [Command("github"), HelpText("Runs various GitHub commands"), CommandScope(ChannelType.Text)]
+        public static async Task<ICommandResult> Github(DiscordUserMessageContext context, GithubAction action = GithubAction.Info, string value = null)
         {
+            if (context.Guild == null) return new ErrorResult("Must be in a guild");
+            context.Bot.GithubRepos.Repositories.TryGetValue(context.Guild.Id, out string linkedRepository);
+            string linkedRepoOwner = linkedRepository?.Split('/')[0];
+            string linkedRepoName = linkedRepository?.Split('/')[1];
             var client = new GitHubClient(new ProductHeaderValue("Netcat-Discord-Bot"));
             client.Credentials = new Credentials(context.Bot.GithubRepos.Token);
-
-            if (context.Guild == null) return new ErrorResult("Must be in a guild");
-            if (!Regex.IsMatch(repository, @"^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}/[\w.-]+$"))
-            {
-                return new ErrorResult("Repository name was not in the correct format. Please use the format `user/repository` or `organization/repository`");
-            }
-
-            try
-            {
-                await client.Repository.Get(repository.Split('/')[0], repository.Split('/')[1]);
-            }
-            catch (NotFoundException)
-            {
-                return new ErrorResult("That repository was not found. This feature currently does not support private repositories unless the GitHub user Netcat-Bot is a repository member, sorry for the inconvenience.");
-            }
-
-            context.Bot.GithubRepos.Repositories[context.Guild.Id] = repository;
-            context.Bot.GithubRepos.SaveConfig();
-            return new SuccessResult("Repository linked successfully. GitHub helper has been enabled. Run the `github` command for more information.");
-        }
-
-        [Command("unlinkrepo", "unlinkgithub", "githubunlink"), HelpText("Unlinks a GitHub repository from the current server; disables GitHub helper"), Permissions(guildPermissions: new[] { GuildPermission.Administrator })]
-        public static ICommandResult UnlinkRepository(DiscordUserMessageContext context)
-        {
-            if (context.Guild == null) return new ErrorResult("Must be in a guild");
-            context.Bot.GithubRepos.Repositories[context.Guild.Id] = null;
-            context.Bot.GithubRepos.SaveConfig();
-            return new SuccessResult("Repository unlinked successfully");
-        }
-
-        [Command("github"), HelpText("Runs various GitHub commands"), CommandScope(ChannelType.Text)]
-        public static async Task<ICommandResult> Github(DiscordUserMessageContext context, GithubAction action = GithubAction.Info, string name = "")
-        {
-            if (context.Guild == null) return new ErrorResult("Must be in a guild");
-            string repository = null;
-            context.Bot.GithubRepos.Repositories.TryGetValue(context.Guild.Id, out repository);
-            string repoOwner = repository?.Split('/')[0];
-            string repoName = repository?.Split('/')[1];
 
             switch (action)
             {
                 case GithubAction.Info:
                     return new SuccessResult($"**GitHub Helper**" +
-                                             $"\nLinked Repository: {(repository != null ? $"https://github.com/{repository}" : "None")}" +
-                                             $"\nUse the `{(repository == null ? "" : "un")}linkrepo` command to {(repository == null ? "link a GitHub repository to this server" : "unlink the currently linked repository")}" +
+                                             $"\nLinked Repository: {(linkedRepository != null ? $"https://github.com/{linkedRepository}" : "None")}" +
+                                             $"\nUse the `github {(linkedRepository == null ? "" : "un")}link` command to {(linkedRepository == null ? "link a GitHub repository to this server" : "unlink the currently linked repository")}" +
                                              $"\n\nOnce a repository is linked, you can use the following features of GitHub Helper:" +
                                              $"\n\n**Commands**" +
                                              $"\nUse the `github milestone [MILESTONE]` command to display the status of a milestone" +
@@ -70,21 +36,50 @@ namespace DiscordBotNew.Commands
                                              $"\nType `GH#[NNN]` anywhere in your message to display a summary of issue number [NNN]" +
                                              $"\nType `GH@[USER]` anywhere in your message to display a summary of GitHub user [USER]" +
                                              $"\nType `GH:[COMMIT SHA1]` anywhere in your message to display a summary of the commit with the hash [COMMIT SHA1]");
+                case GithubAction.Link:
+                    if (!context.HasGuildPermissions(GuildPermission.Administrator))
+                    {
+                        return new ErrorResult("Must be an administrator to link/unlink a repository", "Permission error");
+                    }
+                    if (!Regex.IsMatch(value, @"^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}/[\w.-]+$"))
+                    {
+                        return new ErrorResult("Repository name was not in the correct format. Please use the format `user/repository` or `organization/repository`");
+                    }
+
+                    try
+                    {
+                        await client.Repository.Get(value.Split('/')[0], value.Split('/')[1]);
+                    }
+                    catch (NotFoundException)
+                    {
+                        return new ErrorResult("That repository was not found. This feature currently does not support private repositories unless the GitHub user `Netcat-Bot` is a repository member, sorry for the inconvenience.");
+                    }
+
+                    context.Bot.GithubRepos.Repositories[context.Guild.Id] = value;
+                    context.Bot.GithubRepos.SaveConfig();
+                    return new SuccessResult("Repository linked successfully. GitHub helper has been enabled. Run the `github` command for more information.");
+                case GithubAction.Unlink:
+                    if (!context.HasGuildPermissions(GuildPermission.Administrator))
+                    {
+                        return new ErrorResult("Must be an administrator to link/unlink a repository", "Permission error");
+                    }
+                    context.Bot.GithubRepos.Repositories[context.Guild.Id] = null;
+                    context.Bot.GithubRepos.SaveConfig();
+                    return new SuccessResult("Repository unlinked successfully");
                 case GithubAction.Milestone:
                     using (context.Channel.EnterTypingState())
                     {
-                        var client = new GitHubClient(new ProductHeaderValue("Netcat-Discord-Bot"));
-                        var allIssuesInRepo = await client.Issue.GetAllForRepository(repoOwner, repoName,
+                        var allIssuesInRepo = await client.Issue.GetAllForRepository(linkedRepoOwner, linkedRepoName,
                             new RepositoryIssueRequest {State = ItemStateFilter.All}, new ApiOptions {PageSize = 100});
-                        if (!int.TryParse(name, out int milestone))
+                        if (!int.TryParse(value, out int milestone))
                         {
-                            var allMilestones = await client.Issue.Milestone.GetAllForRepository(repoOwner, repoName,
+                            var allMilestones = await client.Issue.Milestone.GetAllForRepository(linkedRepoOwner, linkedRepoName,
                                 new MilestoneRequest {State = ItemStateFilter.All}, new ApiOptions {PageSize = 100});
-                            milestone = allMilestones.FirstOrDefault(x => x.Title == name)?.Number ??
+                            milestone = allMilestones.FirstOrDefault(x => x.Title == value)?.Number ??
                                         throw new ArgumentException("That milestone does not exist");
                         }
 
-                        Milestone githubMilestone = await client.Issue.Milestone.Get(repoOwner, repoName, milestone);
+                        Milestone githubMilestone = await client.Issue.Milestone.Get(linkedRepoOwner, linkedRepoName, milestone);
                         var issuesInMilestone = allIssuesInRepo.Where(x => x.Milestone?.Number == milestone).ToList();
                         var open = issuesInMilestone.Where(x => x.State.Value == ItemState.Open).ToList();
                         var closed = issuesInMilestone.Where(x => x.State.Value == ItemState.Closed).ToList();
@@ -157,6 +152,8 @@ namespace DiscordBotNew.Commands
         public enum GithubAction
         {
             [HelpText("Lists information about the GitHub helper")] Info,
+            [HelpText("Links a GitHub repository to the current server; enables GitHub helper")] Link,
+            [HelpText("Unlinks the linked repository from the current server; disables GitHub helper")] Unlink,
             [HelpText("Lists information about a GitHub milestone")] Milestone
         }
     }
