@@ -679,7 +679,9 @@ namespace DiscordBotNew.Commands
                 Description = content
             };
 
-            return new SuccessResult(text, embed: builder.Build());
+            await ((ITextChannel)channel).SendMessageAsync(text, embed: builder.Build());
+
+            return new SuccessResult();
         }
     }
 }
