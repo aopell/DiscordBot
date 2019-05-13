@@ -641,16 +641,45 @@ namespace DiscordBotNew.Commands
             }
         }
 
+        public enum ReminderAction
+        {
+            [HelpText("Lists your upcoming reminders")] List,
+            [HelpText("Deletes an upcoming reminder")] Delete
+        }
+
         [Command("reveal"), HelpText("Displays the exact text received by the bot")]
         public static ICommandResult Reveal(DiscordUserMessageContext context)
         {
             return new SuccessResult($"```{context.Message.Content}```");
         }
 
-        public enum ReminderAction
+        [Command("announce"), HelpText("Creates an embed announcement of the given content in the specified channel"), Permissions(guildPermissions: new[] { GuildPermission.ManageMessages })]
+        public static async Task<ICommandResult> Announce(DiscordUserMessageContext context, string channelMention, string text, string content)
         {
-            [HelpText("Lists your upcoming reminders")] List,
-            [HelpText("Deletes an upcoming reminder")] Delete
+            if (context.Message.MentionedChannelIds.Count == 0)
+            {
+                return new ErrorResult("Must mention a channel");
+            }
+
+            IGuildChannel channel = await context.Guild.GetChannelAsync(context.Message.MentionedChannelIds.First());
+
+            if (!((IGuildUser)context.MessageAuthor).GetPermissions(channel).SendMessages)
+            {
+                return new ErrorResult("Must have permission to send messages in that channel");
+            }
+
+            var builder = new EmbedBuilder
+            {
+                Author = new EmbedAuthorBuilder
+                {
+                    Name = context.MessageAuthor.NicknameOrUsername(),
+                    IconUrl = context.MessageAuthor.AvatarUrlOrDefaultAvatar()
+                },
+                Timestamp = context.Message.Timestamp,
+                Description = content
+            };
+
+            return new SuccessResult(text, embed: builder.Build());
         }
     }
 }
