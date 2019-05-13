@@ -16,7 +16,7 @@ namespace DiscordBotNew.Commands
     public static class AnalyticsCommands
     {
         [Command("leaderboard"), HelpText("Counts messages sent by each person in a server"), CommandScope(ChannelType.Text)]
-        [Permissions(guildPermissions: new[] { GuildPermission.ReadMessageHistory, GuildPermission.ManageMessages, GuildPermission.ReadMessages }), ChannelDescriptionDelay(21600)]
+        [Permissions(guildPermissions: new[] { GuildPermission.ReadMessageHistory, GuildPermission.ManageMessages, GuildPermission.ViewChannel }), ChannelDescriptionDelay(21600)]
         public static async Task<ICommandResult> GenerateLeaderboard(ICommandContext context, LeaderboardType type = LeaderboardType.Delta, [HelpText("Specifies the time frame for custom leaderboards")] double customHours = 24d)
         {
             IGuild guild;

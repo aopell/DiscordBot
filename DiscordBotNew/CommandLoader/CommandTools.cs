@@ -281,5 +281,17 @@ namespace DiscordBotNew.CommandLoader
             string[] clocks = { "🕛", "🕧", "🕐", "🕜", "🕑", "🕝", "🕒", "🕞", "🕓", "🕟", "🕔", "🕠", "🕕", "🕡", "🕖", "🕢", "🕗", "🕣", "🕘", "🕤", "🕙", "🕥", "🕚", "🕦" };
             return clocks[time.Hour % 12 * 2 + (time.Minute < 30 ? 0 : 1)];
         }
+
+        public static bool HasChannelPermissions(this DiscordUserMessageContext context, params ChannelPermission[] perms)
+        {
+            var existing = ((IGuildUser) context.MessageAuthor).GetPermissions(context.Channel as IGuildChannel);
+            return perms.All(p => existing.Has(p));
+        }
+
+        public static bool HasGuildPermissions(this DiscordUserMessageContext context, params GuildPermission[] perms)
+        {
+            var existing = ((IGuildUser) context.MessageAuthor).GuildPermissions;
+            return perms.All(p => existing.Has(p));
+        }
     }
 }
