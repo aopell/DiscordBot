@@ -654,7 +654,7 @@ namespace DiscordBotNew.Commands
         }
 
         [Command("announce"), HelpText("Creates an embed announcement of the given content in the specified channel"), Permissions(guildPermissions: new[] { GuildPermission.ManageMessages })]
-        public static async Task<ICommandResult> Announce(DiscordUserMessageContext context, string channelMention, string text, string content)
+        public static async Task<ICommandResult> Announce(DiscordUserMessageContext context, string channelMention, string text, [JoinRemainingParameters] string content)
         {
             if (context.Message.MentionedChannelIds.Count == 0)
             {
