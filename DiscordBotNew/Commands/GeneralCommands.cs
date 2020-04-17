@@ -471,7 +471,7 @@ namespace DiscordBotNew.Commands
         [Command("remind"), HelpText("Remind a certain person to do something at a specified time")]
         public static async Task<ICommandResult> Remind(DiscordUserMessageContext context, [DisplayName("username or @mention"), HelpText("The user to remind")] string user, [DisplayName("reminder time"), HelpText("The the time at which to send the reminder")] string timestamp, [JoinRemainingParameters, HelpText("The message to send as a reminder")] string message)
         {
-            DateTimeOffset targetTime;
+            var targetTime = new DateTimeOffset();
             Match regexMatch = null;
             DayOfWeek dayOfReminder = 0;
             timestamp = timestamp.Trim().ToLower();
