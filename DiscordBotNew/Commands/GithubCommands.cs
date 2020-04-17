@@ -97,6 +97,8 @@ namespace DiscordBotNew.Commands
                             .WithColor(githubMilestone.State.Value == ItemState.Open ? Color.Green : Color.Red)
                             .WithTimestamp(githubMilestone.CreatedAt);
 
+                        embed.AddField("Status", $"{(githubMilestone.DueOn.HasValue ? $"Due by {githubMilestone.DueOn:D}" : "No due date")}\n{githubMilestone.ClosedIssues * 100 / (githubMilestone.OpenIssues + githubMilestone.ClosedIssues)}% complete");
+
                         if (githubMilestone.DueOn.HasValue)
                         {
                             embed.Timestamp = githubMilestone.DueOn.Value;

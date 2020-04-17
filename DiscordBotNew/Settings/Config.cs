@@ -11,7 +11,7 @@ namespace DiscordBotNew.Settings
     public abstract class Config
     {
         [JsonIgnore]
-        public const string BasePath = "D:\\home\\data\\jobs\\continuous\\NetcatBot\\";
+        public const string BasePath = "";
 
         private ReaderWriterLockSlim rwLock { get; }
         private string fileName => BasePath + GetType().GetCustomAttribute<ConfigFileAttribute>().FileName;
