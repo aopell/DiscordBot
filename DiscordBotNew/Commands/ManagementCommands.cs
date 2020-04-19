@@ -111,6 +111,7 @@ namespace DiscordBotNew.Commands
                     {
                         await (await new HttpClient().GetStreamAsync(attachment.Url)).CopyToAsync(fileStream);
                     }
+                    ConfigFileManager.LoadConfigFiles(context.Bot);
                     return new SuccessResult("File successfully replaced");
                 case FileAction.List:
                     return new SuccessResult($"```\nAvailable Files:\n\n{context.Bot.FileNames.OrderBy(x => x).Aggregate((x, y) => $"{x}\n{y}")}\n```");
