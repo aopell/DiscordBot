@@ -108,7 +108,7 @@ namespace DiscordBotNew.Commands
                     }
 
                     var pages = channel.GetMessagesAsync(int.MaxValue);
-                    pages.ForEach(
+                    await pages.ForEachAsync(
                     page =>
                     {
                         foreach (IMessage message in page)

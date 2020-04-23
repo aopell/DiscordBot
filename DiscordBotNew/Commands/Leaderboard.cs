@@ -82,7 +82,7 @@ namespace DiscordBotNew.Commands
                 int messagesInChannel = 0;
 
                 var pages = channel.GetMessagesAsync(int.MaxValue);
-                pages.ForEach(
+                await pages.ForEachAsync(
                 page =>
                 {
                     foreach (IMessage message in page.Where(message => message.Timestamp <= creationTime))

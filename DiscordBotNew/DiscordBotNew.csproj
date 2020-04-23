@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk;Microsoft.NET.Sdk.Publish">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="simplewords\a.txt" />
@@ -216,10 +216,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="2.0.1" />
+    <PackageReference Include="Discord.Net" Version="2.2.0" />
     <PackageReference Include="Microsoft.Web.WebJobs.Publish" Version="2.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="Octokit" Version="0.32.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Octokit" Version="0.47.0" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Settings.job">
