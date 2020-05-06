@@ -40,12 +40,13 @@ namespace DiscordBotNew
 
         public string DefaultTimeZone { get; private set; }
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
             MainInstance = new DiscordBot();
-            MainInstance.MainAsync().GetAwaiter().GetResult();
+
+            await MainInstance.MainAsync();
         }
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
@@ -192,7 +193,7 @@ namespace DiscordBotNew
             if (ChannelDescriptions.Descriptions != null)
             {
                 var toRemove = new List<ulong>();
-                foreach (var item in ChannelDescriptions.Descriptions)
+                foreach (var item in ChannelDescriptions.Descriptions.ToArray())
                 {
                     var channel = (ITextChannel)Client.GetChannel(item.Key);
                     if (channel == null)
@@ -225,7 +226,7 @@ namespace DiscordBotNew
                     }
                 }
 
-                foreach (ulong d in toRemove)
+                foreach (ulong d in toRemove.ToArray())
                 {
                     string status = $"Channel {d} with dynamic description '{ChannelDescriptions.Descriptions[d]}' deleted";
                     EventsLog.LogEvent(status);
@@ -240,7 +241,7 @@ namespace DiscordBotNew
             Statuses.SaveConfig();
 
             bool countdownsModified = false;
-            foreach (ulong guild in Countdowns.Countdowns.Keys)
+            foreach (ulong guild in Countdowns.Countdowns.Keys.ToArray())
             {
                 ulong? channel = (Countdowns.CountdownChannels?.ContainsKey(guild) ?? false) ? Countdowns.CountdownChannels[guild] : (ulong?)null;
                 if (channel == null) continue;
@@ -256,7 +257,7 @@ namespace DiscordBotNew
 
             if (countdownsModified)
             {
-                foreach (ulong guild in Countdowns.Countdowns.Keys)
+                foreach (ulong guild in Countdowns.Countdowns.Keys.ToArray())
                 {
                     foreach (string key in Countdowns.Countdowns[guild].Where(x => x.Value < DateTimeOffset.Now).Select(x => x.Key).ToArray())
                     {
@@ -266,7 +267,7 @@ namespace DiscordBotNew
                 Countdowns.SaveConfig();
             }
 
-            foreach (var reminder in Reminders.Reminders.Where(reminder => reminder.Timestamp < DateTimeOffset.Now))
+            foreach (var reminder in Reminders.Reminders.Where(reminder => reminder.Timestamp < DateTimeOffset.Now).ToArray())
             {
                 EmbedBuilder embed = new EmbedBuilder
                 {
@@ -291,7 +292,7 @@ namespace DiscordBotNew
             if (DynamicMessages.Messages != null)
             {
                 var toRemove = new List<DynamicMessageInfo>();
-                foreach (var message in DynamicMessages.Messages)
+                foreach (var message in DynamicMessages.Messages.ToArray())
                 {
                     try
                     {
