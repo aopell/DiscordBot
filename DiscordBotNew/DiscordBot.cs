@@ -188,52 +188,54 @@ namespace DiscordBotNew
 
         private async void SecondTimer(ulong tick)
         {
-            bool abort = false;
-            Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
-            if (ChannelDescriptions.Descriptions != null)
-            {
-                var toRemove = new List<ulong>();
-                foreach (var item in ChannelDescriptions.Descriptions.ToArray())
-                {
-                    var channel = (ITextChannel)Client.GetChannel(item.Key);
-                    if (channel == null)
-                    {
-                        toRemove.Add(item.Key);
-                        continue;
-                    }
-                    string topic = item.Value;
-                    string newDesc = await descriptionCommandRegex.ReplaceAsync(
-                                     topic,
-                                     async m =>
-                                     {
-                                         var context = new DiscordChannelDescriptionContext(m.Groups[1].Value, channel, this);
-                                         var result = await CommandRunner.RunTimer(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel), true, tick);
-                                         abort = result == null;
-                                         return result?.ToString().Trim() ?? "";
-                                     });
-                    if (abort)
-                    {
-                        continue;
-                    }
+            #region Deprecated Channel Description Logic
+            //bool abort = false;
+            //Regex descriptionCommandRegex = new Regex("{{(.*?)}}");
+            //if (ChannelDescriptions.Descriptions != null)
+            //{
+            //    var toRemove = new List<ulong>();
+            //    foreach (var item in ChannelDescriptions.Descriptions.ToArray())
+            //    {
+            //        var channel = (ITextChannel)Client.GetChannel(item.Key);
+            //        if (channel == null)
+            //        {
+            //            toRemove.Add(item.Key);
+            //            continue;
+            //        }
+            //        string topic = item.Value;
+            //        string newDesc = await descriptionCommandRegex.ReplaceAsync(
+            //                         topic,
+            //                         async m =>
+            //                         {
+            //                             var context = new DiscordChannelDescriptionContext(m.Groups[1].Value, channel, this);
+            //                             var result = await CommandRunner.RunTimer(m.Groups[1].Value, context, CommandTools.GetCommandPrefix(context, channel), true, tick);
+            //                             abort = result == null;
+            //                             return result?.ToString().Trim() ?? "";
+            //                         });
+            //        if (abort)
+            //        {
+            //            continue;
+            //        }
 
-                    try
-                    {
-                        await channel.ModifyAsync(ch => ch.Topic = newDesc);
-                    }
-                    catch
-                    {
-                        // Fail silently
-                    }
-                }
+            //        try
+            //        {
+            //            await channel.ModifyAsync(ch => ch.Topic = newDesc);
+            //        }
+            //        catch
+            //        {
+            //            // Fail silently
+            //        }
+            //    }
 
-                foreach (ulong d in toRemove.ToArray())
-                {
-                    string status = $"Channel {d} with dynamic description '{ChannelDescriptions.Descriptions[d]}' deleted";
-                    EventsLog.LogEvent(status);
-                    await SendStatusMessage(status);
-                    ChannelDescriptions.Descriptions.Remove(d);
-                }
-            }
+            //    foreach (ulong d in toRemove.ToArray())
+            //    {
+            //        string status = $"Channel {d} with dynamic description '{ChannelDescriptions.Descriptions[d]}' deleted";
+            //        EventsLog.LogEvent(status);
+            //        await SendStatusMessage(status);
+            //        ChannelDescriptions.Descriptions.Remove(d);
+            //    }
+            //}
+            #endregion
         }
 
         private async void MinuteTimer(ulong minute)
