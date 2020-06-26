@@ -121,7 +121,7 @@ namespace DiscordBotNew.Commands
 
             IMessage msg = await messageChannel.GetMessageAsync(id);
 
-            if (msg == null) return new ErrorResult("Message not found");
+            if (msg == null) return new ErrorResult("Message not found (maybe you forgot to mention a channel?)");
 
             var builder = new EmbedBuilder
             {
@@ -133,9 +133,16 @@ namespace DiscordBotNew.Commands
                 Timestamp = msg.Timestamp,
                 Footer = new EmbedFooterBuilder
                 {
-                    Text = $"#{messageChannel.Name}"
+                    Text = messageChannel.Name
                 }
             };
+
+            if (context.Channel is IGuildChannel g)
+            {
+                builder.Title = "Click to Jump to Message";
+                builder.Url = $"https://discordapp.com/channels/{g.GuildId}/{messageChannel.Id}/{id}";
+                builder.WithFooter($"{g.Name} #{messageChannel.Name}");
+            }
 
             switch (msg.Type)
             {
@@ -160,18 +167,32 @@ namespace DiscordBotNew.Commands
                 case MessageType.ChannelPinnedMessage:
                     builder.Description = $"{msg.Author.Username} pinned a message to the channel";
                     break;
-                case (Discord.MessageType)7:
+                case MessageType.GuildMemberJoin:
                     builder.Description = $"{msg.Author.Username} joined the server";
+                    break;
+                case MessageType.UserPremiumGuildSubscription:
+                    builder.Description = $"{msg.Author.Username} boosted the server!";
+                    break;
+                case MessageType.UserPremiumGuildSubscriptionTier1:
+                    builder.Description = $"{msg.Author.Username} boosted the server to tier 1!";
+                    break;
+                case MessageType.UserPremiumGuildSubscriptionTier2:
+                    builder.Description = $"{msg.Author.Username} boosted the server to tier 2!";
+                    break;
+                case MessageType.UserPremiumGuildSubscriptionTier3:
+                    builder.Description = $"{msg.Author.Username} boosted the server to tier 3!";
+                    break;
+                case MessageType.ChannelFollowAdd:
+                    builder.Description = $"{msg.Author.Username} followed a channel";
+                    break;
+                default:
+                    builder.Description = $"Unknown System Message";
                     break;
             }
 
-            if (msg.Attachments.Count == 1)
-            {
-                builder.ImageUrl = msg.Attachments.First().Url;
-                builder.Title = msg.Attachments.First().Filename;
-                builder.Url = builder.ImageUrl;
-            }
-            else if (msg.Attachments.Count > 1)
+
+
+            if (msg.Attachments.Count >= 1)
             {
                 foreach (Attachment attachment in msg.Attachments)
                 {
@@ -189,11 +210,11 @@ namespace DiscordBotNew.Commands
                 await context.Channel.SendMessageAsync("", embed: embed);
             }
 
-            return new SuccessResult(context.Channel is IGuildChannel g ? $"Jump: https://discordapp.com/channels/{g.GuildId}/{messageChannel.Id}/{id}" : "", embed: builder.Build());
+            return new SuccessResult();
         }
 
         [Command("back"), HelpText("Creates a backronym from the given text")]
-        public static ICommandResult Back(ICommandContext context, string acronym, [HelpText("The number of backronyms to generate (up to 10)")]byte count = 1, [HelpText("Whether or not to use the larger English dictionary")] bool useComplexWords = false)
+        public static ICommandResult Back(ICommandContext context, string acronym, [HelpText("The number of backronyms to generate (up to 10)")] byte count = 1, [HelpText("Whether or not to use the larger English dictionary")] bool useComplexWords = false)
         {
             count = count < 1 ? (byte)1 : count > 10 ? (byte)10 : count;
 
@@ -203,7 +224,7 @@ namespace DiscordBotNew.Commands
                 backronym += acronym.ToUpper() + ": ";
                 foreach (char c in acronym)
                 {
-                    if (File.Exists($"{(useComplexWords ? "" : "simple")}words\\{char.ToLower(c)}.txt"))
+                    if (File.Exists(Path.Combine($"{(useComplexWords ? "" : "simple")}words", $"{char.ToLower(c)}.txt")))
                     {
                         string[] words = File.ReadAllLines($"{(useComplexWords ? "" : "simple")}words\\{char.ToLower(c)}.txt");
                         string word = words[random.Next(words.Length)];
@@ -211,6 +232,10 @@ namespace DiscordBotNew.Commands
                             backronym += char.ToUpper(word[0]) + word.Substring(1) + " ";
                         else
                             backronym += char.ToUpper(word[0]) + " ";
+                    }
+                    else
+                    {
+                        return new ErrorResult("Couldn't find dictionary files :(");
                     }
                 }
 
