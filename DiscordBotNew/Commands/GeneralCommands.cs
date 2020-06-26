@@ -190,7 +190,7 @@ namespace DiscordBotNew.Commands
                     break;
             }
 
-
+            await context.Channel.SendMessageAsync("", embed: builder.Build());
 
             if (msg.Attachments.Count >= 1)
             {
