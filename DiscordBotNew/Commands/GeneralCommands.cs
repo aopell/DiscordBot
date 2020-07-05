@@ -120,6 +120,7 @@ namespace DiscordBotNew.Commands
             }
 
             IMessage msg = await messageChannel.GetMessageAsync(id);
+            string text = "";
 
             if (msg == null) return new ErrorResult("Message not found (maybe you forgot to mention a channel?)");
 
@@ -139,8 +140,7 @@ namespace DiscordBotNew.Commands
 
             if (context.Channel is IGuildChannel g)
             {
-                builder.Title = "Click to Jump to Message";
-                builder.Url = $"https://discordapp.com/channels/{g.GuildId}/{messageChannel.Id}/{id}";
+                text = $"Jump: https://discordapp.com/channels/{g.GuildId}/{messageChannel.Id}/{id}";
                 builder.WithFooter($"{g.Name} #{messageChannel.Name}");
             }
 
@@ -190,7 +190,7 @@ namespace DiscordBotNew.Commands
                     break;
             }
 
-            await context.Channel.SendMessageAsync("", embed: builder.Build());
+            await context.Channel.SendMessageAsync(text, embed: builder.Build());
 
             if (msg.Attachments.Count >= 1)
             {
