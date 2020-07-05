@@ -226,7 +226,7 @@ namespace DiscordBotNew.Commands
                 {
                     if (File.Exists(Path.Combine($"{(useComplexWords ? "" : "simple")}words", $"{char.ToLower(c)}.txt")))
                     {
-                        string[] words = File.ReadAllLines($"{(useComplexWords ? "" : "simple")}words\\{char.ToLower(c)}.txt");
+                        string[] words = File.ReadAllLines(Path.Combine($"{(useComplexWords ? "" : "simple")}words", $"{char.ToLower(c)}.txt"));
                         string word = words[random.Next(words.Length)];
                         if (word.Length > 1)
                             backronym += char.ToUpper(word[0]) + word.Substring(1) + " ";
