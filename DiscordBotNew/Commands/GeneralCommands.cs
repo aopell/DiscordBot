@@ -141,7 +141,7 @@ namespace DiscordBotNew.Commands
             if (context.Channel is IGuildChannel g)
             {
                 text = $"Jump: https://discordapp.com/channels/{g.GuildId}/{messageChannel.Id}/{id}";
-                builder.WithFooter($"{g.Name} #{messageChannel.Name}");
+                builder.WithFooter($"{g.Guild.Name} #{g.Name}");
             }
 
             switch (msg.Type)
