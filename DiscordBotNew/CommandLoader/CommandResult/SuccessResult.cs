@@ -7,6 +7,8 @@ namespace DiscordBotNew.CommandLoader.CommandResult
     {
         public string Message { get; set; }
         public bool IsTTS { get; set; }
+        public bool ReplyIfPossible { get; set; }
+        public AllowedMentions AllowedMentions { get; set; }
         public Embed Embed { get; set; }
         public RequestOptions Options { get; set; }
         public bool HasContent { get; set; }
@@ -16,13 +18,15 @@ namespace DiscordBotNew.CommandLoader.CommandResult
             HasContent = false;
         }
 
-        public SuccessResult(string message = "", bool isTTS = false, Embed embed = null, RequestOptions options = null)
+        public SuccessResult(string message = "", bool isTTS = false, Embed embed = null, RequestOptions options = null, bool replyIfPossible = false, AllowedMentions allowedMentions = null)
         {
             Message = message;
             IsTTS = isTTS;
             Embed = embed;
             Options = options;
             HasContent = true;
+            ReplyIfPossible = replyIfPossible;
+            AllowedMentions = allowedMentions;
         }
 
         public override string ToString()

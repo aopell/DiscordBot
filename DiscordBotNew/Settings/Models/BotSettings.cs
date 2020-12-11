@@ -21,6 +21,7 @@ namespace DiscordBotNew.Settings.Models
         public ulong? StatusMessageChannel { get; set; }
         public string StatusMessageWebhook { get; set; }
         public string Game { get; set; }
+        public Discord.ActivityType Activity { get; set; }
         public Dictionary<ulong, string> CustomPrefixes { get; set; }
         public ulong? StartupReplyChannel { get; set; }
 

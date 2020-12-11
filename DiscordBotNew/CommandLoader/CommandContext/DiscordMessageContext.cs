@@ -43,6 +43,12 @@ namespace DiscordBotNew.CommandLoader.CommandContext
         public virtual async Task ReplyError(string description, string title = "Error")
         {
             await DiscordBot.Log(new LogMessage(LogSeverity.Error, "ErrorReply", $"{(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{title}] {description}"));
+            
+            if(this is DiscordUserMessageContext dumc)
+            {
+                await dumc.Message.ReplyAsync(embed: BuildErrorEmbed(description, title), allowedMentions: AllowedMentions.None);
+            }
+            
             await Channel.SendMessageAsync(string.Empty, embed: BuildErrorEmbed(description, title));
         }
         public virtual LogMessage LogMessage(string commandName) => new LogMessage(LogSeverity.Info, "Command", $"@{MessageAuthor.Username}#{MessageAuthor.Discriminator} in {(Channel as IGuildChannel)?.Guild.Name ?? "DM"} #{Channel.Name}: [{commandName}] {Message.Content}");

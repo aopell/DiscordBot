@@ -285,7 +285,7 @@ namespace DiscordBotNew
                 };
 
                 var message = await Client.GetUser(reminder.ReceiverId).SendMessageAsync("", embed: embed.Build());
-                await message.AddReactionAsync(new Emoji("💤"));
+                // await message.AddReactionAsync(new Emoji("💤"));
             }
 
             Reminders.Reminders.RemoveAll(x => x.Timestamp < DateTimeOffset.Now);
@@ -385,7 +385,7 @@ namespace DiscordBotNew
 
                 if (Settings.Game != null)
                 {
-                    await Client.SetGameAsync(Settings.Game);
+                    await Client.SetGameAsync(Settings.Game, type: Settings.Activity);
                 }
 
                 Reminders.Reminders = Reminders.Reminders ?? new List<ReminderInfo>();

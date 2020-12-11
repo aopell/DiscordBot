@@ -87,7 +87,7 @@ namespace DiscordBotNew.Commands
                     return new ErrorResult("That poll option doesn't exist");
                 }
 
-                return new SuccessResult(!update ? $"<@{context.MessageAuthor.Id}>: Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"<@{context.MessageAuthor.Id}>: Vote update to {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged");
+                return new SuccessResult(!update ? $"Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"Vote update to {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged", replyIfPossible: true);
             }
             else
             {
@@ -149,7 +149,7 @@ namespace DiscordBotNew.Commands
                         return new ErrorResult("That poll option doesn't exist");
                     }
 
-                    return new SuccessResult(!update ? $"<@{context.MessageAuthor.Id}>: Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"<@{context.MessageAuthor.Id}>: Vote update to {(num ? "option #" : "")}{option}{(num ? "" : "'")} acknowledged");
+                    return new SuccessResult(!update ? $"Vote for {(num ? "option #" : "'")}{option}{(num ? "" : "'")} acknowledged" : $"Vote update to {(num ? "option #" : "")}{option}{(num ? "" : "'")} acknowledged", replyIfPossible: true);
                 }
                 catch (Exception ex)
                 {

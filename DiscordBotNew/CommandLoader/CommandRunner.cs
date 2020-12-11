@@ -228,6 +228,15 @@ namespace DiscordBotNew.CommandLoader
                             switch (context)
                             {
                                 case DiscordMessageContext messageContext:
+                                    if(successResult.ReplyIfPossible)
+                                    {
+                                        try
+                                        {
+                                            await messageContext.Message.ReplyAsync(successResult.Message, successResult.IsTTS, successResult.Embed, successResult.AllowedMentions, successResult.Options);
+                                            break;
+                                        }
+                                        catch { }
+                                    }
                                     await messageContext.Reply(successResult.Message, successResult.IsTTS, successResult.Embed, successResult.Options);
                                     break;
                                 default:

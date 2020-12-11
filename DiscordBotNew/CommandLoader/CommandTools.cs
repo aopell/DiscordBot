@@ -12,7 +12,7 @@ namespace DiscordBotNew.CommandLoader
 {
     public static class CommandTools
     {
-        public static Emote LoadingEmote => Emote.Parse("<:dualring:395760275992739862>");
+        public static Emote LoadingEmote => Emote.Parse("<:loadingspinner:787100540034875441>");
 
         public static DateTimeOffset? ParseDate(this TimeZoneInfo timezone, string dateTime)
         {
@@ -249,6 +249,18 @@ namespace DiscordBotNew.CommandLoader
             }
 
             return args.ToArray();
+        }
+
+        public static EmbedBuilder GenerateTimeAgoEmbed(string name, DateTimeOffset date, string timezone)
+        {
+            var now = DateTimeOffset.Now;
+            TimeSpan difference = now - date.ToUniversalTime();
+            var then = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(now - difference, timezone);
+            return new EmbedBuilder().WithDescription($"Created {difference.ToLongString()} ago")
+                                     .WithAuthor(name, "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/information_2139.png")
+                                     .WithColor(0x3b88c3)
+                                     .AddField("🗓", then.ToString("dddd, MMMM d, yyyy"), true)
+                                     .AddField(GetClockEmoji(then), then.ToString("t"), true);
         }
 
         public static EmbedBuilder GenerateCountdownEmbed(DiscordBot bot, string name, DateTimeOffset date)

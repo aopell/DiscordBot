@@ -24,7 +24,7 @@ namespace DiscordBotNew.Commands
         private static Random random = new Random();
 
         [Command("hello", "test"), HelpText("Says hi")]
-        public static ICommandResult Hello(ICommandContext context) => new SuccessResult("Hello there! :hand_splayed:");
+        public static ICommandResult Hello(ICommandContext context) => new SuccessResult("Hello there! :hand_splayed:", replyIfPossible: true);
 
         [Command("echo", "say"), HelpText("Repeats the provided text back to you")]
         public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters, HelpText("The message to repeat")] string text) => new SuccessResult(text);
@@ -55,13 +55,7 @@ namespace DiscordBotNew.Commands
                 "Very doubtful"
             };
 
-            var messageContext = context as DiscordMessageContext;
-            if (messageContext != null)
-            {
-                messageContext.Message.ReplyAsync($"> {question}\n:8ball: `{responses[random.Next(responses.Length)]}`");
-                return new SuccessResult();
-            }
-            return new SuccessResult($"> {question}\n:8ball: `{responses[random.Next(responses.Length)]}`");
+            return new SuccessResult($"> ***{question}***\n:8ball: `{responses[random.Next(responses.Length)]}`", replyIfPossible: true);
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
@@ -105,7 +99,7 @@ namespace DiscordBotNew.Commands
 
             context.Bot.Settings.SaveConfig();
 
-            return new SuccessResult($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}");
+            return new SuccessResult($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}", replyIfPossible: true, allowedMentions: AllowedMentions.None);
         }
 
         [Command("quote", "byid", OverloadPriority = 0), HelpText("Quotes the message with the provided hypenated ID number")]
@@ -174,10 +168,13 @@ namespace DiscordBotNew.Commands
                     {
                         var refMsg = await messageChannel.GetMessageAsync(msg.Reference.MessageId.ToNullable() ?? 0);
                         builder.Fields.RemoveAll(_=>true);
-                        builder.AddField("Previous Message in Thread", refMsg.Content);
+                        builder.AddField("Previous Message in Thread", string.IsNullOrEmpty(refMsg?.Content) ? "*Message content can't be displayed*" : refMsg.Content.Substring(0, Math.Min(refMsg.Content.Length,  1000)) + (refMsg.Content.Length > 1000 ? "..." : ""));
                         builder.AddField("Jump to Message", $"[Click Here]({msg.GetJumpUrl()})", inline: true);
-                        builder.AddField("Jump to Previous", $"[Click Here]({refMsg.GetJumpUrl()})", inline: true);
-                        builder.Description = $"**@{msg.Author.Username} replied to @{refMsg?.Author?.Username ?? "*not found*"}**:\n{msg.Content}";
+                        if(refMsg != null)
+                        {
+                            builder.AddField("Jump to Previous", $"[Click Here]({refMsg.GetJumpUrl()})", inline: true);
+                        }
+                        builder.Description = $"**{msg.Author.Mention} replied to {refMsg?.Author?.Mention ?? "*not found*"}**:\n{msg.Content}";
                         break;
                     }
                     builder.Description = msg.Content;
@@ -416,7 +413,7 @@ namespace DiscordBotNew.Commands
             embed.AddField("Hex", hex, true);
             embed.AddField("RGB", $"{sc.R}, {sc.G}, {sc.B}", true);
 
-            return new SuccessResult(embed: embed.Build());
+            return new SuccessResult(embed: embed.Build(), replyIfPossible: true, allowedMentions: AllowedMentions.None);
         }
 
         [Command("cat", "floof", "squish"), HelpText("Cat.")]
@@ -440,14 +437,7 @@ namespace DiscordBotNew.Commands
                 await cx.Message.RemoveReactionAsync(CommandTools.LoadingEmote, context.Bot.Client.CurrentUser);
             }
 
-            if (context is DiscordUserMessageContext m)
-            {
-                var msg = await m.Channel.SendMessageAsync(catUrl);
-                await msg.AddReactionAsync(new Emoji("🐱"));
-                return new SuccessResult();
-            }
-
-            return new SuccessResult(catUrl);
+            return new SuccessResult(catUrl, replyIfPossible: true, allowedMentions: AllowedMentions.None);
         }
 
         [Command("dog"), HelpText("Dog.")]
@@ -477,13 +467,7 @@ namespace DiscordBotNew.Commands
 
             if (obj["status"].Value<string>() == "success")
             {
-                if (context is DiscordUserMessageContext m)
-                {
-                    var msg = await m.Channel.SendMessageAsync(obj["message"].Value<string>());
-                    await msg.AddReactionAsync(new Emoji("🐶"));
-                    return new SuccessResult();
-                }
-                return new SuccessResult(obj["message"].Value<string>());
+                return new SuccessResult(obj["message"].Value<string>(), replyIfPossible: true, allowedMentions: AllowedMentions.None);
             }
             return new ErrorResult("Breed not found. For a list of supported breeds, visit https://dog.ceo/dog-api/#breeds-list");
         }
@@ -492,23 +476,24 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Lmgtfy(ICommandContext context, [JoinRemainingParameters] string query) => new SuccessResult("http://lmgtfy.com/?q=" + Uri.EscapeDataString(query));
 
         [Command("ping"), HelpText("Displays the bot's latency")]
-        public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms estimated round trip latency");
+        public static ICommandResult Ping(ICommandContext context) => new SuccessResult($"{context.Bot.Client.Latency} ms estimated round trip latency", replyIfPossible: true, allowedMentions: AllowedMentions.None);
 
-        [Command("decide"), HelpText("Picks a random option")]
-        public static ICommandResult Decide(ICommandContext context, [JoinRemainingParameters] string[] options = null) => new SuccessResult(options?[random.Next(options.Length)] ?? (random.Next(2) == 0 ? "Yes" : "No"));
+        [Command("decide", "pick", "which"), HelpText("Picks a random option")]
+        public static ICommandResult Decide(ICommandContext context, [JoinRemainingParameters] string[] options = null) => new SuccessResult(options?[random.Next(options.Length)] ?? (random.Next(2) == 0 ? "Yes" : "No"), replyIfPossible: true);
 
         [Command("timestamp"), HelpText("Displays the creation timestamp of a message, channel, server, or user"), CommandScope(ChannelType.Text)]
-        public static ICommandResult Timestamp(DiscordMessageContext context, [DisplayName("discord id")] ulong discordId)
+        public static ICommandResult Timestamp(DiscordMessageContext context, [DisplayName("discord id")] ulong discordId, string timezone = null)
         {
             long unixTime = (long)(((discordId >> 22) + 1420070400000) / 1000);
 
             try
             {
-                return new SuccessResult(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.FromUnixTimeSeconds(unixTime), context.Bot.DefaultTimeZone).ToString());
+                var time = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.FromUnixTimeSeconds(unixTime), timezone ?? context.Bot.DefaultTimeZone);
+                return new SuccessResult(embed: CommandTools.GenerateTimeAgoEmbed($"Discord ID {discordId}", time, timezone ?? context.Bot.DefaultTimeZone).Build(), replyIfPossible: true, allowedMentions: AllowedMentions.None);
             }
             catch (Exception ex) when (ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException)
             {
-                return new ErrorResult($"The time zone `{context.Bot.DefaultTimeZone}` is invalid", "Time Zone Error");
+                return new ErrorResult($"The time zone `{timezone ?? context.Bot.DefaultTimeZone}` is invalid", "Time Zone Error");
             }
         }
 
@@ -713,7 +698,7 @@ namespace DiscordBotNew.Commands
         [Command("reveal"), HelpText("Displays the exact text received by the bot")]
         public static ICommandResult Reveal(DiscordUserMessageContext context)
         {
-            return new SuccessResult($"```{context.Message.Content}```");
+            return new SuccessResult($"```{context.Message.Content}```", replyIfPossible: true, allowedMentions: AllowedMentions.None);
         }
 
         [Command("announce"), HelpText("Creates an embed announcement of the given content in the specified channel"), Permissions(guildPermissions: new[] { GuildPermission.ManageMessages })]

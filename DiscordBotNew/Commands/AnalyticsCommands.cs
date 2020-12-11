@@ -42,7 +42,7 @@ namespace DiscordBotNew.Commands
 
             if (context is DiscordUserMessageContext)
             {
-                leaderboardMessage = await messageChannel.SendMessageAsync("Calculating messages sent. This may take a few seconds...");
+                leaderboardMessage = await messageChannel.SendMessageAsync("Calculating messages sent. This may take a while...");
                 await leaderboardMessage.AddReactionAsync(CommandTools.LoadingEmote);
             }
 
@@ -68,10 +68,17 @@ namespace DiscordBotNew.Commands
                         throw new ArgumentOutOfRangeException(nameof(type), type, null);
                 }
 
-                if (context is DiscordUserMessageContext)
+                if (context is DiscordUserMessageContext umc)
                 {
+                    bool first = true;
                     foreach (string message in await leaderboard.ToStringsAsync())
                     {
+                        if (first)
+                        {
+                            await umc.Message.ReplyAsync(message);
+                            first = false;
+                            continue;
+                        }
                         await context.Reply(message);
                     }
 
@@ -133,7 +140,7 @@ namespace DiscordBotNew.Commands
                 }
                 else
                 {
-                    await context.Reply($"Finished creating analytics file. Saved as `analytics-{context.Guild.Id}.txt` ({Math.Round(new FileInfo(Config.BasePath + $"analytics-{context.Guild.Id}.txt").Length / 1048576d, 2)} MB)");
+                    await context.Message.ReplyAsync($"Finished creating analytics file. Saved as `analytics-{context.Guild.Id}.txt` ({Math.Round(new FileInfo(Config.BasePath + $"analytics-{context.Guild.Id}.txt").Length / 1048576d, 2)} MB)");
                 }
             }
             return new SuccessResult();

@@ -261,7 +261,7 @@ namespace DiscordBotNew.Commands
                                     inline: true);
                             }
 
-                            await context.Reply("", embed: embed.Build());
+                            await context.Message.ReplyAsync(embed: embed.Build(), allowedMentions: AllowedMentions.None);
                         }
                         catch (NotFoundException) { }
                     }
@@ -299,7 +299,7 @@ namespace DiscordBotNew.Commands
                                 embed.AddField("Comments", githubCommit.Commit.CommentCount, inline: true);
                             }
 
-                            await context.Reply("", embed: embed.Build());
+                            await context.Message.ReplyAsync(embed: embed.Build(), allowedMentions: AllowedMentions.None);
                         }
                         catch (NotFoundException) { }
                     }
@@ -339,7 +339,7 @@ namespace DiscordBotNew.Commands
                                 embed.AddField("Location", githubUser.Location, inline: true);
                             }
 
-                            await context.Reply("", embed: embed.Build());
+                            await context.Message.ReplyAsync(embed: embed.Build(), allowedMentions: AllowedMentions.None);
                         }
                         catch (NotFoundException) { }
                     }

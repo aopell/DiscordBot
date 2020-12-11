@@ -84,13 +84,14 @@ namespace DiscordBotNew.Commands
             Environment.Exit(0);
         }
 
-        [Command("game"), HelpText("Sets the current game for the bot"), Permissions(ownerOnly: true)]
-        public static async Task<ICommandResult> Game(DiscordUserMessageContext context, [JoinRemainingParameters] string game)
+        [Command("setstatus"), HelpText("Sets the current status for the bot"), Permissions(ownerOnly: true)]
+        public static async Task<ICommandResult> Game(DiscordUserMessageContext context, ActivityType activity, [JoinRemainingParameters] string statusMessage)
         {
-            await context.Bot.Client.SetGameAsync(game);
-            context.Bot.Settings.Game = game;
+            await context.Bot.Client.SetGameAsync(statusMessage, type: activity);
+            context.Bot.Settings.Game = statusMessage;
+            context.Bot.Settings.Activity = activity;
             context.Bot.Settings.SaveConfig();
-            return new SuccessResult("Game updated");
+            return new SuccessResult($"Status updated to `{activity}` `{statusMessage}`");
         }
 
         [Command("file"), HelpText("Gets, puts, or lists bot settings files"), Permissions(ownerOnly: true)]
