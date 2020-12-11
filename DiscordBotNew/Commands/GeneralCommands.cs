@@ -57,8 +57,11 @@ namespace DiscordBotNew.Commands
 
             var messageContext = context as DiscordMessageContext;
             if (messageContext != null)
-                return new SuccessResult($"<@{messageContext.MessageAuthor.Id}>: ***{question}***\n" + responses[random.Next(responses.Length)]);
-            return new SuccessResult(responses[random.Next(responses.Length)]);
+            {
+                messageContext.Message.ReplyAsync($"> {question}\n:8ball: `{responses[random.Next(responses.Length)]}`");
+                return new SuccessResult();
+            }
+            return new SuccessResult($"> {question}\n:8ball: `{responses[random.Next(responses.Length)]}`");
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
@@ -159,13 +162,24 @@ namespace DiscordBotNew.Commands
 
             if (messageChannel is IGuildChannel g)
             {
-                text = $"Jump: {msg.GetJumpUrl()}";
+                builder.AddField("Jump to Message", $"[Click Here]({msg.GetJumpUrl()})", inline: true);
+                // text = $"Jump: {msg.GetJumpUrl()}";
                 builder.WithFooter($"{g.Guild.Name} #{g.Name}");
             }
 
             switch (msg.Type)
             {
                 case MessageType.Default:
+                    if ((msg.Source == MessageSource.User || msg.Source == MessageSource.Bot) && (msg.Reference?.MessageId.IsSpecified ?? false))
+                    {
+                        var refMsg = await messageChannel.GetMessageAsync(msg.Reference.MessageId.ToNullable() ?? 0);
+                        builder.Fields.RemoveAll(_=>true);
+                        builder.AddField("Previous Message in Thread", refMsg.Content);
+                        builder.AddField("Jump to Message", $"[Click Here]({msg.GetJumpUrl()})", inline: true);
+                        builder.AddField("Jump to Previous", $"[Click Here]({refMsg.GetJumpUrl()})", inline: true);
+                        builder.Description = $"**@{msg.Author.Username} replied to @{refMsg?.Author?.Username ?? "*not found*"}**:\n{msg.Content}";
+                        break;
+                    }
                     builder.Description = msg.Content;
                     break;
                 case MessageType.RecipientAdd:
@@ -391,11 +405,12 @@ namespace DiscordBotNew.Commands
                 return new ErrorResult(ex);
             }
 
-            string hex = $"#{sc.R:X2}{sc.G:X2}{sc.B:X2}";
+            string bytes = $"{sc.R:X2}{sc.G:X2}{sc.B:X2}";
+            string hex = $"#{bytes}";
 
             var embed = new EmbedBuilder().WithTitle(sc.IsNamedColor ? sc.Name : hex)
-                                          .WithUrl($"https://www.color-hex.com/color/{sc.R:X2}{sc.G:X2}{sc.B:X2}")
-                                          .WithThumbnailUrl($"https://www.colorbook.io/imagecreator.php?hex={sc.R:X2}{sc.G:X2}{sc.B:X2}&width=1920&height=1080")
+                                          .WithUrl($"https://www.color-hex.com/color/{bytes}")
+                                          .WithThumbnailUrl($"https://via.placeholder.com/1280x720/{bytes}/{bytes}/")
                                           .WithColor((Color)sc);
 
             embed.AddField("Hex", hex, true);
