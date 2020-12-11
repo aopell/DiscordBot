@@ -105,7 +105,21 @@ namespace DiscordBotNew.Commands
             return new SuccessResult($"Prefix set to `{prefix}` for this {(server ? "server" : "channel")}");
         }
 
-        [Command("quote", "byid"), HelpText("Quotes the message with the provided ID number")]
+        [Command("quote", "byid", OverloadPriority = 0), HelpText("Quotes the message with the provided hypenated ID number")]
+        public static async Task<ICommandResult> Quote(DiscordMessageContext context, [DisplayName("hyphenated message ID"), HelpText("The message to quote")] string id)
+        {
+            string[] ids = id.Split('-');
+            IMessageChannel messageChannel = (await context.Guild.GetChannelAsync(ulong.Parse(ids[0]))) as IMessageChannel;
+
+            if (messageChannel == null || !((IGuildUser)context.MessageAuthor).GetPermissions((IGuildChannel)messageChannel).ReadMessageHistory)
+            {
+                return new ErrorResult("You do not have permission to read messages in that channel", "Permissions Error");
+            }
+
+            return await QuoteInternal(context, ulong.Parse(ids[1]), messageChannel);
+        }
+
+        [Command("quote", "byid", OverloadPriority = 100), HelpText("Quotes the message with the provided ID number")]
         public static async Task<ICommandResult> Quote(DiscordMessageContext context, [DisplayName("message ID"), HelpText("The message to quote")] ulong id, [DisplayName("channel mention"), HelpText("The channel to search")] string channel = null)
         {
             IMessageChannel messageChannel = context.Channel;
@@ -119,6 +133,11 @@ namespace DiscordBotNew.Commands
                 return new ErrorResult("You do not have permission to read messages in that channel", "Permissions Error");
             }
 
+            return await QuoteInternal(context, id, messageChannel);
+        }
+
+        private static async Task<ICommandResult> QuoteInternal(DiscordMessageContext context, ulong id, IMessageChannel messageChannel)
+        {
             IMessage msg = await messageChannel.GetMessageAsync(id);
             string text = "";
 
@@ -138,9 +157,9 @@ namespace DiscordBotNew.Commands
                 }
             };
 
-            if (context.Channel is IGuildChannel g)
+            if (messageChannel is IGuildChannel g)
             {
-                text = $"Jump: https://discordapp.com/channels/{g.GuildId}/{messageChannel.Id}/{id}";
+                text = $"Jump: {msg.GetJumpUrl()}";
                 builder.WithFooter($"{g.Guild.Name} #{g.Name}");
             }
 
@@ -184,6 +203,10 @@ namespace DiscordBotNew.Commands
                     break;
                 case MessageType.ChannelFollowAdd:
                     builder.Description = $"{msg.Author.Username} followed a channel";
+                    break;
+                case MessageType.Reply:
+                    var referenceMessage = await messageChannel.GetMessageAsync(msg.Reference.MessageId.ToNullable() ?? 0);
+                    builder.Description = $"{msg.Author.Username} replied to {referenceMessage?.Author?.Username ?? "*not found*"}:\n{msg.Content}";
                     break;
                 default:
                     builder.Description = $"Unknown System Message";
