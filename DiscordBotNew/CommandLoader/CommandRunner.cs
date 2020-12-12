@@ -228,7 +228,7 @@ namespace DiscordBotNew.CommandLoader
                             switch (context)
                             {
                                 case DiscordMessageContext messageContext:
-                                    if(successResult.ReplyIfPossible)
+                                    if(messageContext is DiscordUserMessageContext && successResult.ReplyIfPossible)
                                     {
                                         try
                                         {
