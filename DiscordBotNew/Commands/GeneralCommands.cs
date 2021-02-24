@@ -27,7 +27,7 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Hello(ICommandContext context) => new SuccessResult("Hello there! :hand_splayed:", replyIfPossible: true);
 
         [Command("echo", "say"), HelpText("Repeats the provided text back to you")]
-        public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters, HelpText("The message to repeat")] string text) => new SuccessResult(text);
+        public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters, HelpText("The message to repeat")] string text) => new SuccessResult(text, allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
 
         [Command("8ball"), HelpText("It knows your future")]
         public static ICommandResult Magic8Ball(ICommandContext context, [JoinRemainingParameters, HelpText("A yes or no question")] string question)
@@ -55,7 +55,7 @@ namespace DiscordBotNew.Commands
                 "Very doubtful"
             };
 
-            return new SuccessResult($"> ***{question}***\n:8ball: `{responses[random.Next(responses.Length)]}`", replyIfPossible: true);
+            return new SuccessResult($"> ***{question}***\n:8ball: `{responses[random.Next(responses.Length)]}`", replyIfPossible: true, allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
         }
 
         [Command("setprefix"), HelpText("Sets the command prefix for this DM channel or server"), Permissions(guildPermissions: new[] { GuildPermission.ManageGuild })]
@@ -167,10 +167,10 @@ namespace DiscordBotNew.Commands
                     if ((msg.Source == MessageSource.User || msg.Source == MessageSource.Bot) && (msg.Reference?.MessageId.IsSpecified ?? false))
                     {
                         var refMsg = await messageChannel.GetMessageAsync(msg.Reference.MessageId.ToNullable() ?? 0);
-                        builder.Fields.RemoveAll(_=>true);
-                        builder.AddField("Previous Message in Thread", string.IsNullOrEmpty(refMsg?.Content) ? "*Message content can't be displayed*" : refMsg.Content.Substring(0, Math.Min(refMsg.Content.Length,  1000)) + (refMsg.Content.Length > 1000 ? "..." : ""));
+                        builder.Fields.RemoveAll(_ => true);
+                        builder.AddField("Previous Message in Thread", string.IsNullOrEmpty(refMsg?.Content) ? "*Message content can't be displayed*" : refMsg.Content.Substring(0, Math.Min(refMsg.Content.Length, 1000)) + (refMsg.Content.Length > 1000 ? "..." : ""));
                         builder.AddField("Jump to Message", $"[Click Here]({msg.GetJumpUrl()})", inline: true);
-                        if(refMsg != null)
+                        if (refMsg != null)
                         {
                             builder.AddField("Jump to Previous", $"[Click Here]({refMsg.GetJumpUrl()})", inline: true);
                         }
