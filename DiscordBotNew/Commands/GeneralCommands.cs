@@ -27,7 +27,7 @@ namespace DiscordBotNew.Commands
         public static ICommandResult Hello(ICommandContext context) => new SuccessResult("Hello there! :hand_splayed:", replyIfPossible: true);
 
         [Command("echo", "say"), HelpText("Repeats the provided text back to you")]
-        public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters, HelpText("The message to repeat")] string text) => new SuccessResult(text, allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
+        public static ICommandResult Echo(ICommandContext context, [JoinRemainingParameters, HelpText("The message to repeat")] string text) => new SuccessResult(text.Replace("@everyone", "@_everyone").Replace("@here", "@_here"), allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
 
         [Command("8ball"), HelpText("It knows your future")]
         public static ICommandResult Magic8Ball(ICommandContext context, [JoinRemainingParameters, HelpText("A yes or no question")] string question)
