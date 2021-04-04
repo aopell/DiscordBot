@@ -260,7 +260,7 @@ namespace DiscordBotNew.CommandLoader
                                      .WithAuthor(name, "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/information_2139.png")
                                      .WithColor(0x3b88c3)
                                      .AddField("🗓", then.ToString("dddd, MMMM d, yyyy"), true)
-                                     .AddField(GetClockEmoji(then), then.ToString("t"), true);
+                                     .AddField(GetClockEmoji(then), then.ToString("T"), true);
         }
 
         public static EmbedBuilder GenerateCountdownEmbed(DiscordBot bot, string name, DateTimeOffset date)
@@ -272,7 +272,7 @@ namespace DiscordBotNew.CommandLoader
                                      .WithAuthor(name, "https://emojipedia-us.s3.amazonaws.com/thumbs/120/twitter/120/stopwatch_23f1.png")
                                      .WithColor(0x7689d8)
                                      .AddField("🗓", then.ToString("dddd, MMMM d, yyyy"), true)
-                                     .AddField(GetClockEmoji(then), then.ToString("t"), true);
+                                     .AddField(GetClockEmoji(then), then.ToString("T"), true);
         }
 
         public static EmbedBuilder GenerateCountdownCompleteEmbed(DiscordBot bot, string name, DateTimeOffset date)
