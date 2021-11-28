@@ -284,7 +284,14 @@ namespace DiscordBotNew
                     Color = new Color(224, 79, 95)
                 };
 
-                var message = await Client.GetUser(reminder.ReceiverId).SendMessageAsync("", embed: embed.Build());
+                try 
+                {
+                    var message = await Client.GetUser(reminder.ReceiverId).SendMessageAsync("", embed: embed.Build());
+                }
+                catch
+                {
+                    Console.WriteLine($"Couldn't send reminder to {reminder.ReceiverId} with message {reminder.Message}");
+                }
                 // await message.AddReactionAsync(new Emoji("💤"));
             }
 
